@@ -1,586 +1,313 @@
 {
-  "version": "1.0",
-  "description": "Viral pet meme templates database - pet coding memes 🐱🐶💻",
+  "version": "2.0",
+  "description": "300 viral pet meme templates based on real 2025-2026 viral content from TikTok, YouTube, Reddit, Bored Panda",
+  "lastUpdated": "2026-01-17",
   "templates": [
-    {
-      "id": "monday_mood",
-      "pattern": "When it's [time] and [behavior]...",
-      "examples": [
-        "When it's Monday and I haven't had coffee yet...",
-        "When it's 3AM and the code finally works..."
-      ],
-      "scenes": ["sleeping", "derpy", "dramatic"],
-      "viralScore": 95,
-      "category": "relatable"
-    },
-    {
-      "id": "i_didnt_do_it",
-      "pattern": "[name] 5 minutes after [action]",
-      "examples": [
-        "Me 5 minutes after pushing to production",
-        "The intern 5 minutes after dropping the database"
-      ],
-      "scenes": ["guilty", "scared"],
-      "viralScore": 92,
-      "category": "chaos"
-    },
-    {
-      "id": "when_you_hear",
-      "pattern": "When you hear [trigger]:",
-      "examples": [
-        "When you hear 'tests are passing':",
-        "When you hear 'quick meeting':"
-      ],
-      "scenes": ["excited", "staring", "scared"],
-      "viralScore": 94,
-      "category": "reaction"
-    },
-    {
-      "id": "this_is_fine",
-      "pattern": "This is fine. *[chaos happening]*",
-      "examples": [
-        "This is fine. *production on fire*",
-        "This is fine. *100 merge conflicts*"
-      ],
-      "scenes": ["relaxed", "derpy", "dramatic"],
-      "viralScore": 97,
-      "category": "chaos"
-    },
-    {
-      "id": "nobody_me",
-      "pattern": "Nobody:\nMe at [time]: [action]",
-      "examples": [
-        "Nobody:\nMe at 2AM: debugging this again",
-        "Nobody:\nMe after one bug fix: 'I am the greatest developer'"
-      ],
-      "scenes": ["derpy", "excited", "sleeping"],
-      "viralScore": 93,
-      "category": "chaos"
-    },
-    {
-      "id": "pov",
-      "pattern": "POV: [situation]",
-      "examples": [
-        "POV: The senior dev is reviewing your PR",
-        "POV: You just pushed untested code"
-      ],
-      "scenes": ["staring", "judging", "scared"],
-      "viralScore": 96,
-      "category": "reaction"
-    },
-    {
-      "id": "me_explaining",
-      "pattern": "Me explaining to [person] why [reason]",
-      "examples": [
-        "Me explaining to my cat why I can't pet them right now",
-        "Me explaining to my dog that it's the code, not them"
-      ],
-      "scenes": ["staring", "dramatic", "judging"],
-      "viralScore": 91,
-      "category": "relatable"
-    },
-    {
-      "id": "works_on_my_machine",
-      "pattern": "\"It works on my machine\" 🤷",
-      "examples": [
-        "\"It works on my machine\" - Famous last words",
-        "\"Works on my machine\" *deploys anyway*"
-      ],
-      "scenes": ["relaxed", "derpy", "guilty"],
-      "viralScore": 98,
-      "category": "dev-classic"
-    },
-    {
-      "id": "expectation_reality",
-      "pattern": "Expectation: [good]\nReality: [bad]",
-      "examples": [
-        "Expectation: Quick 5-minute fix\nReality: 3 hours later...",
-        "Expectation: Easy deployment\nReality: Everything is broken"
-      ],
-      "scenes": ["excited", "scared", "dramatic"],
-      "viralScore": 90,
-      "category": "relatable"
-    },
-    {
-      "id": "before_after_coffee",
-      "pattern": "[name] before/after [thing]",
-      "examples": [
-        "Me before coffee vs after coffee",
-        "Me before standup vs after standup"
-      ],
-      "scenes": ["sleeping", "excited", "eating"],
-      "viralScore": 89,
-      "category": "relatable"
-    },
-    {
-      "id": "friday_deploy",
-      "pattern": "Friday deploy energy 💀",
-      "examples": [
-        "Me: I'll just deploy this real quick on Friday",
-        "Friday 4:59 PM: Just one more commit..."
-      ],
-      "scenes": ["scared", "guilty", "dramatic"],
-      "viralScore": 96,
-      "category": "dev-classic"
-    },
-    {
-      "id": "code_review",
-      "pattern": "[pet] reviewing your code be like:",
-      "examples": [
-        "Your cat reviewing your code be like:",
-        "Senior dev energy right here 👀"
-      ],
-      "scenes": ["staring", "judging"],
-      "viralScore": 94,
-      "category": "reaction"
-    },
-    {
-      "id": "merge_conflict",
-      "pattern": "MERGE CONFLICT DETECTED 😱",
-      "examples": [
-        "When you see 47 merge conflicts",
-        "The merge conflict that ended friendships"
-      ],
-      "scenes": ["dramatic", "scared", "staring"],
-      "viralScore": 93,
-      "category": "chaos"
-    },
-    {
-      "id": "debug_mode",
-      "pattern": "[time] hours into debugging:",
-      "examples": [
-        "5 hours into debugging:",
-        "When the bug was a typo all along:"
-      ],
-      "scenes": ["derpy", "sleeping", "dramatic"],
-      "viralScore": 95,
-      "category": "relatable"
-    },
-    {
-      "id": "prod_down",
-      "pattern": "Production is down. Everyone stay calm.",
-      "examples": [
-        "PRODUCTION IS DOWN *internal screaming*",
-        "\"It's just a warning\" - narrator: it was not just a warning"
-      ],
-      "scenes": ["scared", "dramatic", "guilty"],
-      "viralScore": 97,
-      "category": "chaos"
-    },
-    {
-      "id": "copy_stackoverflow",
-      "pattern": "ctrl+c ctrl+v from Stack Overflow energy",
-      "examples": [
-        "Me pretending I wrote this code myself",
-        "This code? Yeah I definitely wrote it 👀"
-      ],
-      "scenes": ["guilty", "relaxed", "derpy"],
-      "viralScore": 96,
-      "category": "dev-classic"
-    },
-    {
-      "id": "one_more_bug",
-      "pattern": "Fixed 1 bug. Created [N] more.",
-      "examples": [
-        "Fixed 1 bug. Created 3 more. As is tradition.",
-        "Task: Fix bug. Actual: Create bug family"
-      ],
-      "scenes": ["dramatic", "derpy", "scared"],
-      "viralScore": 94,
-      "category": "chaos"
-    },
-    {
-      "id": "meeting_could_email",
-      "pattern": "This meeting could have been an email 😤",
-      "examples": [
-        "Hour 2 of a meeting that could've been a Slack message",
-        "My face in unnecessary meetings:"
-      ],
-      "scenes": ["sleeping", "judging", "dramatic"],
-      "viralScore": 91,
-      "category": "relatable"
-    },
-    {
-      "id": "tests_passing",
-      "pattern": "ALL TESTS PASSING ✅✅✅",
-      "examples": [
-        "When all tests pass on first try 🎉",
-        "0 errors. 0 warnings. Is this real life?"
-      ],
-      "scenes": ["excited", "relaxed"],
-      "viralScore": 92,
-      "category": "celebration"
-    },
-    {
-      "id": "git_blame",
-      "pattern": "*runs git blame* Oh no. It was me.",
-      "examples": [
-        "git blame: It was you 6 months ago",
-        "Past me really said 'future me problem'"
-      ],
-      "scenes": ["guilty", "scared", "derpy"],
-      "viralScore": 95,
-      "category": "dev-classic"
-    },
-    {
-      "id": "semicolon",
-      "pattern": "The bug was a [small thing] 💀",
-      "examples": [
-        "The bug was a missing semicolon the whole time",
-        "2 hours. It was a typo. ONE TYPO."
-      ],
-      "scenes": ["dramatic", "derpy", "guilty"],
-      "viralScore": 94,
-      "category": "chaos"
-    },
-    {
-      "id": "legacy_code",
-      "pattern": "Opening legacy code like 👀",
-      "examples": [
-        "Me opening code from 2019:",
-        "This code has been here since before I was hired..."
-      ],
-      "scenes": ["scared", "staring", "judging"],
-      "viralScore": 93,
-      "category": "relatable"
-    },
-    {
-      "id": "no_documentation",
-      "pattern": "Documentation? What documentation? 📄",
-      "examples": [
-        "The documentation: *doesn't exist*",
-        "// TODO: add documentation (written in 2018)"
-      ],
-      "scenes": ["derpy", "scared", "judging"],
-      "viralScore": 92,
-      "category": "dev-classic"
-    },
-    {
-      "id": "keyboard_warrior",
-      "pattern": "Professional keyboard warrior 💻⌨️",
-      "examples": [
-        "Fixing bugs by sitting on the keyboard",
-        "Cat.exe contributing to open source"
-      ],
-      "scenes": ["sitting", "playing"],
-      "viralScore": 93,
-      "category": "cute"
-    },
-    {
-      "id": "sleep_is_overrated",
-      "pattern": "Sleep is for the weak (or so I tell myself)",
-      "examples": [
-        "Just one more commit... *3 hours later*",
-        "Who needs sleep when you have bugs to fix"
-      ],
-      "scenes": ["sleeping", "derpy"],
-      "viralScore": 90,
-      "category": "relatable"
-    },
-    {
-      "id": "imposter_syndrome",
-      "pattern": "Imposter syndrome hitting hard 🥺",
-      "examples": [
-        "Everyone else: Senior dev vibes\nMe:",
-        "Googling how to exit vim... again"
-      ],
-      "scenes": ["scared", "derpy", "guilty"],
-      "viralScore": 94,
-      "category": "relatable"
-    },
-    {
-      "id": "rubber_duck",
-      "pattern": "Explaining the bug to [pet] and suddenly getting it",
-      "examples": [
-        "My cat is the best rubber duck debugger",
-        "Talked to my dog about the bug. Fixed it."
-      ],
-      "scenes": ["staring", "sitting", "judging"],
-      "viralScore": 91,
-      "category": "cute"
-    },
-    {
-      "id": "feature_not_bug",
-      "pattern": "It's not a bug, it's a feature ✨",
-      "examples": [
-        "PM: This is broken\nMe: It's a feature",
-        "Unexpected behavior? Nah, undocumented feature."
-      ],
-      "scenes": ["relaxed", "derpy", "guilty"],
-      "viralScore": 95,
-      "category": "dev-classic"
-    },
-    {
-      "id": "commit_message",
-      "pattern": "git commit -m \"[funny message]\"",
-      "examples": [
-        "git commit -m \"please work\"",
-        "git commit -m \"idk what I changed but it works\""
-      ],
-      "scenes": ["guilty", "derpy", "scared"],
-      "viralScore": 94,
-      "category": "dev-classic"
-    },
-    {
-      "id": "sprint_planning",
-      "pattern": "Sprint planning be like: 📋",
-      "examples": [
-        "This will take 2 hours *takes 2 weeks*",
-        "Sprint goals vs Sprint reality"
-      ],
-      "scenes": ["dramatic", "scared", "derpy"],
-      "viralScore": 89,
-      "category": "relatable"
-    },
-    {
-      "id": "console_log",
-      "pattern": "console.log('[funny text]') 🔍",
-      "examples": [
-        "console.log('why are you like this')",
-        "console.log('HELP') x 47 times"
-      ],
-      "scenes": ["derpy", "dramatic", "scared"],
-      "viralScore": 93,
-      "category": "dev-classic"
-    },
-    {
-      "id": "rm_rf",
-      "pattern": "rm -rf / energy 💥",
-      "examples": [
-        "When you accidentally rm -rf the wrong folder",
-        "DELETE FROM users; // forgot WHERE clause"
-      ],
-      "scenes": ["guilty", "scared", "dramatic"],
-      "viralScore": 96,
-      "category": "chaos"
-    },
-    {
-      "id": "deploy_pray",
-      "pattern": "Deploy and pray 🙏",
-      "examples": [
-        "Deployed. Now we wait and hope.",
-        "*deploys* *prays* *refreshes obsessively*"
-      ],
-      "scenes": ["scared", "excited", "relaxed"],
-      "viralScore": 92,
-      "category": "relatable"
-    },
-    {
-      "id": "100_tabs",
-      "pattern": "[N] tabs open trying to fix one bug",
-      "examples": [
-        "47 Stack Overflow tabs for one error",
-        "My browser: 🔥 My code: still broken"
-      ],
-      "scenes": ["derpy", "dramatic", "sleeping"],
-      "viralScore": 93,
-      "category": "relatable"
-    },
-    {
-      "id": "quick_fix",
-      "pattern": "\"Quick fix\" that took [time]",
-      "examples": [
-        "Quick 5-minute fix *6 hours later*",
-        "It's just a small change... *famous last words*"
-      ],
-      "scenes": ["dramatic", "sleeping", "derpy"],
-      "viralScore": 94,
-      "category": "chaos"
-    },
-    {
-      "id": "error_message",
-      "pattern": "Error: [funny error]",
-      "examples": [
-        "Error: undefined is not a function (surprise!)",
-        "Error: Task failed successfully 🤷"
-      ],
-      "scenes": ["derpy", "dramatic", "scared"],
-      "viralScore": 95,
-      "category": "dev-classic"
-    },
-    {
-      "id": "pet_developer",
-      "pattern": "[pet] the 10x developer 💅",
-      "examples": [
-        "Senior developer energy right here",
-        "They write better code than me tbh"
-      ],
-      "scenes": ["sitting", "relaxed", "judging"],
-      "viralScore": 92,
-      "category": "cute"
-    },
-    {
-      "id": "fetch_success",
-      "pattern": "fetch() was SUCCESSFUL! 🐶🦴",
-      "examples": [
-        "await fetch('/treats') // 200 OK",
-        "Good boy successfully fetched the data"
-      ],
-      "scenes": ["playing", "excited"],
-      "viralScore": 94,
-      "category": "cute"
-    },
-    {
-      "id": "cat_exe",
-      "pattern": "cat.exe has stopped responding",
-      "examples": [
-        "cat.exe is not responding. Close program?",
-        "sudo restart cat.service // fails"
-      ],
-      "scenes": ["sleeping", "derpy", "staring"],
-      "viralScore": 95,
-      "category": "cute"
-    },
-    {
-      "id": "null_pointer",
-      "pattern": "NullPointerException at [pet].brain",
-      "examples": [
-        "Brain.exe returned null",
-        "Object reference not set: one brain cell"
-      ],
-      "scenes": ["derpy", "sleeping", "staring"],
-      "viralScore": 91,
-      "category": "chaos"
-    },
-    {
-      "id": "async_await",
-      "pattern": "await [pet].doTask() // never resolves",
-      "examples": [
-        "await cat.moveFromKeyboard() // timeout",
-        "Promise<treat> still pending..."
-      ],
-      "scenes": ["sleeping", "sitting", "relaxed"],
-      "viralScore": 93,
-      "category": "dev-classic"
-    },
-    {
-      "id": "infinite_loop",
-      "pattern": "while(true) { [action] } 🔄",
-      "examples": [
-        "while(true) { zoomies() }",
-        "while(hungry) { meow() } // infinite loop"
-      ],
-      "scenes": ["playing", "excited", "eating"],
-      "viralScore": 92,
-      "category": "cute"
-    },
-    {
-      "id": "push_force",
-      "pattern": "git push --force 💥",
-      "examples": [
-        "When in doubt, force push it out",
-        "--force: because regular push is for cowards"
-      ],
-      "scenes": ["guilty", "relaxed", "dramatic"],
-      "viralScore": 95,
-      "category": "chaos"
-    },
-    {
-      "id": "code_smell",
-      "pattern": "This code smells... 👃",
-      "examples": [
-        "Code reviewer: 'This smells funny'",
-        "*sniffs code* Something's not right here"
-      ],
-      "scenes": ["judging", "staring", "derpy"],
-      "viralScore": 90,
-      "category": "reaction"
-    },
-    {
-      "id": "refactor_later",
-      "pattern": "// TODO: refactor later (written [year])",
-      "examples": [
-        "// TODO: fix this - written 2019",
-        "// temporary solution (3 years old)"
-      ],
-      "scenes": ["guilty", "relaxed", "derpy"],
-      "viralScore": 94,
-      "category": "dev-classic"
-    },
-    {
-      "id": "spaghetti_code",
-      "pattern": "Spaghetti code is an art form 🍝",
-      "examples": [
-        "Me writing clean code vs legacy codebase:",
-        "The more indentation, the better, right?"
-      ],
-      "scenes": ["derpy", "dramatic", "guilty"],
-      "viralScore": 91,
-      "category": "chaos"
-    },
-    {
-      "id": "dependency_hell",
-      "pattern": "npm install hell 📦",
-      "examples": [
-        "69420 packages installed. 47 vulnerabilities.",
-        "node_modules heavier than the sun"
-      ],
-      "scenes": ["scared", "dramatic", "derpy"],
-      "viralScore": 93,
-      "category": "dev-classic"
-    },
-    {
-      "id": "rubber_duck_debug",
-      "pattern": "My pet > actual debugger",
-      "examples": [
-        "Rubber duck debugging but it's my cat",
-        "Explained the bug to my dog. Solved it."
-      ],
-      "scenes": ["staring", "sitting", "judging"],
-      "viralScore": 92,
-      "category": "cute"
-    },
-    {
-      "id": "pair_programming",
-      "pattern": "Pair programming with my [pet] 💻🐾",
-      "examples": [
-        "My cat: *sits on keyboard* I'm helping!",
-        "Best pair programming partner 10/10"
-      ],
-      "scenes": ["sitting", "playing", "staring"],
-      "viralScore": 94,
-      "category": "cute"
-    },
-    {
-      "id": "standup_vibe",
-      "pattern": "What I did yesterday: [same as today]",
-      "examples": [
-        "Yesterday: bugs. Today: same bugs. Tomorrow: probably bugs.",
-        "Standup: 'Still working on it' x 5 days"
-      ],
-      "scenes": ["sleeping", "derpy", "relaxed"],
-      "viralScore": 90,
-      "category": "relatable"
-    }
+    {"id": 1, "template": "When you hear the treat bag from across the house", "example": "When you hear the treat bag from across the house 👀💨", "breedType": "cat", "scene": "excited", "viralScore": 98},
+    {"id": 2, "template": "I didn't do it. The evidence is lying.", "example": "I didn't do it. The evidence is lying. 😇", "breedType": "cat", "scene": "guilty", "viralScore": 97},
+    {"id": 3, "template": "Monday mood", "example": "Monday mood 😴💤", "breedType": "cat", "scene": "sleeping", "viralScore": 96},
+    {"id": 4, "template": "3 AM zoomies activated", "example": "3 AM zoomies activated 💨🏃", "breedType": "cat", "scene": "playing", "viralScore": 95},
+    {"id": 5, "template": "When hooman is 5 minutes late with dinner", "example": "When hooman is 5 minutes late with dinner 😤🍽️", "breedType": "cat", "scene": "dramatic", "viralScore": 94},
+    {"id": 6, "template": "If I fits, I sits", "example": "If I fits, I sits 📦🐱", "breedType": "cat", "scene": "sitting", "viralScore": 98},
+    {"id": 7, "template": "Personal space? Never heard of it", "example": "Personal space? Never heard of it 🥺💕", "breedType": "cat", "scene": "staring", "viralScore": 93},
+    {"id": 8, "template": "Caught in 4K knocking things off the table", "example": "Caught in 4K knocking things off the table 📸😈", "breedType": "cat", "scene": "guilty", "viralScore": 97},
+    {"id": 9, "template": "The audacity of this hooman to touch MY belly", "example": "The audacity of this hooman to touch MY belly 😾", "breedType": "cat", "scene": "dramatic", "viralScore": 95},
+    {"id": 10, "template": "When the red dot disappears", "example": "When the red dot disappears 👁️👁️❓", "breedType": "cat", "scene": "staring", "viralScore": 94},
+    {"id": 11, "template": "Expectation: Majestic lion. Reality: Derpy potato", "example": "Expectation: Majestic lion. Reality: Derpy potato 🥔😹", "breedType": "cat", "scene": "derpy", "viralScore": 96},
+    {"id": 12, "template": "When the vet says 'just a quick visit'", "example": "When the vet says 'just a quick visit' 😱🏥", "breedType": "cat", "scene": "scared", "viralScore": 93},
+    {"id": 13, "template": "Judging you silently from across the room", "example": "Judging you silently from across the room 👀😾", "breedType": "cat", "scene": "judging", "viralScore": 95},
+    {"id": 14, "template": "When someone else sits in MY spot", "example": "When someone else sits in MY spot 😤👊", "breedType": "cat", "scene": "dramatic", "viralScore": 94},
+    {"id": 15, "template": "The face I make when you stop petting me", "example": "The face I make when you stop petting me 🥺😿", "breedType": "cat", "scene": "staring", "viralScore": 92},
+    {"id": 16, "template": "Chaos goblin mode: ACTIVATED", "example": "Chaos goblin mode: ACTIVATED 😈💥", "breedType": "cat", "scene": "playing", "viralScore": 96},
+    {"id": 17, "template": "When you open the can but it's not tuna", "example": "When you open the can but it's not tuna 😭💔", "breedType": "cat", "scene": "dramatic", "viralScore": 95},
+    {"id": 18, "template": "This box is mine now. I don't make the rules.", "example": "This box is mine now. I don't make the rules. 📦👑", "breedType": "cat", "scene": "sitting", "viralScore": 97},
+    {"id": 19, "template": "When hooman comes home after 5 minutes", "example": "When hooman comes home after 5 minutes 😐 (I didn't miss you)", "breedType": "cat", "scene": "relaxed", "viralScore": 93},
+    {"id": 20, "template": "One brain cell and it's on vacation", "example": "One brain cell and it's on vacation 🧠✈️😹", "breedType": "cat", "scene": "derpy", "viralScore": 98},
+    {"id": 21, "template": "Screaming into the void at 4 AM", "example": "Screaming into the void at 4 AM 🌙😺📢", "breedType": "cat", "scene": "dramatic", "viralScore": 94},
+    {"id": 22, "template": "When you make eye contact and slowly push it off", "example": "When you make eye contact and slowly push it off 👁️👁️ *push* 😈", "breedType": "cat", "scene": "guilty", "viralScore": 97},
+    {"id": 23, "template": "Why use the $50 bed when the cardboard box exists", "example": "Why use the $50 bed when the cardboard box exists 📦💅", "breedType": "cat", "scene": "sitting", "viralScore": 95},
+    {"id": 24, "template": "The look of betrayal when you come back smelling like another cat", "example": "The look of betrayal when you come back smelling like another cat 😿💔", "breedType": "cat", "scene": "judging", "viralScore": 96},
+    {"id": 25, "template": "Nap 1 of 47 for today", "example": "Nap 1 of 47 for today 😴💤", "breedType": "cat", "scene": "sleeping", "viralScore": 94},
+    {"id": 26, "template": "When the cucumber appears behind you", "example": "When the cucumber appears behind you 🥒😱💨", "breedType": "cat", "scene": "scared", "viralScore": 97},
+    {"id": 27, "template": "Plotting world domination from my perch", "example": "Plotting world domination from my perch 🌍😈👑", "breedType": "cat", "scene": "staring", "viralScore": 93},
+    {"id": 28, "template": "The DRAMA when I said no", "example": "The DRAMA when I said no 🎭😿", "breedType": "cat", "scene": "dramatic", "viralScore": 95},
+    {"id": 29, "template": "Caught mid-blep", "example": "Caught mid-blep 👅😹", "breedType": "cat", "scene": "derpy", "viralScore": 96},
+    {"id": 30, "template": "When you sneeze and I take it personally", "example": "When you sneeze and I take it personally 😾💢", "breedType": "cat", "scene": "scared", "viralScore": 92},
+    {"id": 31, "template": "Professional napper, amateur hunter", "example": "Professional napper, amateur hunter 😴🦎❌", "breedType": "cat", "scene": "sleeping", "viralScore": 94},
+    {"id": 32, "template": "When the new kitten gets attention", "example": "When the new kitten gets attention 😤 (I was here first)", "breedType": "cat", "scene": "judging", "viralScore": 93},
+    {"id": 33, "template": "Excuse me, this is MY sunbeam", "example": "Excuse me, this is MY sunbeam ☀️😾", "breedType": "cat", "scene": "relaxed", "viralScore": 95},
+    {"id": 34, "template": "When you try to move me from your laptop", "example": "When you try to move me from your laptop 💻😈 (No)", "breedType": "cat", "scene": "sitting", "viralScore": 96},
+    {"id": 35, "template": "Midnight parkour champion", "example": "Midnight parkour champion 🌙🏃💨", "breedType": "cat", "scene": "playing", "viralScore": 97},
+    {"id": 36, "template": "When the toy stops moving on its own", "example": "When the toy stops moving on its own 👀❓ (broken)", "breedType": "cat", "scene": "staring", "viralScore": 92},
+    {"id": 37, "template": "This face means I'm about to cause problems", "example": "This face means I'm about to cause problems 😈🔥", "breedType": "cat", "scene": "staring", "viralScore": 95},
+    {"id": 38, "template": "When you close the door and I'm on the wrong side", "example": "When you close the door and I'm on the wrong side 😭🚪", "breedType": "cat", "scene": "dramatic", "viralScore": 94},
+    {"id": 39, "template": "The regret of jumping and missing", "example": "The regret of jumping and missing 😿💫", "breedType": "cat", "scene": "guilty", "viralScore": 96},
+    {"id": 40, "template": "When they bought the expensive food but I want trash", "example": "When they bought the expensive food but I want trash 🗑️😋", "breedType": "cat", "scene": "eating", "viralScore": 93},
+    {"id": 41, "template": "Loaf mode: engaged", "example": "Loaf mode: engaged 🍞🐱", "breedType": "cat", "scene": "sitting", "viralScore": 97},
+    {"id": 42, "template": "When you're trying to work and I need attention NOW", "example": "When you're trying to work and I need attention NOW 💻🐱💢", "breedType": "cat", "scene": "dramatic", "viralScore": 95},
+    {"id": 43, "template": "The look of pure betrayal at bath time", "example": "The look of pure betrayal at bath time 🛁😿💔", "breedType": "cat", "scene": "scared", "viralScore": 96},
+    {"id": 44, "template": "When the bird outside is taunting me", "example": "When the bird outside is taunting me 🐦👀 *chattering sounds*", "breedType": "cat", "scene": "staring", "viralScore": 94},
+    {"id": 45, "template": "Just vibing on the keyboard during your meeting", "example": "Just vibing on the keyboard during your meeting ⌨️😼💅", "breedType": "cat", "scene": "relaxed", "viralScore": 93},
+    {"id": 46, "template": "When you pet the wrong spot", "example": "When you pet the wrong spot 😾🖐️❌", "breedType": "cat", "scene": "dramatic", "viralScore": 95},
+    {"id": 47, "template": "Absolutely unhinged at 3 AM", "example": "Absolutely unhinged at 3 AM 🌙😈💥", "breedType": "cat", "scene": "playing", "viralScore": 97},
+    {"id": 48, "template": "This is the face of someone who regrets nothing", "example": "This is the face of someone who regrets nothing 😈✨", "breedType": "cat", "scene": "guilty", "viralScore": 96},
+    {"id": 49, "template": "When you're late with the wet food", "example": "When you're late with the wet food 😤⏰🍽️", "breedType": "cat", "scene": "dramatic", "viralScore": 94},
+    {"id": 50, "template": "Tail goes poof for no reason", "example": "Tail goes poof for no reason 🐱💨 ❓", "breedType": "cat", "scene": "scared", "viralScore": 92},
+    {"id": 51, "template": "When I want outside but also inside", "example": "When I want outside but also inside 🚪😾 (make up your mind, door)", "breedType": "cat", "scene": "dramatic", "viralScore": 95},
+    {"id": 52, "template": "The stare that says you're sleeping too peacefully", "example": "The stare that says you're sleeping too peacefully 👁️👁️🌙", "breedType": "cat", "scene": "staring", "viralScore": 93},
+    {"id": 53, "template": "My face vs my true intentions", "example": "My face vs my true intentions 😇/😈", "breedType": "cat", "scene": "relaxed", "viralScore": 94},
+    {"id": 54, "template": "When the vacuum comes out", "example": "When the vacuum comes out 😱💨🏃", "breedType": "cat", "scene": "scared", "viralScore": 96},
+    {"id": 55, "template": "Professional toe attacker", "example": "Professional toe attacker 🦶😈", "breedType": "cat", "scene": "playing", "viralScore": 93},
+    {"id": 56, "template": "When you catch me drinking from your glass", "example": "When you catch me drinking from your glass 🥤👀 (and what about it?)", "breedType": "cat", "scene": "guilty", "viralScore": 95},
+    {"id": 57, "template": "The pure joy of an empty Amazon box", "example": "The pure joy of an empty Amazon box 📦😻✨", "breedType": "cat", "scene": "excited", "viralScore": 97},
+    {"id": 58, "template": "When you try to take a photo but I move", "example": "When you try to take a photo but I move 📸💨 (blurry chaos)", "breedType": "cat", "scene": "derpy", "viralScore": 92},
+    {"id": 59, "template": "Suspicious of this new furniture", "example": "Suspicious of this new furniture 👀🛋️❓", "breedType": "cat", "scene": "staring", "viralScore": 91},
+    {"id": 60, "template": "When hooman says 'no' but I hear 'try again'", "example": "When hooman says 'no' but I hear 'try again' 😈🔄", "breedType": "cat", "scene": "dramatic", "viralScore": 95},
+    {"id": 61, "template": "The judgment when you don't share your food", "example": "The judgment when you don't share your food 👀🍔😤", "breedType": "cat", "scene": "judging", "viralScore": 94},
+    {"id": 62, "template": "Sleeping in the most uncomfortable position possible", "example": "Sleeping in the most uncomfortable position possible 😴🥨", "breedType": "cat", "scene": "sleeping", "viralScore": 96},
+    {"id": 63, "template": "When you come home and I pretend I didn't miss you", "example": "When you come home and I pretend I didn't miss you 😒 (I did)", "breedType": "cat", "scene": "relaxed", "viralScore": 93},
+    {"id": 64, "template": "Chaotic energy contained in a tiny body", "example": "Chaotic energy contained in a tiny body 😈✨💥", "breedType": "cat", "scene": "playing", "viralScore": 95},
+    {"id": 65, "template": "When you have a meeting and I have MEOWS", "example": "When you have a meeting and I have MEOWS 📢💻😺", "breedType": "cat", "scene": "dramatic", "viralScore": 94},
+    {"id": 66, "template": "This is my concerned face (I'm not concerned)", "example": "This is my concerned face (I'm not concerned) 😐💅", "breedType": "cat", "scene": "staring", "viralScore": 92},
+    {"id": 67, "template": "When I accidentally scare myself", "example": "When I accidentally scare myself 😱💨 (why am I like this)", "breedType": "cat", "scene": "scared", "viralScore": 96},
+    {"id": 68, "template": "The chosen spot on the clean laundry", "example": "The chosen spot on the clean laundry 👕😼✨", "breedType": "cat", "scene": "sitting", "viralScore": 95},
+    {"id": 69, "template": "When you stop scrolling to pet me", "example": "When you stop scrolling to pet me 📱➡️🐱 (correct choice)", "breedType": "cat", "scene": "relaxed", "viralScore": 93},
+    {"id": 70, "template": "Absolutely feral at 2 AM for no reason", "example": "Absolutely feral at 2 AM for no reason 🌙😈🔥", "breedType": "cat", "scene": "playing", "viralScore": 97},
+    {"id": 71, "template": "The can opener has summoned me", "example": "The can opener has summoned me 🥫👂💨", "breedType": "cat", "scene": "excited", "viralScore": 96},
+    {"id": 72, "template": "When you pick me up without consent", "example": "When you pick me up without consent 😾 (put me DOWN)", "breedType": "cat", "scene": "dramatic", "viralScore": 94},
+    {"id": 73, "template": "Eyes say innocent, paws say chaos", "example": "Eyes say innocent, paws say chaos 🥺😈", "breedType": "cat", "scene": "staring", "viralScore": 95},
+    {"id": 74, "template": "When you catch me on the counter", "example": "When you catch me on the counter 👀 (you saw nothing)", "breedType": "cat", "scene": "guilty", "viralScore": 97},
+    {"id": 75, "template": "Living my best life in this sunbeam", "example": "Living my best life in this sunbeam ☀️😻✨", "breedType": "cat", "scene": "relaxed", "viralScore": 93},
+    {"id": 76, "template": "Did someone say... treats?!", "example": "Did someone say... TREATS?! 👂👀💨", "breedType": "dog", "scene": "excited", "viralScore": 98},
+    {"id": 77, "template": "I have no idea what I'm doing but I'm excited", "example": "I have no idea what I'm doing but I'm excited 🐶🎉❓", "breedType": "dog", "scene": "derpy", "viralScore": 97},
+    {"id": 78, "template": "When hooman comes home after 5 minutes", "example": "When hooman comes home after 5 minutes 😭💕 (I MISSED YOU SO MUCH)", "breedType": "dog", "scene": "excited", "viralScore": 98},
+    {"id": 79, "template": "The look when you say 'walk' but don't grab the leash", "example": "The look when you say 'walk' but don't grab the leash 👀💔", "breedType": "dog", "scene": "dramatic", "viralScore": 96},
+    {"id": 80, "template": "Professional good boy, amateur listener", "example": "Professional good boy, amateur listener 🐶💅", "breedType": "dog", "scene": "derpy", "viralScore": 95},
+    {"id": 81, "template": "When the doorbell rings", "example": "When the doorbell rings 🚨🐕📢 BARK BARK BARK", "breedType": "dog", "scene": "excited", "viralScore": 97},
+    {"id": 82, "template": "I didn't eat the shoe. The shoe attacked me first.", "example": "I didn't eat the shoe. The shoe attacked me first. 👟😇", "breedType": "dog", "scene": "guilty", "viralScore": 96},
+    {"id": 83, "template": "When you fake throw the ball", "example": "When you fake throw the ball 👀💔😤 (BETRAYAL)", "breedType": "dog", "scene": "dramatic", "viralScore": 98},
+    {"id": 84, "template": "SQUIRREL!!!", "example": "SQUIRREL!!! 🐿️👀💨", "breedType": "dog", "scene": "excited", "viralScore": 97},
+    {"id": 85, "template": "When you spell W-A-L-K but I know", "example": "When you spell W-A-L-K but I know 👂👀 (I'm smarter than you think)", "breedType": "dog", "scene": "staring", "viralScore": 95},
+    {"id": 86, "template": "The regret after the zoomies", "example": "The regret after the zoomies 😴💨 (worth it)", "breedType": "dog", "scene": "sleeping", "viralScore": 94},
+    {"id": 87, "template": "When someone else pets me and you're watching", "example": "When someone else pets me and you're watching 👀 (jealous?)", "breedType": "dog", "scene": "relaxed", "viralScore": 93},
+    {"id": 88, "template": "My brain vs the squirrel outside", "example": "My brain vs the squirrel outside 🧠❌🐿️✅", "breedType": "dog", "scene": "staring", "viralScore": 96},
+    {"id": 89, "template": "When you're eating and I'm not", "example": "When you're eating and I'm not 🥺🍔 (this is discrimination)", "breedType": "dog", "scene": "staring", "viralScore": 97},
+    {"id": 90, "template": "Just rolled in something. No regrets.", "example": "Just rolled in something. No regrets. 💩😋✨", "breedType": "dog", "scene": "guilty", "viralScore": 95},
+    {"id": 91, "template": "The face of pure happiness: car ride", "example": "The face of pure happiness: car ride 🚗😍💨", "breedType": "dog", "scene": "excited", "viralScore": 96},
+    {"id": 92, "template": "When bath time is mentioned", "example": "When bath time is mentioned 🛁😱 (suddenly I cannot hear)", "breedType": "dog", "scene": "scared", "viralScore": 95},
+    {"id": 93, "template": "I brought you this stick. It's my gift.", "example": "I brought you this stick. It's my gift. 🪵🐶💕", "breedType": "dog", "scene": "excited", "viralScore": 94},
+    {"id": 94, "template": "The dramatic flop when I want belly rubs", "example": "The dramatic flop when I want belly rubs 🐕🔄😍", "breedType": "dog", "scene": "dramatic", "viralScore": 96},
+    {"id": 95, "template": "When you talk to another dog at the park", "example": "When you talk to another dog at the park 👀😤 (I'm right here)", "breedType": "dog", "scene": "judging", "viralScore": 94},
+    {"id": 96, "template": "10/10 good boy. 0/10 listener.", "example": "10/10 good boy. 0/10 listener. 🐶💅", "breedType": "dog", "scene": "derpy", "viralScore": 95},
+    {"id": 97, "template": "When you say 'no' but I hear 'try harder'", "example": "When you say 'no' but I hear 'try harder' 🐶😈", "breedType": "dog", "scene": "staring", "viralScore": 93},
+    {"id": 98, "template": "The snoot that boops all hearts", "example": "The snoot that boops all hearts 👃💕", "breedType": "dog", "scene": "relaxed", "viralScore": 92},
+    {"id": 99, "template": "When the other dog gets a treat but I don't", "example": "When the other dog gets a treat but I don't 😤💔 (JUSTICE)", "breedType": "dog", "scene": "dramatic", "viralScore": 96},
+    {"id": 100, "template": "My face when you leave for work", "example": "My face when you leave for work 🥺😭💔", "breedType": "dog", "scene": "staring", "viralScore": 97},
+    {"id": 101, "template": "Professional tail chaser since birth", "example": "Professional tail chaser since birth 🐕🌀😵", "breedType": "dog", "scene": "playing", "viralScore": 94},
+    {"id": 102, "template": "When the thunder rumbles", "example": "When the thunder rumbles ⛈️😰🛋️ (I'm under here forever now)", "breedType": "dog", "scene": "scared", "viralScore": 95},
+    {"id": 103, "template": "The head tilt of confusion", "example": "The head tilt of confusion 🐶❓ (wat?)", "breedType": "dog", "scene": "derpy", "viralScore": 96},
+    {"id": 104, "template": "When you have food and I have hope", "example": "When you have food and I have hope 🥺🍗✨", "breedType": "dog", "scene": "staring", "viralScore": 97},
+    {"id": 105, "template": "Best friend energy at maximum capacity", "example": "Best friend energy at maximum capacity 🐶💕💯", "breedType": "dog", "scene": "excited", "viralScore": 93},
+    {"id": 106, "template": "When you pack a suitcase", "example": "When you pack a suitcase 🧳👀😭 (TAKE ME WITH YOU)", "breedType": "dog", "scene": "dramatic", "viralScore": 96},
+    {"id": 107, "template": "Just destroyed a toy. Feel alive.", "example": "Just destroyed a toy. Feel alive. 🧸💀😋", "breedType": "dog", "scene": "guilty", "viralScore": 94},
+    {"id": 108, "template": "The stare that demands treats", "example": "The stare that demands treats 👁️👁️🍖", "breedType": "dog", "scene": "staring", "viralScore": 95},
+    {"id": 109, "template": "When you stop petting after only 47 minutes", "example": "When you stop petting after only 47 minutes 🥺 (I wasn't done)", "breedType": "dog", "scene": "dramatic", "viralScore": 94},
+    {"id": 110, "template": "Professional couch warmer", "example": "Professional couch warmer 🛋️🐶💤", "breedType": "dog", "scene": "sleeping", "viralScore": 93},
+    {"id": 111, "template": "When you drop food and we both know it", "example": "When you drop food and we both know it 🍗👀💨", "breedType": "dog", "scene": "excited", "viralScore": 97},
+    {"id": 112, "template": "The puppy eyes that get everything", "example": "The puppy eyes that get everything 🥺✨ (works every time)", "breedType": "dog", "scene": "staring", "viralScore": 98},
+    {"id": 113, "template": "When you're gone for 8 hours vs 8 seconds", "example": "When you're gone for 8 hours vs 8 seconds: Same energy 😭💕", "breedType": "dog", "scene": "excited", "viralScore": 96},
+    {"id": 114, "template": "Just tried to catch my tail. Failed. Still happy.", "example": "Just tried to catch my tail. Failed. Still happy. 🐶🌀😊", "breedType": "dog", "scene": "derpy", "viralScore": 95},
+    {"id": 115, "template": "When you say 'good boy' and I transcend", "example": "When you say 'good boy' and I transcend 🐶✨🌟", "breedType": "dog", "scene": "excited", "viralScore": 94},
+    {"id": 116, "template": "The dramatic sigh when you won't share", "example": "The dramatic sigh when you won't share 😤😔🍕", "breedType": "dog", "scene": "dramatic", "viralScore": 93},
+    {"id": 117, "template": "When I see my leash", "example": "When I see my leash 🐕💨🎉 YESYESYESYES", "breedType": "dog", "scene": "excited", "viralScore": 97},
+    {"id": 118, "template": "Zoomies hitting after doing nothing all day", "example": "Zoomies hitting after doing nothing all day 💨🏃🐶", "breedType": "dog", "scene": "playing", "viralScore": 96},
+    {"id": 119, "template": "When you're sad and I bring you my toy", "example": "When you're sad and I bring you my toy 🐶🧸💕 (fixed it)", "breedType": "dog", "scene": "relaxed", "viralScore": 95},
+    {"id": 120, "template": "My one brain cell during zoomies", "example": "My one brain cell during zoomies 🧠💨❌", "breedType": "dog", "scene": "playing", "viralScore": 96},
+    {"id": 121, "template": "When the mail carrier has the AUDACITY", "example": "When the mail carrier has the AUDACITY 📬😤🐕 BARK BARK", "breedType": "dog", "scene": "excited", "viralScore": 94},
+    {"id": 122, "template": "Just stole your spot on the couch. What are you gonna do about it?", "example": "Just stole your spot on the couch. What are you gonna do about it? 🛋️😏", "breedType": "dog", "scene": "relaxed", "viralScore": 93},
+    {"id": 123, "template": "When you accidentally step on my paw", "example": "When you accidentally step on my paw 🐾😱 (THE DRAMATICS)", "breedType": "dog", "scene": "dramatic", "viralScore": 95},
+    {"id": 124, "template": "The nose work that finds every crumb", "example": "The nose work that finds every crumb 👃🔍🍪", "breedType": "dog", "scene": "staring", "viralScore": 92},
+    {"id": 125, "template": "When you leave but promise to come back", "example": "When you leave but promise to come back 🥺🚪 (I'll wait right here)", "breedType": "dog", "scene": "staring", "viralScore": 96},
+    {"id": 126, "template": "This Husky be like: *dramatic howl*", "example": "This Husky be like: *dramatic howl* 🐺📢🎭", "breedType": "dog", "scene": "dramatic", "viralScore": 97},
+    {"id": 127, "template": "Golden Retriever brain: just happy to be here", "example": "Golden Retriever brain: just happy to be here 🐕✨😊", "breedType": "dog", "scene": "derpy", "viralScore": 96},
+    {"id": 128, "template": "When you throw but don't actually throw", "example": "When you throw but don't actually throw 👀❓ (I trusted you)", "breedType": "dog", "scene": "staring", "viralScore": 95},
+    {"id": 129, "template": "Park time = best time", "example": "Park time = best time 🌳🐕🎉", "breedType": "dog", "scene": "excited", "viralScore": 94},
+    {"id": 130, "template": "When you sit down and I immediately need to go out", "example": "When you sit down and I immediately need to go out 🚪🐶 (timing is my talent)", "breedType": "dog", "scene": "staring", "viralScore": 93},
+    {"id": 131, "template": "The smile that melts hearts", "example": "The smile that melts hearts 🐶😊💕", "breedType": "dog", "scene": "relaxed", "viralScore": 95},
+    {"id": 132, "template": "When you show me the vet's address on the GPS", "example": "When you show me the vet's address on the GPS 📍🏥😰", "breedType": "dog", "scene": "scared", "viralScore": 94},
+    {"id": 133, "template": "My face during belly rubs", "example": "My face during belly rubs 🐶😍✨ (heaven)", "breedType": "dog", "scene": "relaxed", "viralScore": 96},
+    {"id": 134, "template": "Caught digging but not sorry", "example": "Caught digging but not sorry 🕳️🐕😏 (there was treasure)", "breedType": "dog", "scene": "guilty", "viralScore": 95},
+    {"id": 135, "template": "When you put on shoes", "example": "When you put on shoes 👟👀 ARE WE GOING?! WHERE?! CAN I COME?!", "breedType": "dog", "scene": "excited", "viralScore": 97},
+    {"id": 136, "template": "The dramatic exit when I don't get what I want", "example": "The dramatic exit when I don't get what I want 🐶🚪😤", "breedType": "dog", "scene": "dramatic", "viralScore": 94},
+    {"id": 137, "template": "Professional snuggler, will work for treats", "example": "Professional snuggler, will work for treats 🐶💕🍖", "breedType": "dog", "scene": "relaxed", "viralScore": 93},
+    {"id": 138, "template": "When you come home smelling like another dog", "example": "When you come home smelling like another dog 👃😤💔 (explain yourself)", "breedType": "dog", "scene": "judging", "viralScore": 96},
+    {"id": 139, "template": "The tippy taps of excitement", "example": "The tippy taps of excitement 🐾💃🎉", "breedType": "dog", "scene": "excited", "viralScore": 97},
+    {"id": 140, "template": "When you're on the phone and I want attention", "example": "When you're on the phone and I want attention 📱🐶🥺 (I'm more important)", "breedType": "dog", "scene": "staring", "viralScore": 94},
+    {"id": 141, "template": "Just a little guy with big dreams", "example": "Just a little guy with big dreams 🐶✨🌟", "breedType": "dog", "scene": "relaxed", "viralScore": 93},
+    {"id": 142, "template": "When you say 'car ride' and I lose my mind", "example": "When you say 'car ride' and I lose my mind 🚗🐕🎉💨", "breedType": "dog", "scene": "excited", "viralScore": 98},
+    {"id": 143, "template": "The side-eye when you won't throw the ball", "example": "The side-eye when you won't throw the ball 👀🎾😤", "breedType": "dog", "scene": "judging", "viralScore": 95},
+    {"id": 144, "template": "Epic fail: tried to catch treat, missed face", "example": "Epic fail: tried to catch treat, missed face 🍖❌😅", "breedType": "dog", "scene": "derpy", "viralScore": 96},
+    {"id": 145, "template": "When hooman says my name in a nice voice", "example": "When hooman says my name in a nice voice 🐶👂❤️ (I love you too)", "breedType": "dog", "scene": "excited", "viralScore": 94},
+    {"id": 146, "template": "This floor is lava and I am speed", "example": "This floor is lava and I am speed 🏃💨🔥", "breedType": "dog", "scene": "playing", "viralScore": 95},
+    {"id": 147, "template": "My reaction to the word 'treat'", "example": "My reaction to the word 'treat' 👂🐶💨✨", "breedType": "dog", "scene": "excited", "viralScore": 97},
+    {"id": 148, "template": "When I accidentally bonk my head", "example": "When I accidentally bonk my head 🐶💫 (but still happy)", "breedType": "dog", "scene": "derpy", "viralScore": 94},
+    {"id": 149, "template": "The cuddle that nobody asked for but everyone needed", "example": "The cuddle that nobody asked for but everyone needed 🐶💕🛋️", "breedType": "dog", "scene": "relaxed", "viralScore": 95},
+    {"id": 150, "template": "Maximum happiness achieved: snacks AND pets", "example": "Maximum happiness achieved: snacks AND pets 🐶🍖✋✨", "breedType": "dog", "scene": "excited", "viralScore": 96},
+    {"id": 151, "template": "When you open a can and it's not for me", "example": "When you open a can and it's not for me 🥫😿💔", "breedType": "cat", "scene": "dramatic", "viralScore": 95},
+    {"id": 152, "template": "The void stares back", "example": "The void stares back 🐱👁️👁️ (and judges you)", "breedType": "cat", "scene": "staring", "viralScore": 94},
+    {"id": 153, "template": "Orange cat brain cell rotation day", "example": "Orange cat brain cell rotation day 🧡🧠 (it's not my turn)", "breedType": "cat", "scene": "derpy", "viralScore": 98},
+    {"id": 154, "template": "When you sneeze and disturb my nap", "example": "When you sneeze and disturb my nap 😾💤💢", "breedType": "cat", "scene": "judging", "viralScore": 93},
+    {"id": 155, "template": "Criminally smol", "example": "Criminally smol 🐱🔍✨ (stealing hearts)", "breedType": "cat", "scene": "relaxed", "viralScore": 97},
+    {"id": 156, "template": "When you have the audacity to close the door", "example": "When you have the audacity to close the door 🚪😾 (how DARE)", "breedType": "cat", "scene": "dramatic", "viralScore": 95},
+    {"id": 157, "template": "The yell of demands", "example": "The yell of demands 😺📢 (MEOW means NOW)", "breedType": "cat", "scene": "dramatic", "viralScore": 94},
+    {"id": 158, "template": "When you're trying to read but I AM the book now", "example": "When you're trying to read but I AM the book now 📖🐱💅", "breedType": "cat", "scene": "sitting", "viralScore": 96},
+    {"id": 159, "template": "Flopped dramatically because you walked past without petting", "example": "Flopped dramatically because you walked past without petting 🐱🔄😤", "breedType": "cat", "scene": "dramatic", "viralScore": 95},
+    {"id": 160, "template": "The hunter awakens (at 3 AM)", "example": "The hunter awakens (at 3 AM) 🌙🐱🎯", "breedType": "cat", "scene": "playing", "viralScore": 96},
+    {"id": 161, "template": "When you give me the cheap treats", "example": "When you give me the cheap treats 😾💀 (I know the difference)", "breedType": "cat", "scene": "judging", "viralScore": 94},
+    {"id": 162, "template": "Maximum relaxation achieved", "example": "Maximum relaxation achieved 🐱☀️💤✨", "breedType": "cat", "scene": "relaxed", "viralScore": 93},
+    {"id": 163, "template": "The haunted expression after seeing a ghost (or nothing)", "example": "The haunted expression after seeing a ghost (or nothing) 👀❓😱", "breedType": "cat", "scene": "scared", "viralScore": 95},
+    {"id": 164, "template": "When you're 2 seconds late with dinner", "example": "When you're 2 seconds late with dinner ⏰😾 (STARVING)", "breedType": "cat", "scene": "dramatic", "viralScore": 97},
+    {"id": 165, "template": "The biscuit-making session at midnight", "example": "The biscuit-making session at midnight 🐱🍞🌙 (kneading intensifies)", "breedType": "cat", "scene": "relaxed", "viralScore": 96},
+    {"id": 166, "template": "When the box is too small but I fit anyway", "example": "When the box is too small but I fit anyway 📦🐱 (liquid form)", "breedType": "cat", "scene": "sitting", "viralScore": 98},
+    {"id": 167, "template": "The zoom from nowhere to nowhere", "example": "The zoom from nowhere to nowhere 🐱💨💨💨", "breedType": "cat", "scene": "playing", "viralScore": 95},
+    {"id": 168, "template": "When you make the bed and I'm still in it", "example": "When you make the bed and I'm still in it 🛏️🐱 (I'm a lump now)", "breedType": "cat", "scene": "relaxed", "viralScore": 94},
+    {"id": 169, "template": "Judging your life choices since 2020", "example": "Judging your life choices since 2020 🐱👀💅", "breedType": "cat", "scene": "judging", "viralScore": 96},
+    {"id": 170, "template": "When you bring home a new plant (prey)", "example": "When you bring home a new plant (prey) 🌱👀😈", "breedType": "cat", "scene": "staring", "viralScore": 95},
+    {"id": 171, "template": "The teefies of chaos", "example": "The teefies of chaos 🐱👿🦷", "breedType": "cat", "scene": "derpy", "viralScore": 94},
+    {"id": 172, "template": "When you pick up the nail clippers", "example": "When you pick up the nail clippers ✂️😱💨 (suddenly I'm invisible)", "breedType": "cat", "scene": "scared", "viralScore": 95},
+    {"id": 173, "template": "I am the baby. Treat me as such.", "example": "I am the baby. Treat me as such. 🐱👶💕", "breedType": "cat", "scene": "relaxed", "viralScore": 93},
+    {"id": 174, "template": "The airplane ears of annoyance", "example": "The airplane ears of annoyance 🐱✈️😾", "breedType": "cat", "scene": "judging", "viralScore": 94},
+    {"id": 175, "template": "When you pet me wrong (every way is wrong)", "example": "When you pet me wrong (every way is wrong) 🐱🖐️❌", "breedType": "cat", "scene": "dramatic", "viralScore": 95},
+    {"id": 176, "template": "Spotted: one (1) brain cell", "example": "Spotted: one (1) brain cell 🐱🔍🧠", "breedType": "cat", "scene": "derpy", "viralScore": 97},
+    {"id": 177, "template": "When you come home and I pretend I don't care", "example": "When you come home and I pretend I don't care 🐱😒 (but I do)", "breedType": "cat", "scene": "relaxed", "viralScore": 93},
+    {"id": 178, "template": "The attack mode: unexpected edition", "example": "The attack mode: unexpected edition 🐱😈💥 (your ankles)", "breedType": "cat", "scene": "playing", "viralScore": 96},
+    {"id": 179, "template": "When you don't let me out then in then out", "example": "When you don't let me out then in then out 🚪🐱🔄😤", "breedType": "cat", "scene": "dramatic", "viralScore": 95},
+    {"id": 180, "template": "This paper is mine now. Accept it.", "example": "This paper is mine now. Accept it. 📄🐱👑", "breedType": "cat", "scene": "sitting", "viralScore": 94},
+    {"id": 181, "template": "When you try to cuddle on MY terms", "example": "When you try to cuddle on MY terms 🐱💅 (rejected)", "breedType": "cat", "scene": "judging", "viralScore": 93},
+    {"id": 182, "template": "The tap tap tap at 5 AM", "example": "The tap tap tap at 5 AM 🐱🐾🌅 (wake up, servant)", "breedType": "cat", "scene": "staring", "viralScore": 96},
+    {"id": 183, "template": "Chonk level: maximum capacity", "example": "Chonk level: maximum capacity 🐱🍔💪", "breedType": "cat", "scene": "relaxed", "viralScore": 95},
+    {"id": 184, "template": "When the laser pointer disappears", "example": "When the laser pointer disappears 🔴❓🐱💀 (WHERE DID IT GO)", "breedType": "cat", "scene": "staring", "viralScore": 97},
+    {"id": 185, "template": "Living on the edge (of everything)", "example": "Living on the edge (of everything) 🐱📏😎", "breedType": "cat", "scene": "sitting", "viralScore": 94},
+    {"id": 186, "template": "When you make direct eye contact", "example": "When you make direct eye contact 🐱👀 (now we fight)", "breedType": "cat", "scene": "staring", "viralScore": 93},
+    {"id": 187, "template": "The 4 AM concert nobody asked for", "example": "The 4 AM concert nobody asked for 🐱📢🌙🎤", "breedType": "cat", "scene": "dramatic", "viralScore": 95},
+    {"id": 188, "template": "When you have a guest and I must investigate", "example": "When you have a guest and I must investigate 🐱🔍👀", "breedType": "cat", "scene": "staring", "viralScore": 94},
+    {"id": 189, "template": "Maximum floof achieved", "example": "Maximum floof achieved 🐱☁️✨", "breedType": "cat", "scene": "relaxed", "viralScore": 96},
+    {"id": 190, "template": "When you return from vacation", "example": "When you return from vacation 🐱😒 (you abandoned me)", "breedType": "cat", "scene": "judging", "viralScore": 95},
+    {"id": 191, "template": "The slow blink of love (or manipulation)", "example": "The slow blink of love (or manipulation) 🐱😌💕", "breedType": "cat", "scene": "relaxed", "viralScore": 93},
+    {"id": 192, "template": "When you bring out the dreaded carrier", "example": "When you bring out the dreaded carrier 🐱🧳😱💨", "breedType": "cat", "scene": "scared", "viralScore": 96},
+    {"id": 193, "template": "Chief Inspector of All Things", "example": "Chief Inspector of All Things 🐱🔍👀", "breedType": "cat", "scene": "staring", "viralScore": 94},
+    {"id": 194, "template": "When you sit on my spot (all spots are mine)", "example": "When you sit on my spot (all spots are mine) 🐱🛋️😤", "breedType": "cat", "scene": "judging", "viralScore": 95},
+    {"id": 195, "template": "The tail flick of annoyance", "example": "The tail flick of annoyance 🐱💢 (flick flick)", "breedType": "cat", "scene": "judging", "viralScore": 93},
+    {"id": 196, "template": "When you open a bag and it's not for me", "example": "When you open a bag and it's not for me 🛍️🐱😔", "breedType": "cat", "scene": "dramatic", "viralScore": 94},
+    {"id": 197, "template": "Sploot position activated", "example": "Sploot position activated 🐱📏💤", "breedType": "cat", "scene": "relaxed", "viralScore": 95},
+    {"id": 198, "template": "When you accidentally wake me from nap 47", "example": "When you accidentally wake me from nap 47 🐱💤😾", "breedType": "cat", "scene": "judging", "viralScore": 94},
+    {"id": 199, "template": "The sprint after using the litter box", "example": "The sprint after using the litter box 🐱💨💨💨 (poop zoomies)", "breedType": "cat", "scene": "playing", "viralScore": 97},
+    {"id": 200, "template": "When you stop watching me sleep", "example": "When you stop watching me sleep 🐱👀 (I felt the eyes leave)", "breedType": "cat", "scene": "staring", "viralScore": 93},
+    {"id": 201, "template": "This Chihuahua be like: I AM the danger", "example": "This Chihuahua be like: I AM the danger 🐕😤👊", "breedType": "dog", "scene": "dramatic", "viralScore": 96},
+    {"id": 202, "template": "Lab brain: ball is life", "example": "Lab brain: ball is life 🎾🐕🧠✨", "breedType": "dog", "scene": "excited", "viralScore": 95},
+    {"id": 203, "template": "When you take the scenic route to avoid the vet", "example": "When you take the scenic route to avoid the vet 🐕🚗❓🏥", "breedType": "dog", "scene": "staring", "viralScore": 94},
+    {"id": 204, "template": "The full body wiggle of happiness", "example": "The full body wiggle of happiness 🐕💃✨", "breedType": "dog", "scene": "excited", "viralScore": 97},
+    {"id": 205, "template": "When you say 'vet' and I suddenly can't hear", "example": "When you say 'vet' and I suddenly can't hear 🐕🦻❌ (selectively deaf)", "breedType": "dog", "scene": "scared", "viralScore": 95},
+    {"id": 206, "template": "Floor is cold. Belly is warm. Sploot.", "example": "Floor is cold. Belly is warm. Sploot. 🐕📏💤", "breedType": "dog", "scene": "relaxed", "viralScore": 94},
+    {"id": 207, "template": "The lean of pure love", "example": "The lean of pure love 🐕💕 (all my weight on you)", "breedType": "dog", "scene": "relaxed", "viralScore": 96},
+    {"id": 208, "template": "When there's another dog on TV", "example": "When there's another dog on TV 📺🐕👀 (who is she?)", "breedType": "dog", "scene": "staring", "viralScore": 95},
+    {"id": 209, "template": "Corgi butt appreciation post", "example": "Corgi butt appreciation post 🍑🐕✨", "breedType": "dog", "scene": "relaxed", "viralScore": 97},
+    {"id": 210, "template": "When the peanut butter jar is empty", "example": "When the peanut butter jar is empty 🥜🐕💔 (tragedy)", "breedType": "dog", "scene": "dramatic", "viralScore": 94},
+    {"id": 211, "template": "This Shiba be like: *judging in Japanese*", "example": "This Shiba be like: *judging in Japanese* 🐕👀💅", "breedType": "dog", "scene": "judging", "viralScore": 96},
+    {"id": 212, "template": "When you pretend to throw but don't", "example": "When you pretend to throw but don't 🎾🐕😤 (the ultimate betrayal)", "breedType": "dog", "scene": "staring", "viralScore": 97},
+    {"id": 213, "template": "Begging level: expert", "example": "Begging level: expert 🐕🥺🍖", "breedType": "dog", "scene": "staring", "viralScore": 95},
+    {"id": 214, "template": "When you finally scratch THE spot", "example": "When you finally scratch THE spot 🐕😍✨ (leg kicks intensify)", "breedType": "dog", "scene": "excited", "viralScore": 96},
+    {"id": 215, "template": "The guilty look before you even know what they did", "example": "The guilty look before you even know what they did 🐕👀😬", "breedType": "dog", "scene": "guilty", "viralScore": 97},
+    {"id": 216, "template": "When you're eating chips at midnight", "example": "When you're eating chips at midnight 🌙🐕👂 (I heard that)", "breedType": "dog", "scene": "staring", "viralScore": 95},
+    {"id": 217, "template": "Dreaming of chasing squirrels", "example": "Dreaming of chasing squirrels 🐕💤🐿️ (legs running in sleep)", "breedType": "dog", "scene": "sleeping", "viralScore": 94},
+    {"id": 218, "template": "When you won't let me greet EVERY dog at the park", "example": "When you won't let me greet EVERY dog at the park 🐕🌳😤", "breedType": "dog", "scene": "dramatic", "viralScore": 93},
+    {"id": 219, "template": "The tongue that won't stay in", "example": "The tongue that won't stay in 🐕👅😋 (blep)", "breedType": "dog", "scene": "derpy", "viralScore": 96},
+    {"id": 220, "template": "When you grab the car keys", "example": "When you grab the car keys 🔑🐕 ARE WE GOING SOMEWHERE?!", "breedType": "dog", "scene": "excited", "viralScore": 97},
+    {"id": 221, "template": "This is my ball. There are many like it but this one is mine.", "example": "This is my ball. There are many like it but this one is mine. 🎾🐕💕", "breedType": "dog", "scene": "staring", "viralScore": 94},
+    {"id": 222, "template": "When hooman eats without sharing", "example": "When hooman eats without sharing 🐕😤🍕 (criminal)", "breedType": "dog", "scene": "judging", "viralScore": 95},
+    {"id": 223, "template": "The excited pee when guests arrive", "example": "The excited pee when guests arrive 🐕💦😅 (sorry not sorry)", "breedType": "dog", "scene": "excited", "viralScore": 93},
+    {"id": 224, "template": "When you tell me I'm adopted (I still love you)", "example": "When you tell me I'm adopted (I still love you) 🐕💕😊", "breedType": "dog", "scene": "relaxed", "viralScore": 92},
+    {"id": 225, "template": "Husky energy: chaos and drama", "example": "Husky energy: chaos and drama 🐺📢🎭", "breedType": "dog", "scene": "dramatic", "viralScore": 97},
+    {"id": 226, "template": "When you don't share your sandwich", "example": "When you don't share your sandwich 🥪🐕💔🥺", "breedType": "dog", "scene": "staring", "viralScore": 95},
+    {"id": 227, "template": "The way I look at hooman vs the way I look at other dogs", "example": "The way I look at hooman vs the way I look at other dogs 💕😤", "breedType": "dog", "scene": "staring", "viralScore": 94},
+    {"id": 228, "template": "When the fireworks start", "example": "When the fireworks start 🎆🐕😰 (end of the world)", "breedType": "dog", "scene": "scared", "viralScore": 96},
+    {"id": 229, "template": "Professional floor inspector", "example": "Professional floor inspector 🐕👃🔍 (sniff rating: 10/10)", "breedType": "dog", "scene": "staring", "viralScore": 93},
+    {"id": 230, "template": "When you come home from grocery shopping", "example": "When you come home from grocery shopping 🛒🐕 DID YOU GET ME SOMETHING?!", "breedType": "dog", "scene": "excited", "viralScore": 95},
+    {"id": 231, "template": "The head out the window face", "example": "The head out the window face 🐕🚗💨 (living my best life)", "breedType": "dog", "scene": "excited", "viralScore": 98},
+    {"id": 232, "template": "When hooman talks to me like I understand (I do)", "example": "When hooman talks to me like I understand (I do) 🐕👂✨", "breedType": "dog", "scene": "staring", "viralScore": 94},
+    {"id": 233, "template": "Trying to look innocent after destroying the couch", "example": "Trying to look innocent after destroying the couch 🛋️🐕😇 (who, me?)", "breedType": "dog", "scene": "guilty", "viralScore": 96},
+    {"id": 234, "template": "When you yawn and I yawn back", "example": "When you yawn and I yawn back 🐕🥱 (bonding)", "breedType": "dog", "scene": "relaxed", "viralScore": 93},
+    {"id": 235, "template": "The snow zoomies of pure joy", "example": "The snow zoomies of pure joy ❄️🐕💨🎉", "breedType": "dog", "scene": "playing", "viralScore": 97},
+    {"id": 236, "template": "When you're on a Zoom call and I NEED you", "example": "When you're on a Zoom call and I NEED you 💻🐕📢 (important meeting? I think not)", "breedType": "dog", "scene": "dramatic", "viralScore": 95},
+    {"id": 237, "template": "The look when you won't give more treats", "example": "The look when you won't give more treats 🐕🥺🍖 (but I was so good)", "breedType": "dog", "scene": "staring", "viralScore": 96},
+    {"id": 238, "template": "When we pass the dog park without stopping", "example": "When we pass the dog park without stopping 🌳🐕💔 (betrayal)", "breedType": "dog", "scene": "dramatic", "viralScore": 94},
+    {"id": 239, "template": "The butt wiggle before pounce", "example": "The butt wiggle before pounce 🐕🍑💨 (attack mode)", "breedType": "dog", "scene": "playing", "viralScore": 95},
+    {"id": 240, "template": "When you're crying and I offer my paw", "example": "When you're crying and I offer my paw 🐕🐾💕 (I fix)", "breedType": "dog", "scene": "relaxed", "viralScore": 96},
+    {"id": 241, "template": "This Pug be like: *breathes heavily* 👀", "example": "This Pug be like: *breathes heavily* 👀 🐕💨", "breedType": "dog", "scene": "derpy", "viralScore": 94},
+    {"id": 242, "template": "When someone new enters the house", "example": "When someone new enters the house 🏠🐕📢 INTRUDER ALERT", "breedType": "dog", "scene": "excited", "viralScore": 95},
+    {"id": 243, "template": "The post-zoomies collapse", "example": "The post-zoomies collapse 🐕💨➡️💤 (I am deceased)", "breedType": "dog", "scene": "sleeping", "viralScore": 96},
+    {"id": 244, "template": "When you play favorites with the cat", "example": "When you play favorites with the cat 🐕🐱😤 (I saw that)", "breedType": "dog", "scene": "judging", "viralScore": 94},
+    {"id": 245, "template": "Maximum waggle achieved", "example": "Maximum waggle achieved 🐕💃✨ (full body involved)", "breedType": "dog", "scene": "excited", "viralScore": 97},
+    {"id": 246, "template": "When you finally throw the ball for real", "example": "When you finally throw the ball for real 🎾🐕💨 YESSS", "breedType": "dog", "scene": "excited", "viralScore": 96},
+    {"id": 247, "template": "The sigh when you won't get up early on weekends", "example": "The sigh when you won't get up early on weekends 🐕😤🛏️", "breedType": "dog", "scene": "dramatic", "viralScore": 93},
+    {"id": 248, "template": "When hooman says 'be right back' (lies)", "example": "When hooman says 'be right back' (lies) 🐕🚪😢", "breedType": "dog", "scene": "staring", "viralScore": 95},
+    {"id": 249, "template": "Chasing my tail: a never-ending saga", "example": "Chasing my tail: a never-ending saga 🐕🌀😵 (almost got it)", "breedType": "dog", "scene": "playing", "viralScore": 94},
+    {"id": 250, "template": "When you're sick and I become a nurse", "example": "When you're sick and I become a nurse 🐕💕🤒 (I never leave)", "breedType": "dog", "scene": "relaxed", "viralScore": 96},
+    {"id": 251, "template": "The stare that demands the impossible: more walks", "example": "The stare that demands the impossible: more walks 🐕👀🚶", "breedType": "dog", "scene": "staring", "viralScore": 93},
+    {"id": 252, "template": "When you sneeze and I think you're dying", "example": "When you sneeze and I think you're dying 🐕👀❓ (ARE YOU OK)", "breedType": "dog", "scene": "staring", "viralScore": 95},
+    {"id": 253, "template": "This Maine Coon be like: *majestic floof*", "example": "This Maine Coon be like: *majestic floof* 🐱👑✨", "breedType": "cat", "scene": "relaxed", "viralScore": 96},
+    {"id": 254, "template": "When you laugh at your phone instead of me", "example": "When you laugh at your phone instead of me 📱🐱😤 (I'm funny too)", "breedType": "cat", "scene": "judging", "viralScore": 94},
+    {"id": 255, "template": "The splayed toes of relaxation", "example": "The splayed toes of relaxation 🐱🐾☀️ (toe beans out)", "breedType": "cat", "scene": "relaxed", "viralScore": 95},
+    {"id": 256, "template": "When you're late coming home", "example": "When you're late coming home 🐱⏰ (I'll remember this)", "breedType": "cat", "scene": "judging", "viralScore": 93},
+    {"id": 257, "template": "The murder mitten reveal", "example": "The murder mitten reveal 🐱🔪 (claws out)", "breedType": "cat", "scene": "playing", "viralScore": 96},
+    {"id": 258, "template": "When you put the new cat tree in the wrong spot", "example": "When you put the new cat tree in the wrong spot 🐱🌲❌ (move it)", "breedType": "cat", "scene": "judging", "viralScore": 94},
+    {"id": 259, "template": "This Siamese be like: *yells about nothing*", "example": "This Siamese be like: *yells about nothing* 🐱📢❓", "breedType": "cat", "scene": "dramatic", "viralScore": 95},
+    {"id": 260, "template": "When you try to work from home", "example": "When you try to work from home 💻🐱 (this is MY desk)", "breedType": "cat", "scene": "sitting", "viralScore": 97},
+    {"id": 261, "template": "The pure confusion when you rearrange furniture", "example": "The pure confusion when you rearrange furniture 🐱❓🛋️", "breedType": "cat", "scene": "staring", "viralScore": 93},
+    {"id": 262, "template": "When you get up to use the bathroom at 3 AM", "example": "When you get up to use the bathroom at 3 AM 🐱👀🌙 (now we PLAY)", "breedType": "cat", "scene": "excited", "viralScore": 94},
+    {"id": 263, "template": "The 'I just made a mess' face", "example": "The 'I just made a mess' face 🐱😬💥 (no regrets)", "breedType": "cat", "scene": "guilty", "viralScore": 96},
+    {"id": 264, "template": "When you touch the belly (trap activated)", "example": "When you touch the belly (trap activated) 🐱🖐️😈 (CHOMP)", "breedType": "cat", "scene": "playing", "viralScore": 97},
+    {"id": 265, "template": "This Scottish Fold be like: *perpetual concern*", "example": "This Scottish Fold be like: *perpetual concern* 🐱👀 (what's happening)", "breedType": "cat", "scene": "staring", "viralScore": 95},
+    {"id": 266, "template": "When you bring out the brush", "example": "When you bring out the brush 🐱💇 (depends on my mood)", "breedType": "cat", "scene": "staring", "viralScore": 93},
+    {"id": 267, "template": "The sunbeam shuffle throughout the day", "example": "The sunbeam shuffle throughout the day 🐱☀️➡️☀️ (following the light)", "breedType": "cat", "scene": "relaxed", "viralScore": 94},
+    {"id": 268, "template": "When you don't acknowledge me within 0.5 seconds", "example": "When you don't acknowledge me within 0.5 seconds 🐱😤 (hello???)", "breedType": "cat", "scene": "dramatic", "viralScore": 95},
+    {"id": 269, "template": "The plastic bag investigation", "example": "The plastic bag investigation 🐱🛍️👀 (what secrets do you hold)", "breedType": "cat", "scene": "staring", "viralScore": 93},
+    {"id": 270, "template": "When I fit somewhere I shouldn't", "example": "When I fit somewhere I shouldn't 🐱📦🏺 (liquid cat)", "breedType": "cat", "scene": "sitting", "viralScore": 96},
+    {"id": 271, "template": "The midnight scream for no reason", "example": "The midnight scream for no reason 🐱📢🌙❓ (the void answered)", "breedType": "cat", "scene": "dramatic", "viralScore": 95},
+    {"id": 272, "template": "When you forget to close the forbidden room", "example": "When you forget to close the forbidden room 🐱🚪😈 (finally)", "breedType": "cat", "scene": "excited", "viralScore": 94},
+    {"id": 273, "template": "This Persian be like: *flat face, big attitude*", "example": "This Persian be like: *flat face, big attitude* 🐱💅👑", "breedType": "cat", "scene": "judging", "viralScore": 95},
+    {"id": 274, "template": "The hair tie obsession", "example": "The hair tie obsession 🐱💇‍♀️ (it's my precious)", "breedType": "cat", "scene": "playing", "viralScore": 93},
+    {"id": 275, "template": "When you give attention to literally anything else", "example": "When you give attention to literally anything else 🐱😤 (excuse me?)", "breedType": "cat", "scene": "judging", "viralScore": 96},
+    {"id": 276, "template": "The 'I brought you a gift' face (it's a bug)", "example": "The 'I brought you a gift' face (it's a bug) 🐱🐛🎁 (you're welcome)", "breedType": "cat", "scene": "relaxed", "viralScore": 95},
+    {"id": 277, "template": "When the wifi goes down and you have to entertain me", "example": "When the wifi goes down and you have to entertain me 🐱📵 (finally)", "breedType": "cat", "scene": "staring", "viralScore": 94},
+    {"id": 278, "template": "This Bengal be like: *parkour expert*", "example": "This Bengal be like: *parkour expert* 🐱🏃💨", "breedType": "cat", "scene": "playing", "viralScore": 96},
+    {"id": 279, "template": "When you think I'm asleep but I see everything", "example": "When you think I'm asleep but I see everything 🐱👁️💤 (I know what you did)", "breedType": "cat", "scene": "staring", "viralScore": 95},
+    {"id": 280, "template": "The aggressive biscuit-making on your stomach", "example": "The aggressive biscuit-making on your stomach 🐱🍞😣 (love hurts)", "breedType": "cat", "scene": "relaxed", "viralScore": 94},
+    {"id": 281, "template": "When you say 'pspsps' from another room", "example": "When you say 'pspsps' from another room 🐱👂💨 (coming!)", "breedType": "cat", "scene": "excited", "viralScore": 97},
+    {"id": 282, "template": "The 'I'm not touching you' energy with the dog", "example": "The 'I'm not touching you' energy with the dog 🐱🐕 (annoying on purpose)", "breedType": "cat", "scene": "staring", "viralScore": 93},
+    {"id": 283, "template": "When you try to photograph my cute moment", "example": "When you try to photograph my cute moment 📸🐱 *moves* (too slow)", "breedType": "cat", "scene": "derpy", "viralScore": 94},
+    {"id": 284, "template": "This Ragdoll be like: *goes limp*", "example": "This Ragdoll be like: *goes limp* 🐱🫠 (I am spaghetti)", "breedType": "cat", "scene": "relaxed", "viralScore": 95},
+    {"id": 285, "template": "When you close the laptop before saving my paw prints", "example": "When you close the laptop before saving my paw prints 💻🐱🐾 (art)", "breedType": "cat", "scene": "sitting", "viralScore": 93},
+    {"id": 286, "template": "The judgment when you eat salad", "example": "The judgment when you eat salad 🐱🥗👀 (that's rabbit food)", "breedType": "cat", "scene": "judging", "viralScore": 94},
+    {"id": 287, "template": "When you have the AUDACITY to move while I'm on you", "example": "When you have the AUDACITY to move while I'm on you 🐱💢 (you're a bed now)", "breedType": "cat", "scene": "dramatic", "viralScore": 96},
+    {"id": 288, "template": "The water dish investigation (why is it there)", "example": "The water dish investigation (why is it there) 🐱💧👀❓", "breedType": "cat", "scene": "staring", "viralScore": 92},
+    {"id": 289, "template": "When you adopt another cat", "example": "When you adopt another cat 🐱🐱 (first one was enough)", "breedType": "cat", "scene": "judging", "viralScore": 95},
+    {"id": 290, "template": "This Sphynx be like: *goblin energy*", "example": "This Sphynx be like: *goblin energy* 🐱👹 (embrace the chaos)", "breedType": "cat", "scene": "derpy", "viralScore": 96},
+    {"id": 291, "template": "When you put me in the costume", "example": "When you put me in the costume 🐱👔 (I will remember this)", "breedType": "cat", "scene": "judging", "viralScore": 94},
+    {"id": 292, "template": "The blank stare into your soul", "example": "The blank stare into your soul 🐱👁️👁️ (I see your sins)", "breedType": "cat", "scene": "staring", "viralScore": 95},
+    {"id": 293, "template": "When there's a crinkle sound", "example": "When there's a crinkle sound 🐱👂✨ (WHAT WAS THAT)", "breedType": "cat", "scene": "excited", "viralScore": 96},
+    {"id": 294, "template": "This tuxedo cat be like: *formal chaos*", "example": "This tuxedo cat be like: *formal chaos* 🐱🎩😈", "breedType": "cat", "scene": "playing", "viralScore": 93},
+    {"id": 295, "template": "When you try to sleep in but I am AWAKE", "example": "When you try to sleep in but I am AWAKE 🐱🌅 (so are you now)", "breedType": "cat", "scene": "staring", "viralScore": 95},
+    {"id": 296, "template": "The aggressive head bonk of affection", "example": "The aggressive head bonk of affection 🐱💥💕 (I LOVE YOU)", "breedType": "cat", "scene": "relaxed", "viralScore": 94},
+    {"id": 297, "template": "When you don't give me your food but I've been SO patient", "example": "When you don't give me your food but I've been SO patient 🐱🍽️😤 (30 seconds)", "breedType": "cat", "scene": "dramatic", "viralScore": 95},
+    {"id": 298, "template": "This calico be like: *three cats in one body*", "example": "This calico be like: *three cats in one body* 🐱🎭 (mood depends)", "breedType": "cat", "scene": "dramatic", "viralScore": 93},
+    {"id": 299, "template": "When you find the secret napping spot", "example": "When you find the secret napping spot 🐱🔍💤 (how did you find me)", "breedType": "cat", "scene": "sleeping", "viralScore": 94},
+    {"id": 300, "template": "The absolute chaos of cardboard box season", "example": "The absolute chaos of cardboard box season 📦🐱🎉 (Christmas came early)", "breedType": "cat", "scene": "excited", "viralScore": 97}
   ],
+  "scenes": ["sleeping", "staring", "playing", "eating", "derpy", "dramatic", "guilty", "excited", "scared", "sitting", "judging", "relaxed"],
   "fillers": {
-    "times": ["Monday 9AM", "3AM", "Friday 4:59PM", "during standup", "right before demo", "after coffee", "during production outage"],
-    "actions": ["pushed to production", "deleted the database", "merged to main", "ran npm install", "closed 50 tabs", "fixed the bug", "created 5 new bugs"],
-    "triggers": ["'quick meeting'", "'tests passing'", "'production is down'", "'merge conflict'", "'code review'", "'treat time'", "'walkies'"],
-    "errors": ["undefined is not a function", "cannot read property of null", "stack overflow", "segfault", "out of memory", "connection timeout"]
-  },
-  "catSpecific": [
-    "cat.exe has stopped working 😹",
-    "sudo restart cat.service // permission denied 🐱",
-    "Keyboard cat reporting for duty ⌨️🐱",
-    "Meow fixed your bug (by sitting on it) 🐱🔧",
-    "cat.sleep() // runs forever 😹💤",
-    "Senior meow-veloper energy 💅🐱",
-    "HISS-ue tracking: bug found 🐱🔍",
-    "Purrfect code, no changes needed 😸",
-    "cat.interrupt(human.work) ✅",
-    "404: Zero f*cks given 🐱"
-  ],
-  "dogSpecific": [
-    "Good boy deployed to production 🐶🚀",
-    "await dog.fetch() // always returns! 🐶🦴",
-    "WOOF: Works Only On Friday 🐶💼",
-    "Dog.prototype.bestBoy = true 🐶",
-    "Tail-wagging driven development 🐶💻",
-    "Bark.js - the goodest framework 🐶",
-    "fetch('/treats').then(wag) 🐶🦴",
-    "Runtime: unlimited zoomies 🐶💨",
-    "git commit -m 'BORK BORK' 🐶",
-    "Very code. Much deploy. Wow. 🐶"
-  ]
+    "times": ["Monday 9AM", "3 AM", "5 AM", "dinner time", "nap time", "after midnight", "when you're busy"],
+    "actions": ["knocked something off", "ate something weird", "zoomed across the house", "demanded attention", "ignored you completely", "made a mess"],
+    "triggers": ["treat bag", "can opener", "doorbell", "car keys", "W-A-L-K spelled out", "food being opened", "pspsps sound"]
+  }
 }

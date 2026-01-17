@@ -206,108 +206,112 @@ export default function Create() {
     return null;
   };
   
-  // 🔥 VIRAL MEME GENERATOR ALGORITHM 🔥
-  // Uses template database + AI for maximum viral potential!
+  // 🔥 VIRAL MEME GENERATOR ALGORITHM v2.0 🔥
+  // Uses 300 real viral pet meme templates from 2025-2026!
   
-  // Get matching viral templates for the detected scene
+  // Get matching viral templates for the detected scene + pet type
   const getMatchingTemplates = (scene, petType) => {
     const templates = viralTemplates.templates || [];
+    const isCat = petType?.toLowerCase().includes('cat');
+    const isDog = petType?.toLowerCase().includes('dog');
     
-    // Filter templates that match the scene
-    const matchingTemplates = templates.filter(t => 
-      t.scenes && t.scenes.includes(scene)
-    );
+    // Filter templates that match the scene AND pet type
+    let matchingTemplates = templates.filter(t => {
+      const sceneMatch = t.scene === scene || !t.scene;
+      const typeMatch = t.breedType === 'any' || 
+        (isCat && t.breedType === 'cat') || 
+        (isDog && t.breedType === 'dog') ||
+        (!isCat && !isDog); // If unknown, show all
+      return sceneMatch && typeMatch;
+    });
+    
+    // If not enough matches, also include templates for "any" pet type
+    if (matchingTemplates.length < 5) {
+      const anyTypeTemplates = templates.filter(t => 
+        t.scene === scene && t.breedType === 'any'
+      );
+      matchingTemplates = [...matchingTemplates, ...anyTypeTemplates];
+    }
+    
+    // If still not enough, get by scene only
+    if (matchingTemplates.length < 5) {
+      const sceneOnlyTemplates = templates.filter(t => t.scene === scene);
+      matchingTemplates = [...matchingTemplates, ...sceneOnlyTemplates];
+    }
     
     // Sort by viral score (higher = more viral)
     matchingTemplates.sort((a, b) => (b.viralScore || 0) - (a.viralScore || 0));
     
-    // Take top 5 matching templates
-    return matchingTemplates.slice(0, 5);
+    // Shuffle top results for variety, then take 8
+    const top = matchingTemplates.slice(0, 15);
+    const shuffled = top.sort(() => Math.random() - 0.5);
+    
+    return shuffled.slice(0, 8);
   };
   
-  // Fill template with pet-specific data
-  const fillTemplate = (template, petContext, scene) => {
-    const { petName, breed, behaviors } = petContext;
-    const isCat = breed?.toLowerCase().includes('cat') || petContext.petType === 'cat';
-    const isDog = breed?.toLowerCase().includes('dog') || petContext.petType === 'dog';
+  // Get the caption from template (using 'example' field from new format)
+  const getTemplateCaption = (template, petContext) => {
+    let caption = template.example || template.template;
     
-    // Pick a random example from the template
-    const examples = template.examples || [];
-    let caption = examples[Math.floor(Math.random() * examples.length)] || template.pattern;
-    
-    // Replace placeholders
-    caption = caption.replace(/\[name\]/gi, petName || (isCat ? 'Kitty' : 'Doggo'));
-    caption = caption.replace(/\[pet\]/gi, isCat ? 'cat' : isDog ? 'dog' : 'pet');
-    caption = caption.replace(/\[breed\]/gi, breed || (isCat ? 'cat' : 'dog'));
-    
-    // Replace time/action with random fillers
-    const fillers = viralTemplates.fillers || {};
-    if (caption.includes('[time]')) {
-      const times = fillers.times || ['3AM'];
-      caption = caption.replace(/\[time\]/gi, times[Math.floor(Math.random() * times.length)]);
-    }
-    if (caption.includes('[action]')) {
-      const actions = fillers.actions || ['pushed to production'];
-      caption = caption.replace(/\[action\]/gi, actions[Math.floor(Math.random() * actions.length)]);
-    }
-    if (caption.includes('[trigger]')) {
-      const triggers = fillers.triggers || ["'tests passing'"];
-      caption = caption.replace(/\[trigger\]/gi, triggers[Math.floor(Math.random() * triggers.length)]);
-    }
-    
-    // Add behavior-specific flavor
-    if (behaviors?.includes('dramatic')) {
-      caption = caption.replace('🔥', '🔥🎭');
-    }
-    if (behaviors?.includes('lazy')) {
-      caption = caption.replace('💻', '💻😴');
-    }
+    // Replace any remaining placeholders with pet name
+    const petName = petContext.petName || (template.breedType === 'cat' ? 'Kitty' : 'Doggo');
+    caption = caption.replace(/\[name\]/gi, petName);
+    caption = caption.replace(/\[pet\]/gi, petName);
     
     return caption;
   };
   
-  // Get pet-specific viral captions
-  const getPetSpecificCaptions = (petContext) => {
-    const isCat = petContext.breed?.toLowerCase().includes('cat') || petContext.petType === 'cat';
-    const isDog = petContext.breed?.toLowerCase().includes('dog') || petContext.petType === 'dog';
-    const petName = petContext.petName || (isCat ? 'Kitty' : 'Doggo');
+  // Get random templates for variety
+  const getRandomTemplates = (petType, count = 3) => {
+    const templates = viralTemplates.templates || [];
+    const isCat = petType?.toLowerCase().includes('cat');
+    const isDog = petType?.toLowerCase().includes('dog');
     
-    if (isCat) {
-      return (viralTemplates.catSpecific || []).map(c => c.replace(/\[name\]/gi, petName));
-    } else if (isDog) {
-      return (viralTemplates.dogSpecific || []).map(c => c.replace(/\[name\]/gi, petName));
-    }
-    return [];
+    // Filter by pet type
+    const filtered = templates.filter(t => 
+      t.breedType === 'any' || 
+      (isCat && t.breedType === 'cat') || 
+      (isDog && t.breedType === 'dog')
+    );
+    
+    // Shuffle and pick random ones
+    const shuffled = filtered.sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, count);
   };
   
-  // 🧠 MAIN VIRAL CAPTION GENERATOR - Template + AI powered!
+  // 🧠 MAIN VIRAL CAPTION GENERATOR v2.0 - 300 Real Viral Templates!
   const generateViralCaptions = async (petContext, imageContext) => {
-    const scene = imageContext?.scene || 'default';
+    const scene = imageContext?.scene || 'relaxed';
     const captions = [];
     
-    // 1️⃣ Get matching viral templates
-    const matchingTemplates = getMatchingTemplates(scene, petContext.petType);
+    // 1️⃣ Get matching viral templates by scene + pet type
+    const matchingTemplates = getMatchingTemplates(scene, petContext.petType || petContext.breed);
     
-    // 2️⃣ Fill templates with pet data
+    // 2️⃣ Extract captions from templates
     matchingTemplates.forEach(template => {
-      const filled = fillTemplate(template, petContext, scene);
-      if (filled && !captions.includes(filled)) {
-        captions.push(filled);
+      const caption = getTemplateCaption(template, petContext);
+      if (caption && !captions.includes(caption)) {
+        captions.push(caption);
       }
     });
     
-    // 3️⃣ Add pet-specific viral captions
-    const petCaptions = getPetSpecificCaptions(petContext);
-    // Pick 2 random pet-specific ones
-    const shuffledPet = petCaptions.sort(() => Math.random() - 0.5).slice(0, 2);
-    captions.push(...shuffledPet);
+    // 3️⃣ Add some random high-viral templates for variety
+    const randomTemplates = getRandomTemplates(petContext.petType || petContext.breed, 3);
+    randomTemplates.forEach(template => {
+      const caption = getTemplateCaption(template, petContext);
+      if (caption && !captions.includes(caption)) {
+        captions.push(caption);
+      }
+    });
     
     // 4️⃣ Try AI enhancement if API key is available
     const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
     if (apiKey && apiKey.startsWith('sk-or-') && mediaPreviews.length > 0) {
       try {
-        console.log('🤖 Enhancing with AI...');
+        console.log('🤖 Enhancing with AI Vision...');
         const imageData = mediaPreviews[0].url;
+        const isCat = petContext.petType?.toLowerCase().includes('cat') || petContext.breed?.toLowerCase().includes('cat');
+        const petTypeStr = isCat ? 'cat' : 'dog';
         
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
@@ -328,24 +332,23 @@ export default function Create() {
                 },
                 {
                   type: 'text',
-                  text: `You are a viral pet meme generator. Look at this ${petContext.petType || 'pet'} photo.
-                  
-Pet name: ${petContext.petName || 'pet'}
-Breed: ${petContext.breed || 'unknown'}
-Behaviors: ${petContext.behaviors?.join(', ') || 'none specified'}
-Detected scene: ${scene}
+                  text: `You are a viral pet meme caption generator. Look at this ${petTypeStr} photo.
 
-Generate 2 VIRAL meme captions that would go viral on social media. Make them:
-- SHORT (under 50 chars ideal, max 80)
-- FUNNY with programming/coding jokes (cats on keyboards, dogs fetching data, etc.)
-- Use emojis sparingly but effectively
-- Reference common dev experiences (bugs, deploys, code review, etc.)
+Pet name: ${petContext.petName || petTypeStr}
+Detected mood/scene: ${scene}
 
-Output ONLY the 2 captions, one per line. No numbering, no explanations.`
+Generate 2 VIRAL, FUNNY meme captions based on what you see in the image. Make them:
+- SHORT (under 60 characters ideal)
+- HILARIOUS and relatable to pet owners
+- Use emojis sparingly but effectively (1-3 max)
+- Reference common pet behaviors: treats, zoomies, naps, begging, being dramatic, guilty face, etc.
+- Similar style to viral memes like "When you hear the treat bag 👀" or "I didn't do it 😇"
+
+Output ONLY the 2 captions, one per line. No numbering, no explanations, no quotes.`
                 }
               ]
             }],
-            max_tokens: 150,
+            max_tokens: 120,
           }),
         });
         
@@ -353,10 +356,13 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations.`
           const data = await response.json();
           const content = data.choices?.[0]?.message?.content?.trim();
           if (content) {
-            const aiCaptions = content.split('\n').filter(c => c.trim().length > 0).slice(0, 2);
-            // Add AI captions at the TOP (they're usually best!)
+            const aiCaptions = content.split('\n')
+              .map(c => c.trim())
+              .filter(c => c.length > 0 && c.length < 100)
+              .slice(0, 2);
+            // Add AI captions at the TOP (they're context-aware!)
             captions.unshift(...aiCaptions);
-            console.log('✅ AI added captions:', aiCaptions);
+            console.log('✅ AI generated:', aiCaptions);
           }
         }
       } catch (error) {
@@ -371,12 +377,10 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations.`
   
   // Legacy function for backwards compatibility
   const generateContextualCaptions = (petContext, imageContext) => {
-    // This now just calls the viral generator synchronously with basic templates
-    const scene = imageContext?.scene || 'default';
+    const scene = imageContext?.scene || 'relaxed';
     const matchingTemplates = getMatchingTemplates(scene, petContext.petType);
-    const captions = matchingTemplates.map(t => fillTemplate(t, petContext, scene));
-    const petCaptions = getPetSpecificCaptions(petContext).slice(0, 2);
-    return [...new Set([...captions, ...petCaptions])].slice(0, 5);
+    const captions = matchingTemplates.map(t => getTemplateCaption(t, petContext));
+    return [...new Set(captions)].slice(0, 5);
   };
   
   const generateAICaptions = async (manualScenario = null) => {
