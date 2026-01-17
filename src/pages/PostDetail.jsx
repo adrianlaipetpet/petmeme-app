@@ -208,7 +208,10 @@ export default function PostDetail() {
               alt={post.pet.name}
               className="w-10 h-10 rounded-full object-cover border-2 border-primary-200"
               onError={(e) => {
-                e.target.src = 'https://picsum.photos/seed/fallback/50/50';
+                // Pet-only fallback! 🐱🐶
+                e.target.src = post?.pet?.petType === 'dog' 
+                  ? 'https://placedog.net/50/50?id=post' 
+                  : 'https://cataas.com/cat?width=50&height=50&t=post';
               }}
             />
             <div>
@@ -270,7 +273,10 @@ export default function PostDetail() {
               alt={post.caption}
               className="w-full max-h-[60vh] object-contain"
               onError={(e) => {
-                e.target.src = 'https://picsum.photos/seed/fallback/600/600';
+                // Pet-only fallback! 🐱🐶
+                e.target.src = post?.pet?.petType === 'dog' 
+                  ? 'https://placedog.net/600/600?id=media' 
+                  : 'https://cataas.com/cat?width=600&height=600&t=media';
               }}
             />
           )}
@@ -366,7 +372,7 @@ export default function PostDetail() {
                   alt={comment.user.name}
                   className="w-9 h-9 rounded-full object-cover flex-shrink-0"
                   onError={(e) => {
-                    e.target.src = 'https://picsum.photos/seed/fallback/50/50';
+                    e.target.src = Math.random() > 0.5 ? 'https://placedog.net/50/50?id=comment' : 'https://cataas.com/cat?width=50&height=50&t=comment';
                   }}
                 />
                 <div className="flex-1">
@@ -427,7 +433,7 @@ export default function PostDetail() {
                                   alt={reply.user.name}
                                   className="w-7 h-7 rounded-full object-cover flex-shrink-0"
                                   onError={(e) => {
-                                    e.target.src = 'https://picsum.photos/seed/fallback/50/50';
+                                    e.target.src = Math.random() > 0.5 ? 'https://placedog.net/50/50?id=comment' : 'https://cataas.com/cat?width=50&height=50&t=comment';
                                   }}
                                 />
                                 <div>
@@ -482,7 +488,7 @@ export default function PostDetail() {
             alt="You"
             className="w-9 h-9 rounded-full object-cover flex-shrink-0"
             onError={(e) => {
-              e.target.src = 'https://picsum.photos/seed/fallback/50/50';
+              e.target.src = Math.random() > 0.5 ? 'https://placedog.net/50/50?id=comment' : 'https://cataas.com/cat?width=50&height=50&t=comment';
             }}
           />
           <div className="flex-1 relative">

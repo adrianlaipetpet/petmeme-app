@@ -9,20 +9,32 @@ import {
   Award, Share2, MoreHorizontal
 } from 'lucide-react';
 
-// Behavior emoji map
+// 🐱🐶 Coding-themed behavior emoji map (cats & dogs only!)
 const behaviorEmojis = {
-  zoomies: '💨',
-  lazy: '😴',
+  debugging: '🔍',
+  deploying: '🚀',
+  keyboard: '⌨️',
+  crashed: '💤',
+  fetch: '🦴',
+  judging: '👀',
+  genius: '🧠',
+  chaos: '💥',
+  nocturnal: '🌙',
+  loyal: '🐶',
+  hardworking: '💪',
+  helpful: '🤝',
+  chaotic: '😈',
+  napping: '😴',
   dramatic: '🎭',
+  lazy: '😴',
   foodie: '🍗',
   destroyer: '💥',
   derpy: '🤪',
   vocal: '🗣️',
   cuddly: '🤗',
   scared: '😱',
-  jealous: '😤',
+  zoomies: '💨',
   clingy: '🥺',
-  genius: '🧠',
 };
 
 export default function Profile() {
@@ -99,10 +111,12 @@ export default function Profile() {
   };
   
   const handleShare = async () => {
+    const petType = petData?.petType === 'dog' ? '🐶' : '🐱';
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${petData?.name} on PetMeme Hub`,
+          title: `${petData?.name} ${petType} on Lmeow`,
+          text: `Check out ${petData?.name}'s coding memes! 😹💻`,
           url: window.location.href,
         });
       } catch (err) {
@@ -110,7 +124,7 @@ export default function Profile() {
       }
     } else {
       navigator.clipboard.writeText(window.location.href);
-      showToast('Profile link copied!', 'success');
+      showToast('Profile link copied! 🔗', 'success');
     }
   };
   
@@ -124,14 +138,15 @@ export default function Profile() {
   
   return (
     <div className="min-h-screen pb-8">
-      {/* Header with gradient background */}
-      <div className="relative h-48 bg-gradient-to-br from-primary-400 via-accent-coral to-secondary-400">
-        {/* Decorative patterns */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-4 left-4 text-4xl">🐾</div>
-          <div className="absolute top-8 right-8 text-3xl">✨</div>
-          <div className="absolute bottom-12 left-1/4 text-2xl">🎭</div>
-          <div className="absolute top-12 right-1/3 text-2xl">💕</div>
+      {/* Header with gradient background - Coding themed! 💻🐱🐶 */}
+      <div className="relative h-48 bg-gradient-to-br from-primary-500 via-secondary-500 to-accent-coral">
+        {/* Decorative coding patterns */}
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute top-4 left-4 text-4xl">💻</div>
+          <div className="absolute top-8 right-8 text-3xl">🐱</div>
+          <div className="absolute bottom-12 left-1/4 text-2xl">⌨️</div>
+          <div className="absolute top-12 right-1/3 text-2xl">🐶</div>
+          <div className="absolute bottom-8 right-1/4 text-2xl">🚀</div>
         </div>
         
         {/* Actions */}
@@ -159,31 +174,48 @@ export default function Profile() {
         {/* Avatar */}
         <div className="flex justify-center">
           <div className="relative">
-            <img
+            <motion.img
+              whileHover={{ scale: 1.05 }}
               src={petData?.photoURL || reliableImages.profile1}
               alt={petData?.name}
-              className="w-32 h-32 rounded-full object-cover border-4 border-white dark:border-petmeme-bg-dark shadow-xl"
+              className="w-32 h-32 rounded-full object-cover border-4 border-white dark:border-lmeow-bg-dark shadow-xl"
               onError={(e) => {
-                e.target.src = 'https://picsum.photos/seed/fallback/200/200';
+                // Pet-only fallback! 🐱🐶
+                e.target.src = petData?.petType === 'dog' 
+                  ? 'https://placedog.net/200/200?id=profile' 
+                  : 'https://cataas.com/cat?width=200&height=200&t=profile';
               }}
             />
             
-            {/* Verified/Popular badge */}
+            {/* Pet type badge (cat or dog) 🐱🐶 */}
+            <div className="absolute -top-1 -left-1 text-3xl">
+              {petData?.petType === 'dog' ? '🐶' : '🐱'}
+            </div>
+            
+            {/* Verified/Popular badge - 10x Developer! */}
             {petData?.stats?.followers > 10000 && (
-              <div className="absolute -bottom-1 -right-1 w-10 h-10 bg-gradient-to-br from-accent-gold to-amber-500 rounded-full flex items-center justify-center shadow-lg">
+              <motion.div 
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="absolute -bottom-1 -right-1 w-10 h-10 bg-gradient-to-br from-accent-gold to-amber-500 rounded-full flex items-center justify-center shadow-lg"
+              >
                 <Award className="w-5 h-5 text-white" />
-              </div>
+              </motion.div>
             )}
           </div>
         </div>
         
-        {/* Pet name & breed */}
+        {/* Pet name & breed - Coding style! 💻 */}
         <div className="text-center mt-4">
-          <h1 className="font-heading text-3xl font-bold text-petmeme-text dark:text-petmeme-text-dark">
+          <h1 className="font-heading text-3xl font-bold text-lmeow-text dark:text-lmeow-text-dark flex items-center justify-center gap-2">
             {petData?.name}
+            {petData?.viralScore >= 9 && <span className="text-xl">🏆</span>}
           </h1>
-          <p className="text-petmeme-muted mt-1">
-            {petData?.breed} {petData?.type?.split(' ')[0]}
+          <p className="text-lmeow-muted mt-1 flex items-center justify-center gap-1">
+            <span>{petData?.petType === 'dog' ? '🐶' : '🐱'}</span>
+            {petData?.breed}
+            <span className="mx-2">•</span>
+            <span className="text-primary-500 font-medium">Dev Score: {petData?.viralScore || '8.5'}/10</span>
           </p>
         </div>
         
@@ -203,33 +235,33 @@ export default function Profile() {
           </div>
         )}
         
-        {/* Bio */}
+        {/* Bio - Coding style */}
         {petData?.bio && (
-          <p className="text-center text-petmeme-text dark:text-petmeme-text-dark mt-4 max-w-xs mx-auto">
-            {petData.bio}
+          <p className="text-center text-lmeow-text dark:text-lmeow-text-dark mt-4 max-w-sm mx-auto bg-primary-50 dark:bg-primary-900/20 p-3 rounded-xl">
+            💻 {petData.bio}
           </p>
         )}
         
-        {/* Stats */}
-        <div className="flex justify-center gap-8 mt-6">
-          <div className="text-center">
-            <p className="font-heading text-2xl font-bold text-petmeme-text dark:text-petmeme-text-dark">
+        {/* Stats - Developer metrics 📊 */}
+        <div className="flex justify-center gap-6 mt-6">
+          <motion.div whileHover={{ scale: 1.1 }} className="text-center p-3 rounded-xl bg-primary-50 dark:bg-primary-900/20">
+            <p className="font-heading text-2xl font-bold text-lmeow-text dark:text-lmeow-text-dark">
               {formatCount(petData?.stats?.posts || posts.length)}
             </p>
-            <p className="text-sm text-petmeme-muted">Posts</p>
-          </div>
-          <div className="text-center">
-            <p className="font-heading text-2xl font-bold text-petmeme-text dark:text-petmeme-text-dark">
+            <p className="text-sm text-lmeow-muted">Memes 📸</p>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.1 }} className="text-center p-3 rounded-xl bg-secondary-50 dark:bg-secondary-900/20">
+            <p className="font-heading text-2xl font-bold text-lmeow-text dark:text-lmeow-text-dark">
               {formatCount(petData?.stats?.followers || 0)}
             </p>
-            <p className="text-sm text-petmeme-muted">Followers</p>
-          </div>
-          <div className="text-center">
-            <p className="font-heading text-2xl font-bold text-petmeme-text dark:text-petmeme-text-dark">
+            <p className="text-sm text-lmeow-muted">Fans 🐾</p>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.1 }} className="text-center p-3 rounded-xl bg-accent-coral/10">
+            <p className="font-heading text-2xl font-bold text-lmeow-text dark:text-lmeow-text-dark">
               {formatCount(petData?.stats?.likes || 0)}
             </p>
-            <p className="text-sm text-petmeme-muted">Likes</p>
-          </div>
+            <p className="text-sm text-lmeow-muted">Paws 🐾</p>
+          </motion.div>
         </div>
         
         {/* Action buttons */}
@@ -314,7 +346,7 @@ export default function Profile() {
                     className="w-full h-full object-cover"
                     loading="lazy"
                     onError={(e) => {
-                      e.target.src = 'https://picsum.photos/seed/fallback/200/200';
+                      e.target.src = petData?.petType === 'dog' ? 'https://placedog.net/200/200?id=grid' : 'https://cataas.com/cat?width=200&height=200&t=grid';
                     }}
                   />
                 )}
@@ -347,7 +379,7 @@ export default function Profile() {
                     className="w-full h-full object-cover"
                     loading="lazy"
                     onError={(e) => {
-                      e.target.src = 'https://picsum.photos/seed/fallback/200/200';
+                      e.target.src = petData?.petType === 'dog' ? 'https://placedog.net/200/200?id=grid' : 'https://cataas.com/cat?width=200&height=200&t=grid';
                     }}
                   />
                 </Link>

@@ -27,16 +27,16 @@ const featuredMemes = [
   },
 ];
 
-// Behavior filters
+// 🐱🐶 Coding-themed behavior filters (cats & dogs only!)
 const behaviors = [
-  { id: 'zoomies', emoji: '💨', label: 'Zoomies' },
-  { id: 'lazy', emoji: '😴', label: 'Lazy' },
-  { id: 'dramatic', emoji: '🎭', label: 'Dramatic' },
-  { id: 'foodie', emoji: '🍗', label: 'Foodie' },
-  { id: 'derpy', emoji: '🤪', label: 'Derpy' },
-  { id: 'cuddly', emoji: '🤗', label: 'Cuddly' },
-  { id: 'genius', emoji: '🧠', label: 'Too Smart' },
-  { id: 'clingy', emoji: '🥺', label: 'Velcro Pet' },
+  { id: 'debugging', emoji: '🔍', label: 'Debugging' },
+  { id: 'deploying', emoji: '🚀', label: 'Deploying' },
+  { id: 'keyboard', emoji: '⌨️', label: 'On Keyboard' },
+  { id: 'crashed', emoji: '💤', label: 'Crashed' },
+  { id: 'fetch', emoji: '🦴', label: 'Fetching' },
+  { id: 'judging', emoji: '👀', label: 'Code Review' },
+  { id: 'genius', emoji: '🧠', label: '10x Dev' },
+  { id: 'chaos', emoji: '💥', label: 'rm -rf' },
 ];
 
 export default function Discover() {
@@ -66,16 +66,16 @@ export default function Discover() {
   
   return (
     <div className="min-h-screen pb-8">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-petmeme-bg/80 dark:bg-petmeme-bg-dark/80 backdrop-blur-lg border-b border-gray-100 dark:border-gray-800 px-4 py-3">
+      {/* Header - Coding meme search 🐱🐶💻 */}
+      <header className="sticky top-0 z-40 bg-lmeow-bg/80 dark:bg-lmeow-bg-dark/80 backdrop-blur-lg border-b border-gray-100 dark:border-gray-800 px-4 py-3">
         <form onSubmit={handleSearch} className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-petmeme-muted" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-lmeow-muted" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setIsSearching(true)}
-            placeholder="Search pets, breeds, hashtags..."
+            placeholder="Search coding memes, cats, dogs... 🐱🐶💻"
             className="input-field pl-12 pr-10"
           />
           {searchQuery && (
@@ -85,7 +85,7 @@ export default function Discover() {
                 setSearchQuery('');
                 setIsSearching(false);
               }}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-petmeme-muted hover:text-petmeme-text"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-lmeow-muted hover:text-primary-500"
             >
               <X className="w-5 h-5" />
             </button>
@@ -94,10 +94,10 @@ export default function Discover() {
       </header>
       
       <div className="p-4 space-y-8">
-        {/* Featured carousel */}
+        {/* Featured coding memes 🐱🐶💻 */}
         <section>
-          <h2 className="font-heading text-xl font-bold text-petmeme-text dark:text-petmeme-text-dark mb-4 flex items-center gap-2">
-            <span className="text-2xl">✨</span> Featured Memes
+          <h2 className="font-heading text-xl font-bold text-lmeow-text dark:text-lmeow-text-dark mb-4 flex items-center gap-2">
+            <span className="text-2xl">💻</span> Top Coding Memes 🐱🐶
           </h2>
           
           <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-4 px-4">
@@ -127,7 +127,10 @@ export default function Discover() {
                       alt={meme.title}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        e.target.src = 'https://picsum.photos/seed/featured/300/400';
+                        // Pet-only fallback! 🐱🐶
+                        e.target.src = Math.random() > 0.5 
+                          ? 'https://cataas.com/cat?width=300&height=400&t=featured' 
+                          : 'https://placedog.net/300/400?id=featured';
                       }}
                     />
                   )}
@@ -150,10 +153,10 @@ export default function Discover() {
           </div>
         </section>
         
-        {/* Trending hashtags */}
+        {/* Trending coding hashtags 🔥 */}
         <section>
-          <h2 className="font-heading text-xl font-bold text-petmeme-text dark:text-petmeme-text-dark mb-4 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-accent-coral" /> Trending Now
+          <h2 className="font-heading text-xl font-bold text-lmeow-text dark:text-lmeow-text-dark mb-4 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-accent-coral animate-pulse" /> Trending Dev Tags 🔥
           </h2>
           
           <div className="grid grid-cols-2 gap-3">
@@ -163,19 +166,20 @@ export default function Discover() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
+                whileHover={{ scale: 1.02 }}
               >
                 <Link
                   to={`/browse/hashtag/${encodeURIComponent(item.tag)}`}
-                  className="card p-4 text-left hover:shadow-card-hover transition-shadow block"
+                  className="card p-4 text-left hover:shadow-card-hover transition-shadow block bg-gradient-to-br from-white to-primary-50 dark:from-lmeow-card-dark dark:to-primary-900/20"
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">{item.emoji}</span>
                     <div>
-                      <p className="font-semibold text-petmeme-text dark:text-petmeme-text-dark">
+                      <p className="font-semibold text-lmeow-text dark:text-lmeow-text-dark">
                         #{item.tag}
                       </p>
-                      <p className="text-sm text-petmeme-muted">
-                        {formatCount(item.count)} posts
+                      <p className="text-sm text-lmeow-muted">
+                        {formatCount(item.count)} memes
                       </p>
                     </div>
                   </div>
@@ -185,10 +189,10 @@ export default function Discover() {
           </div>
         </section>
         
-        {/* Browse by breed */}
+        {/* Browse by breed - Cats & Dogs Only! 🐱🐶 */}
         <section>
-          <h2 className="font-heading text-xl font-bold text-petmeme-text dark:text-petmeme-text-dark mb-4 flex items-center gap-2">
-            <span className="text-2xl">🐾</span> Popular Breeds
+          <h2 className="font-heading text-xl font-bold text-lmeow-text dark:text-lmeow-text-dark mb-4 flex items-center gap-2">
+            <span className="text-2xl">🐱🐶</span> Popular Breeds (Cats & Dogs!)
           </h2>
           
           <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-4 px-4 pb-2">
@@ -198,25 +202,29 @@ export default function Discover() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.05 }}
+                whileHover={{ scale: 1.1 }}
               >
                 <Link
                   to={`/browse/breed/${encodeURIComponent(item.breed)}`}
                   className="flex-shrink-0 text-center block"
                 >
-                  <div className="w-20 h-20 rounded-full overflow-hidden border-3 border-primary-200 dark:border-primary-700 mx-auto mb-2">
+                  <div className="w-20 h-20 rounded-full overflow-hidden border-3 border-primary-300 dark:border-primary-600 mx-auto mb-2 shadow-lg">
                     <img
                       src={item.image}
                       alt={item.breed}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        e.target.src = 'https://picsum.photos/seed/breed/100/100';
+                        // Pet breed fallback! 🐱🐶
+                        e.target.src = item.type === 'dog' 
+                          ? 'https://placedog.net/100/100?id=breed' 
+                          : 'https://cataas.com/cat?width=100&height=100&t=breed';
                       }}
                     />
                   </div>
-                  <p className="text-sm font-medium text-petmeme-text dark:text-petmeme-text-dark max-w-[80px] truncate">
-                    {item.breed}
+                  <p className="text-sm font-medium text-lmeow-text dark:text-lmeow-text-dark max-w-[80px] truncate flex items-center justify-center gap-1">
+                    {item.emoji || (item.type === 'dog' ? '🐶' : '🐱')} {item.breed}
                   </p>
-                  <p className="text-xs text-petmeme-muted">
+                  <p className="text-xs text-lmeow-muted">
                     {formatCount(item.count)}
                   </p>
                 </Link>
@@ -225,39 +233,40 @@ export default function Discover() {
           </div>
         </section>
         
-        {/* Quick behavior filters */}
+        {/* Quick coding behavior filters 💻 */}
         <section>
-          <h2 className="font-heading text-xl font-bold text-petmeme-text dark:text-petmeme-text-dark mb-4 flex items-center gap-2">
-            <Hash className="w-5 h-5 text-primary-500" /> Browse by Behavior
+          <h2 className="font-heading text-xl font-bold text-lmeow-text dark:text-lmeow-text-dark mb-4 flex items-center gap-2">
+            <Hash className="w-5 h-5 text-primary-500" /> Browse by Dev Mood 💻
           </h2>
           
           <div className="flex flex-wrap gap-2">
             {behaviors.map((behavior) => (
-              <Link
-                key={behavior.id}
-                to={`/browse/behavior/${encodeURIComponent(behavior.id)}`}
-                className="badge-behavior hover:scale-105 transition-transform"
-              >
-                <span>{behavior.emoji}</span>
-                <span>{behavior.label}</span>
-              </Link>
+              <motion.div key={behavior.id} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                <Link
+                  to={`/browse/behavior/${encodeURIComponent(behavior.id)}`}
+                  className="badge-behavior hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors inline-flex"
+                >
+                  <span>{behavior.emoji}</span>
+                  <span>{behavior.label}</span>
+                </Link>
+              </motion.div>
             ))}
           </div>
         </section>
         
-        {/* For You section */}
+        {/* For You section - Personalized coding memes */}
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-heading text-xl font-bold text-petmeme-text dark:text-petmeme-text-dark flex items-center gap-2">
-              <span className="text-2xl">🎯</span> For You
+            <h2 className="font-heading text-xl font-bold text-lmeow-text dark:text-lmeow-text-dark flex items-center gap-2">
+              <span className="text-2xl">🎯</span> Pawsonalized For You
             </h2>
-            <Link to="/" className="text-sm text-primary-500 font-medium">
-              See All
+            <Link to="/" className="text-sm text-primary-500 font-medium hover:underline">
+              See All →
             </Link>
           </div>
           
-          <p className="text-petmeme-muted text-sm mb-4">
-            Based on your pet's personality and preferences
+          <p className="text-lmeow-muted text-sm mb-4">
+            Coding memes matched to your pet's dev personality 🐱🐶💻
           </p>
           
           {/* Masonry-style grid preview */}
@@ -290,7 +299,10 @@ export default function Discover() {
                     alt={post.caption}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     onError={(e) => {
-                      e.target.src = 'https://picsum.photos/seed/post/300/300';
+                      // Pet post fallback! 🐱🐶
+                      e.target.src = post.pet?.petType === 'dog' 
+                        ? 'https://placedog.net/300/300?id=post' 
+                        : 'https://cataas.com/cat?width=300&height=300&t=post';
                     }}
                   />
                 )}

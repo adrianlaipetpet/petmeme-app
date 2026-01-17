@@ -185,7 +185,10 @@ export default function FilteredContent() {
                       className="w-full h-full object-cover"
                       loading="lazy"
                       onError={(e) => {
-                        e.target.src = 'https://picsum.photos/seed/filtered/300/300';
+                        // Pet-only fallback! 🐱🐶
+                        e.target.src = post.pet?.petType === 'dog' 
+                          ? 'https://placedog.net/300/300?id=filtered' 
+                          : 'https://cataas.com/cat?width=300&height=300&t=filtered';
                       }}
                     />
                   )}
@@ -238,7 +241,10 @@ export default function FilteredContent() {
                         className="w-full h-full object-cover"
                         loading="lazy"
                         onError={(e) => {
-                          e.target.src = 'https://picsum.photos/seed/thumb/100/100';
+                          // Pet-only fallback! 🐱🐶
+                          e.target.src = Math.random() > 0.5 
+                            ? 'https://placedog.net/100/100?id=thumb' 
+                            : 'https://cataas.com/cat?width=100&height=100&t=thumb';
                         }}
                       />
                     )}
@@ -252,7 +258,10 @@ export default function FilteredContent() {
                         alt={post.pet.name}
                         className="w-6 h-6 rounded-full object-cover"
                         onError={(e) => {
-                          e.target.src = 'https://picsum.photos/seed/avatar/50/50';
+                          // Pet-only fallback! 🐱🐶
+                          e.target.src = post.pet?.petType === 'dog' 
+                            ? 'https://placedog.net/50/50?id=avatar' 
+                            : 'https://cataas.com/cat?width=50&height=50&t=avatar';
                         }}
                       />
                       <span className="font-semibold text-sm text-petmeme-text dark:text-petmeme-text-dark">

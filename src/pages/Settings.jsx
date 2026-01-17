@@ -223,7 +223,10 @@ export default function Settings() {
               alt={pet?.name}
               className="w-16 h-16 rounded-full object-cover border-2 border-primary-200"
               onError={(e) => {
-                e.target.src = 'https://picsum.photos/seed/fallback/100/100';
+                // Pet-only fallback! 🐱🐶
+                e.target.src = pet?.type?.includes('Dog') 
+                  ? 'https://placedog.net/100/100?id=settings' 
+                  : 'https://cataas.com/cat?width=100&height=100&t=settings';
               }}
             />
             <button
@@ -359,7 +362,10 @@ export default function Settings() {
                   alt="Current photo"
                   className="w-32 h-32 rounded-full object-cover border-4 border-primary-200"
                   onError={(e) => {
-                    e.target.src = 'https://picsum.photos/seed/fallback/200/200';
+                    // Pet-only fallback! 🐱🐶
+                    e.target.src = editForm.type?.includes('Dog') 
+                      ? 'https://placedog.net/200/200?id=edit' 
+                      : 'https://cataas.com/cat?width=200&height=200&t=edit';
                   }}
                 />
               </div>
@@ -450,7 +456,10 @@ export default function Settings() {
                       alt="Pet photo"
                       className="w-24 h-24 rounded-full object-cover border-4 border-primary-200 group-hover:opacity-80 transition-opacity"
                       onError={(e) => {
-                        e.target.src = 'https://picsum.photos/seed/fallback/200/200';
+                        // Pet-only fallback! 🐱🐶
+                        e.target.src = editForm.type?.includes('Dog') 
+                          ? 'https://placedog.net/200/200?id=photo' 
+                          : 'https://cataas.com/cat?width=200&height=200&t=photo';
                       }}
                     />
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">

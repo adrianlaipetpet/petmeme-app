@@ -19,53 +19,63 @@ export default function Campaigns() {
   
   return (
     <div className="min-h-screen pb-8">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-petmeme-bg/80 dark:bg-petmeme-bg-dark/80 backdrop-blur-lg border-b border-gray-100 dark:border-gray-800">
-        <div className="px-4 py-4">
+      {/* Header - Meow Madness Challenges 🐱🐶💻 */}
+      <header className="sticky top-0 z-40 bg-gradient-to-r from-primary-500 via-secondary-500 to-accent-coral text-white">
+        <div className="px-4 py-5">
           <h1 className="font-heading text-2xl font-bold flex items-center gap-2">
-            <Trophy className="w-6 h-6 text-accent-gold" />
-            Campaigns
+            <Trophy className="w-7 h-7 text-accent-gold animate-bounce" />
+            Meow Madness Challenges
+            <span className="text-xl">🐱🐶</span>
           </h1>
-          <p className="text-sm text-petmeme-muted mt-1">
-            Win prizes & get featured by top pet brands!
+          <p className="text-sm text-white/80 mt-1">
+            Win prizes with your pet coding memes! 💻🏆
           </p>
         </div>
       </header>
       
       <div className="p-4 space-y-8">
-        {/* Quick stats */}
+        {/* Quick stats - Coding themed! 💻 */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="card p-4 text-center gradient-card">
+          <motion.div 
+            whileHover={{ scale: 1.05 }}
+            className="card p-4 text-center bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20"
+          >
             <Gift className="w-6 h-6 text-primary-500 mx-auto mb-2" />
-            <p className="font-heading text-xl font-bold text-petmeme-text dark:text-petmeme-text-dark">
-              $5K+
+            <p className="font-heading text-xl font-bold text-lmeow-text dark:text-lmeow-text-dark">
+              $5K+ 💰
             </p>
-            <p className="text-xs text-petmeme-muted">Prizes This Month</p>
-          </div>
-          <div className="card p-4 text-center gradient-card">
+            <p className="text-xs text-lmeow-muted">Prizes (in treats!)</p>
+          </motion.div>
+          <motion.div 
+            whileHover={{ scale: 1.05 }}
+            className="card p-4 text-center bg-gradient-to-br from-secondary-50 to-secondary-100 dark:from-secondary-900/20 dark:to-secondary-800/20"
+          >
             <Users className="w-6 h-6 text-secondary-500 mx-auto mb-2" />
-            <p className="font-heading text-xl font-bold text-petmeme-text dark:text-petmeme-text-dark">
-              8.9K
+            <p className="font-heading text-xl font-bold text-lmeow-text dark:text-lmeow-text-dark">
+              42.0K 🐱🐶
             </p>
-            <p className="text-xs text-petmeme-muted">Participants</p>
-          </div>
-          <div className="card p-4 text-center gradient-card">
+            <p className="text-xs text-lmeow-muted">Pet Coders</p>
+          </motion.div>
+          <motion.div 
+            whileHover={{ scale: 1.05 }}
+            className="card p-4 text-center bg-gradient-to-br from-accent-gold/20 to-accent-peach/20"
+          >
             <Star className="w-6 h-6 text-accent-gold mx-auto mb-2" />
-            <p className="font-heading text-xl font-bold text-petmeme-text dark:text-petmeme-text-dark">
-              156
+            <p className="font-heading text-xl font-bold text-lmeow-text dark:text-lmeow-text-dark">
+              1337 🏆
             </p>
-            <p className="text-xs text-petmeme-muted">Winners</p>
-          </div>
+            <p className="text-xs text-lmeow-muted">Meme Legends</p>
+          </motion.div>
         </div>
         
-        {/* Active campaigns */}
+        {/* Active challenges - Coding themed! 🔥 */}
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-heading text-xl font-bold text-petmeme-text dark:text-petmeme-text-dark flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary-500" />
-              Active Campaigns
+            <h2 className="font-heading text-xl font-bold text-lmeow-text dark:text-lmeow-text-dark flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary-500 animate-pulse" />
+              Hot Challenges 🔥
             </h2>
-            <span className="badge">{activeCampaigns.length} Live</span>
+            <span className="badge bg-gradient-to-r from-primary-500 to-accent-coral text-white">{activeCampaigns.length} Live! 🐱🐶</span>
           </div>
           
           <div className="space-y-4">
@@ -84,16 +94,19 @@ export default function Campaigns() {
                     alt={campaign.title}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      e.target.src = 'https://picsum.photos/seed/campaign/600/400';
+                      // Pet-only fallback! 🐱🐶
+                      e.target.src = Math.random() > 0.5 
+                        ? 'https://cataas.com/cat?width=600&height=400&t=campaign' 
+                        : 'https://placedog.net/600/400?id=campaign';
                     }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                   
                   {/* Days left badge */}
-                  <div className="absolute top-3 right-3 flex items-center gap-1 px-3 py-1.5 bg-white/90 dark:bg-petmeme-card-dark/90 backdrop-blur-sm rounded-full">
+                  <div className="absolute top-3 right-3 flex items-center gap-1 px-3 py-1.5 bg-white/90 dark:bg-lmeow-card-dark/90 backdrop-blur-sm rounded-full">
                     <Clock className="w-4 h-4 text-accent-coral" />
-                    <span className="text-sm font-medium text-petmeme-text dark:text-petmeme-text-dark">
-                      {campaign.daysLeft} days left
+                    <span className="text-sm font-bold text-lmeow-text dark:text-lmeow-text-dark">
+                      ⏰ {campaign.daysLeft} days!
                     </span>
                   </div>
                   
@@ -110,11 +123,12 @@ export default function Campaigns() {
                 
                 {/* Content */}
                 <div className="p-4">
-                  <h3 className="font-heading text-lg font-bold text-petmeme-text dark:text-petmeme-text-dark">
-                    {campaign.title}
+                  <h3 className="font-heading text-lg font-bold text-lmeow-text dark:text-lmeow-text-dark flex items-center gap-2">
+                    {campaign.emoji || '🐾'} {campaign.title}
+                    {campaign.hot && <span className="text-xs bg-accent-coral text-white px-2 py-0.5 rounded-full animate-pulse">HOT!</span>}
                   </h3>
                   
-                  <p className="text-sm text-petmeme-muted mt-2">
+                  <p className="text-sm text-lmeow-muted mt-2">
                     {campaign.description}
                   </p>
                   
@@ -128,7 +142,7 @@ export default function Campaigns() {
                   
                   {/* Stats & action */}
                   <div className="flex items-center justify-between mt-4">
-                    <div className="flex items-center gap-4 text-sm text-petmeme-muted">
+                    <div className="flex items-center gap-4 text-sm text-lmeow-muted">
                       <span className="flex items-center gap-1">
                         <Users className="w-4 h-4" />
                         {campaign.entries.toLocaleString()} entries
@@ -150,11 +164,11 @@ export default function Campaigns() {
           </div>
         </section>
         
-        {/* Past winners - NOW CLICKABLE */}
+        {/* Past winners - Meme Legends Hall of Fame 🏆 */}
         <section>
-          <h2 className="font-heading text-xl font-bold text-petmeme-text dark:text-petmeme-text-dark mb-4 flex items-center gap-2">
+          <h2 className="font-heading text-xl font-bold text-lmeow-text dark:text-lmeow-text-dark mb-4 flex items-center gap-2">
             <Trophy className="w-5 h-5 text-accent-gold" />
-            Recent Winners
+            Meme Legends 🏆🐱🐶
           </h2>
           
           <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-4 px-4">
@@ -170,17 +184,20 @@ export default function Campaigns() {
                     alt={winner.petName}
                     className="w-20 h-20 rounded-full object-cover mx-auto border-4 border-accent-gold/30 group-hover:border-accent-gold transition-colors"
                     onError={(e) => {
-                      e.target.src = 'https://picsum.photos/seed/winner/100/100';
+                      // Pet winner fallback! 🐱🐶
+                      e.target.src = winner.petType === 'dog' 
+                        ? 'https://placedog.net/100/100?id=winner' 
+                        : 'https://cataas.com/cat?width=100&height=100&t=winner';
                     }}
                   />
                   <div className="absolute -bottom-1 -right-1 left-1/2 -translate-x-1/2 w-8 h-8 bg-accent-gold rounded-full flex items-center justify-center">
                     <Trophy className="w-4 h-4 text-white" />
                   </div>
                 </div>
-                <p className="font-semibold text-sm text-petmeme-text dark:text-petmeme-text-dark mt-3 truncate group-hover:text-primary-500 transition-colors">
-                  {winner.petName}
+                <p className="font-semibold text-sm text-lmeow-text dark:text-lmeow-text-dark mt-3 truncate group-hover:text-primary-500 transition-colors">
+                  {winner.petName} {winner.petType === 'dog' ? '🐶' : '🐱'}
                 </p>
-                <p className="text-xs text-petmeme-muted truncate">
+                <p className="text-xs text-lmeow-muted truncate">
                   {winner.prize}
                 </p>
               </Link>
@@ -188,17 +205,23 @@ export default function Campaigns() {
           </div>
         </section>
         
-        {/* Brand partners */}
-        <section className="card p-6 text-center">
-          <Package className="w-10 h-10 text-primary-500 mx-auto mb-3" />
-          <h3 className="font-heading text-lg font-bold text-petmeme-text dark:text-petmeme-text-dark">
-            Are you a brand?
+        {/* Brand partners - Coding companies welcome! 💼 */}
+        <section className="card p-6 text-center bg-gradient-to-br from-secondary-50 to-primary-50 dark:from-secondary-900/20 dark:to-primary-900/20">
+          <motion.div
+            animate={{ rotate: [0, 10, -10, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <Package className="w-12 h-12 text-primary-500 mx-auto mb-3" />
+          </motion.div>
+          <h3 className="font-heading text-lg font-bold text-lmeow-text dark:text-lmeow-text-dark">
+            Are you a tech/pet brand? 💼🐾
           </h3>
-          <p className="text-sm text-petmeme-muted mt-2 mb-4">
-            Partner with us to reach millions of pet lovers with fun, meme-style campaigns!
+          <p className="text-sm text-lmeow-muted mt-2 mb-4">
+            Partner with us! Reach millions of pet-loving developers with coding meme campaigns! 😹🐶💻
           </p>
-          <button className="btn-secondary">
-            Contact for Partnerships
+          <button className="btn-primary flex items-center gap-2 mx-auto">
+            <span>🤝</span>
+            Let's Collaborate!
           </button>
         </section>
       </div>
@@ -217,15 +240,15 @@ export default function Campaigns() {
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg bg-white dark:bg-petmeme-card-dark rounded-t-3xl p-6 max-h-[80vh] overflow-y-auto"
+            className="w-full max-w-lg bg-white dark:bg-lmeow-card-dark rounded-t-3xl p-6 max-h-[80vh] overflow-y-auto"
           >
             <div className="w-12 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-6" />
             
-            <h2 className="font-heading text-2xl font-bold text-petmeme-text dark:text-petmeme-text-dark">
-              {selectedCampaign.title}
+            <h2 className="font-heading text-2xl font-bold text-lmeow-text dark:text-lmeow-text-dark flex items-center gap-2">
+              {selectedCampaign.emoji || '🐾'} {selectedCampaign.title}
             </h2>
             
-            <p className="text-petmeme-muted mt-2">
+            <p className="text-lmeow-muted mt-2">
               {selectedCampaign.description}
             </p>
             
@@ -240,13 +263,13 @@ export default function Campaigns() {
             
             {/* Requirements */}
             <div className="mt-6">
-              <h3 className="font-semibold text-petmeme-text dark:text-petmeme-text-dark mb-3">
-                Requirements
+              <h3 className="font-semibold text-lmeow-text dark:text-lmeow-text-dark mb-3 flex items-center gap-2">
+                📋 Requirements (for cats & dogs only!)
               </h3>
               <ul className="space-y-2">
                 {selectedCampaign.requirements.map((req, i) => (
-                  <li key={i} className="flex items-center gap-2 text-sm text-petmeme-muted">
-                    <span className="w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-500 text-xs">
+                  <li key={i} className="flex items-center gap-2 text-sm text-lmeow-muted">
+                    <span className="w-6 h-6 rounded-full bg-gradient-to-r from-primary-400 to-secondary-400 flex items-center justify-center text-white text-xs font-bold">
                       {i + 1}
                     </span>
                     {req}
@@ -258,9 +281,9 @@ export default function Campaigns() {
             <Link
               to="/create"
               onClick={() => handleJoin(selectedCampaign)}
-              className="btn-primary w-full mt-8 text-center block"
+              className="btn-primary w-full mt-8 text-center block flex items-center justify-center gap-2"
             >
-              Join Campaign & Create Entry
+              <span>🚀</span> Join & Create Your Meme!
             </Link>
           </motion.div>
         </motion.div>

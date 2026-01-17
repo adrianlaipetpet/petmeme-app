@@ -2,79 +2,132 @@ import { motion } from 'framer-motion';
 
 export default function Splash() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gradient-hero">
-      {/* Animated paw icon */}
+    <div className="min-h-screen flex flex-col items-center justify-center gradient-hero overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{ y: [0, -20, 0], rotate: [0, 10, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-20 left-10 text-5xl opacity-30"
+        >
+          🐱
+        </motion.div>
+        <motion.div
+          animate={{ y: [0, 20, 0], rotate: [0, -10, 0] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+          className="absolute top-32 right-16 text-4xl opacity-30"
+        >
+          💻
+        </motion.div>
+        <motion.div
+          animate={{ y: [0, -15, 0] }}
+          transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+          className="absolute bottom-40 left-20 text-4xl opacity-30"
+        >
+          🐾
+        </motion.div>
+        <motion.div
+          animate={{ y: [0, 15, 0], rotate: [0, 15, 0] }}
+          transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
+          className="absolute bottom-32 right-10 text-5xl opacity-30"
+        >
+          🐶
+        </motion.div>
+      </div>
+      
+      {/* 🎨 NEW LMEOW LOGO - Large and animated! */}
       <motion.div
         animate={{ 
-          scale: [1, 1.1, 1],
-          rotate: [0, 5, -5, 0]
+          scale: [1, 1.05, 1],
+          rotate: [0, 2, -2, 0]
         }}
         transition={{ 
-          duration: 1.5, 
+          duration: 2, 
           repeat: Infinity,
           ease: "easeInOut" 
         }}
-        className="mb-6"
+        className="mb-6 relative"
       >
-        <div className="w-24 h-24 relative">
-          <svg viewBox="0 0 100 100" className="w-full h-full">
-            <defs>
-              <linearGradient id="splashGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style={{ stopColor: '#d946ef' }}/>
-                <stop offset="50%" style={{ stopColor: '#ff6b6b' }}/>
-                <stop offset="100%" style={{ stopColor: '#22c55e' }}/>
-              </linearGradient>
-            </defs>
-            <ellipse cx="50" cy="65" rx="25" ry="20" fill="url(#splashGradient)"/>
-            <ellipse cx="30" cy="35" rx="10" ry="12" fill="url(#splashGradient)"/>
-            <ellipse cx="50" cy="28" rx="10" ry="12" fill="url(#splashGradient)"/>
-            <ellipse cx="70" cy="35" rx="10" ry="12" fill="url(#splashGradient)"/>
-          </svg>
-        </div>
+        {/* Main Logo Image - LARGE for splash! */}
+        <motion.img
+          src="/lmeow-logo.png"
+          alt="Lmeow"
+          className="w-56 h-56 md:w-72 md:h-72 object-contain drop-shadow-2xl"
+          initial={{ scale: 0, rotate: -180 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ 
+            type: "spring",
+            stiffness: 200,
+            damping: 15,
+            delay: 0.2
+          }}
+        />
+        
+        {/* Sparkles around logo */}
+        <motion.div
+          animate={{ scale: [1, 1.3, 1], opacity: [1, 0.5, 1] }}
+          transition={{ duration: 1, repeat: Infinity }}
+          className="absolute -top-2 -right-2 text-2xl"
+        >
+          ✨
+        </motion.div>
+        <motion.div
+          animate={{ scale: [1, 1.3, 1], opacity: [1, 0.5, 1] }}
+          transition={{ duration: 1, repeat: Infinity, delay: 0.3 }}
+          className="absolute -bottom-1 -left-2 text-xl"
+        >
+          💖
+        </motion.div>
+        <motion.div
+          animate={{ scale: [1, 1.2, 1], opacity: [1, 0.7, 1] }}
+          transition={{ duration: 1.2, repeat: Infinity, delay: 0.6 }}
+          className="absolute top-1/2 -right-4 text-lg"
+        >
+          ⭐
+        </motion.div>
       </motion.div>
       
-      {/* Title */}
-      <motion.h1
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="font-heading text-4xl font-bold text-gradient mb-2"
-      >
-        PetMeme Hub
-      </motion.h1>
-      
-      {/* Tagline */}
+      {/* Tagline - No text logo, just the image above! */}
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.4 }}
-        className="text-petmeme-muted dark:text-petmeme-muted-dark font-medium"
+        transition={{ delay: 0.5 }}
+        className="text-lmeow-muted dark:text-lmeow-muted-dark font-medium mt-6 text-center px-6 text-lg"
       >
-        Where pet chaos goes viral 🐾
+        Pet coding memes for cats & dogs! 🐱🐶💻
       </motion.p>
       
-      {/* Loading dots */}
+      {/* Fun loading text */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
-        className="mt-12 flex gap-2"
+        transition={{ delay: 0.8 }}
+        className="mt-12 text-center"
       >
-        {[0, 1, 2].map((i) => (
-          <motion.div
-            key={i}
-            animate={{ 
-              scale: [1, 1.3, 1],
-              opacity: [0.5, 1, 0.5] 
-            }}
-            transition={{ 
-              duration: 0.8, 
-              repeat: Infinity,
-              delay: i * 0.15 
-            }}
-            className="w-2 h-2 rounded-full bg-primary-400"
-          />
-        ))}
+        <p className="text-sm text-primary-400 font-medium mb-3">
+          Compiling the memes...
+        </p>
+        
+        {/* Bouncy paw prints */}
+        <div className="flex gap-3 justify-center">
+          {['🐾', '🐾', '🐾'].map((paw, i) => (
+            <motion.div
+              key={i}
+              animate={{ 
+                y: [0, -10, 0],
+                scale: [1, 1.2, 1]
+              }}
+              transition={{ 
+                duration: 0.6, 
+                repeat: Infinity,
+                delay: i * 0.15 
+              }}
+              className="text-2xl"
+            >
+              {paw}
+            </motion.div>
+          ))}
+        </div>
       </motion.div>
     </div>
   );

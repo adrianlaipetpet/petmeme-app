@@ -1,39 +1,62 @@
-# 🐾 PetMeme Hub
+# 😸 Lmeow - Pet Coding Memes
 
-> The #1 social platform for pet lovers to create, share, and discover funny pet memes and short videos!
+<div align="center">
+  <img src="public/lmeow-logo.png" alt="Lmeow Logo" width="150" />
+  
+  ### LOL + MEOW = 😹
+  
+  > The #1 social platform for pet-loving developers! Create hilarious coding memes with cats 🐱 and dogs 🐶 only!
+</div>
 
-![PetMeme Hub](https://img.shields.io/badge/version-1.0.0-purple)
+![Lmeow](https://img.shields.io/badge/Lmeow-1.0.0-pink)
 ![React](https://img.shields.io/badge/React-19.2-blue)
 ![Tailwind](https://img.shields.io/badge/Tailwind-4.x-cyan)
 ![Firebase](https://img.shields.io/badge/Firebase-12.x-orange)
 
+## 🎨 Brand Assets
+
+The official Lmeow logo is located at:
+```
+public/lmeow-logo.png
+```
+
+Use it in components with:
+```jsx
+<img src="/lmeow-logo.png" alt="Lmeow Logo" className="w-12 h-12" />
+```
+
 ## ✨ Features
 
+### 🐱🐶 Cats & Dogs Only!
+- **NO generic images** - Every image/video shows real cats or dogs
+- **Meme text overlays** - Classic Impact-style text on all content
+- **Coding themed** - "Works on my machine", "cat.exe crashed", etc.
+
 ### 🎯 Core Features
-- **Pet-First Profiles** - Spotlight your pet with badges, viral stats, and Instagram-style grids
-- **Infinite Scroll Feed** - TikTok-style vertical feed mixing memes & short videos
-- **AI Meme Generator** - Get caption suggestions based on your pet's breed & behaviors
-- **Multi-Tab Discovery** - "For You", "Following", "Trending" personalized feeds
+- **Pet-First Profiles** - Spotlight your cat/dog with Dev Score & badges
+- **Infinite Scroll Feed** - TikTok-style vertical feed with auto-play videos
+- **AI Meme Generator** - Get coding caption suggestions based on your pet
+- **Multi-Tab Discovery** - "For You", "Following", "Trending" feeds
 - **Rich Engagement** - Paw likes, threaded comments, reposts, bookmarks
 
 ### 🎨 Design & UX
-- **Vibrant Theme** - Playful pastels + bright accents
+- **Vibrant Theme** - Pink/purple gradients with playful accents
 - **Custom Fonts** - Fredoka (headings) + Poppins (body)
+- **Impact Meme Text** - Classic white text with black outline
 - **Dark/Light Mode** - Toggle between themes
-- **Mobile-First PWA** - Optimized for phones with safe area support
-- **Smooth Animations** - Framer Motion powered interactions
+- **Mobile-First PWA** - Optimized for phones
 
 ### 💰 Monetization Ready
 - **Meme-Style Ads** - Brand-tagged posts with shop links
-- **Campaign System** - Brands create challenges with prizes
-- **Behavior Data** - Optional pet personality tracking for personalization
+- **Meow Madness Challenges** - Brands create coding-themed challenges
+- **Behavior Data** - Optional pet personality tracking
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Node.js 18+
 - npm or yarn
-- Firebase project (for full functionality)
+- Firebase project (optional, has Demo Mode)
 
 ### Installation
 
@@ -50,66 +73,41 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173) to view the app.
 
-### Firebase Setup (Required for Full Functionality)
+### Demo Mode
+Click "Try Demo Mode" on the login screen to explore without setting up Firebase!
 
-1. Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
-2. Enable Authentication (Google & Email/Password)
-3. Create a Firestore database
-4. Enable Firebase Storage
-5. Copy your config to environment variables:
+## 🖼️ Logo Usage
 
-Create a `.env` file in the project root:
-```env
-VITE_FIREBASE_API_KEY=your_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-VITE_FIREBASE_APP_ID=your_app_id
-VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
-```
-
-### AI Meme Generation (Optional)
-
-To enable AI-powered caption suggestions:
-1. Get an API key from [OpenRouter](https://openrouter.ai)
-2. Add to your `.env`:
-```env
-VITE_OPENROUTER_API_KEY=your_openrouter_key
-```
+The Lmeow logo appears in:
+- ✅ Splash screen (large, animated)
+- ✅ Login page (medium, animated)
+- ✅ Home feed header (small)
+- ✅ Browser favicon
+- ✅ PWA manifest icons
+- ✅ Empty states
+- ✅ Demo mode button
 
 ## 📁 Project Structure
 
 ```
+public/
+├── lmeow-logo.png     # 🎨 Main logo!
+├── manifest.json      # PWA config
+└── ...
+
 src/
 ├── components/
-│   ├── auth/          # ProtectedRoute
-│   ├── feed/          # FeedCard, FeedTabs
+│   ├── feed/          # FeedCard with meme text
 │   ├── navigation/    # BottomNav
 │   └── ui/            # ToastContainer
-├── config/
-│   └── firebase.js    # Firebase configuration
-├── layouts/
-│   ├── AuthLayout.jsx # Login/signup wrapper
-│   └── MainLayout.jsx # Main app with bottom nav
+├── data/
+│   └── demoData.js    # All cats & dogs demo content
 ├── pages/
-│   ├── auth/
-│   │   ├── Login.jsx      # Google/Email auth
-│   │   └── Onboarding.jsx # Pet setup wizard
-│   ├── Campaigns.jsx      # Brand campaigns
-│   ├── Create.jsx         # Post creator + AI
-│   ├── Discover.jsx       # Search & explore
-│   ├── Home.jsx           # Main feed
-│   ├── PostDetail.jsx     # Full post + comments
-│   ├── Profile.jsx        # Pet profile page
-│   ├── Settings.jsx       # User settings
-│   └── Splash.jsx         # Loading screen
-├── store/
-│   ├── authStore.js   # User & pet state
-│   ├── feedStore.js   # Posts & interactions
-│   └── uiStore.js     # Theme, modals, toasts
-├── index.css          # Tailwind + custom styles
-└── App.jsx            # Routes & providers
+│   ├── Splash.jsx     # Logo splash screen
+│   ├── Home.jsx       # Feed with logo header
+│   ├── auth/Login.jsx # Login with logo
+│   └── ...
+└── index.css          # Meme text styling
 ```
 
 ## 🛠 Tech Stack
@@ -122,50 +120,33 @@ src/
 | Animations | Framer Motion |
 | Icons | Lucide React |
 | Backend | Firebase (Auth, Firestore, Storage) |
-| AI | Claude/OpenRouter (optional) |
+| AI | Google Gemini via OpenRouter (optional) |
+| Images | cataas.com (cats), placedog.net (dogs) |
 
-## 📱 Key Pages
+## 🎨 Meme Text Styling
 
-### 🏠 Home Feed
-- Infinite scroll with pull-to-refresh
-- Auto-play video support
-- Double-tap to like with paw animation
-- Side engagement buttons
+All memes use classic Impact-style text:
 
-### 🐾 Pet Profile
-- Large pet avatar with behavior badges
-- Viral stats (posts, followers, likes)
-- 3-column Instagram-style grid
-- Tabs: My Memes, Favorites, Collabs
-
-### ✏️ Create Post
-- Multi-image/video upload (max 4)
-- Text overlay editor
-- AI caption generator
-- Behavior tagging
-
-### 🏆 Campaigns
-- Active brand challenges
-- Prize details & requirements
-- Entry tracking
-- Past winners showcase
-
-## 🎨 Customization
-
-### Colors
-Edit theme colors in `src/index.css`:
 ```css
-@theme {
-  --color-primary-500: #d946ef; /* Main accent */
-  --color-accent-coral: #ff6b6b; /* Like button */
-  /* ... */
+.meme-text {
+  font-family: 'Impact', sans-serif;
+  text-transform: uppercase;
+  color: white;
+  text-shadow: -3px -3px 0 #000, 3px -3px 0 #000...;
+  -webkit-text-stroke: 2px black;
 }
 ```
 
-### Fonts
-Google Fonts are loaded in the CSS:
-- Fredoka (headings)
-- Poppins (body text)
+## 📱 Demo Memes
+
+| Pet | Meme Text |
+|-----|-----------|
+| 🐱 Debug McWhiskers | "WORKS ON MY MACHINE" |
+| 🐶 Bork Overflow | "DEPLOYED TO PROD - ZERO ERRORS" |
+| 🐱 Null Pointer | "CAT.EXE HAS STOPPED WORKING" |
+| 🐶 API Boi | "WHEN THE API FINALLY FETCHES" |
+| 🐱 Keyboard Destroyer | "FIXING CODE BY SITTING ON KEYBOARD" |
+| 🐶 Force Pusher | "GIT PUSH --FORCE - NO REGRETS" |
 
 ## 📄 License
 
@@ -177,4 +158,10 @@ Built by **@adriannewman21** from Hong Kong 🇭🇰
 
 ---
 
-*Made with ❤️ and lots of 🐾 paw taps*
+<div align="center">
+  <img src="public/lmeow-logo.png" alt="Lmeow" width="60" />
+  <br/>
+  <em>Made with ❤️ and lots of 🐾 paw taps</em>
+  <br/>
+  <strong>🐱 + 🐶 + 💻 = 😹</strong>
+</div>

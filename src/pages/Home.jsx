@@ -5,8 +5,17 @@ import { useFeedStore } from '../store/feedStore';
 import { useAuthStore } from '../store/authStore';
 import FeedCard from '../components/feed/FeedCard';
 import FeedTabs from '../components/feed/FeedTabs';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, Cat } from 'lucide-react';
 import { demoPosts } from '../data/demoData';
+
+// Fun loading messages
+const loadingMessages = [
+  "Whiskering up memes... 🐱",
+  "Herding cats for content... 😹",
+  "Chasing the red dot... 🔴",
+  "Pawsing for cuteness... 🐾",
+  "Loading the floof... ✨",
+];
 
 export default function Home() {
   const { posts, setPosts, addPosts, hasMore, isLoading, setLoading, activeTab, lastDoc } = useFeedStore();
@@ -88,20 +97,29 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-petmeme-bg/80 dark:bg-petmeme-bg-dark/80 backdrop-blur-lg border-b border-gray-100 dark:border-gray-800">
+      <header className="sticky top-0 z-40 bg-white/90 dark:bg-lmeow-card-dark/90 backdrop-blur-xl border-b-2 border-primary-100 dark:border-primary-900">
         <div className="px-4 py-3 flex items-center justify-between">
-          <h1 className="font-heading text-2xl font-bold text-gradient">
-            PetMeme Hub
-          </h1>
+          {/* 🎨 LOGO - Bigger for visibility! */}
+          <motion.img 
+            src="/lmeow-logo.png"
+            alt="Lmeow"
+            className="h-14 md:h-16 w-auto object-contain drop-shadow-lg"
+            animate={{ rotate: [0, 3, -3, 0] }}
+            transition={{ duration: 3, repeat: Infinity, repeatDelay: 4 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          />
           
+          {/* User greeting */}
           {pet && (
             <motion.div 
-              whileTap={{ scale: 0.9 }}
-              className="flex items-center gap-2 px-3 py-1.5 bg-primary-100 dark:bg-primary-900/30 rounded-full"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-100 to-secondary-100 dark:from-primary-900/30 dark:to-secondary-900/30 rounded-full border-2 border-primary-200 dark:border-primary-800"
             >
-              <Sparkles className="w-4 h-4 text-primary-500" />
-              <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
-                Hi, {pet.name}!
+              <span className="text-lg">🐾</span>
+              <span className="text-sm font-semibold text-primary-700 dark:text-primary-300">
+                Hey, {pet.name}!
               </span>
             </motion.div>
           )}
@@ -112,20 +130,38 @@ export default function Home() {
       </header>
       
       {/* Feed content */}
-      <div className="pb-4">
+      <div className="pb-24">
         {posts.length === 0 && isLoading ? (
           <div className="flex flex-col items-center justify-center py-20">
-            <Loader2 className="w-10 h-10 text-primary-500 animate-spin" />
-            <p className="mt-4 text-petmeme-muted">Loading pet memes...</p>
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              className="text-6xl mb-4"
+            >
+              🐱
+            </motion.div>
+            <motion.p 
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className="text-primary-500 font-medium"
+            >
+              {loadingMessages[Math.floor(Math.random() * loadingMessages.length)]}
+            </motion.p>
           </div>
         ) : posts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-            <div className="text-6xl mb-4">🐾</div>
-            <h2 className="font-heading text-2xl font-bold text-petmeme-text dark:text-petmeme-text-dark">
+            <motion.div 
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="text-7xl mb-4"
+            >
+              😿
+            </motion.div>
+            <h2 className="font-heading text-2xl font-bold text-lmeow-text dark:text-lmeow-text-dark">
               No memes yet!
             </h2>
-            <p className="text-petmeme-muted mt-2">
-              Be the first to share some pet chaos
+            <p className="text-lmeow-muted mt-2">
+              Be the first to unleash the chaos! 🌪️
             </p>
           </div>
         ) : (
@@ -134,14 +170,25 @@ export default function Home() {
             next={fetchMore}
             hasMore={hasMore}
             loader={
-              <div className="flex justify-center py-6">
-                <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+              <div className="flex flex-col items-center py-6">
+                <motion.span
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="text-4xl"
+                >
+                  🐾
+                </motion.span>
+                <p className="text-sm text-primary-400 mt-2">Loading more chaos...</p>
               </div>
             }
             endMessage={
-              <p className="text-center py-6 text-petmeme-muted">
-                You've seen all the memes! 🎉
-              </p>
+              <div className="text-center py-8">
+                <img src="/lmeow-logo.png" alt="Lmeow" className="w-12 h-12 mx-auto mb-2 object-contain" />
+                <p className="text-lmeow-muted font-medium">
+                  You've seen all the memes! 
+                </p>
+                <p className="text-sm text-primary-400">Come back for more chaos later! 🐾</p>
+              </div>
             }
             className="space-y-4 px-4 pt-4"
           >

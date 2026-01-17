@@ -54,18 +54,20 @@ export default function Create() {
   
   const fileInputRef = useRef(null);
   
-  // Quick scenario options for manual selection (fallback when no AI)
+  // 🐱🐶 Coding-themed scenario options for manual selection!
   const scenarioOptions = [
-    { id: 'sleeping', emoji: '😴', label: 'Sleeping/Napping', scene: 'sleeping', mood: 'peaceful', action: 'taking a nap' },
-    { id: 'staring', emoji: '👀', label: 'Staring/Judging', scene: 'staring', mood: 'judgmental', action: 'staring intensely' },
-    { id: 'playing', emoji: '🎾', label: 'Playing', scene: 'playing', mood: 'excited', action: 'playing around' },
-    { id: 'eating', emoji: '🍗', label: 'Eating/Begging', scene: 'eating', mood: 'hungry', action: 'wanting food' },
-    { id: 'derpy', emoji: '🤪', label: 'Derpy/Funny Face', scene: 'derpy', mood: 'confused', action: 'being derpy' },
-    { id: 'dramatic', emoji: '🎭', label: 'Being Dramatic', scene: 'being_dramatic', mood: 'dramatic', action: 'being extra' },
-    { id: 'guilty', emoji: '😬', label: 'Guilty Look', scene: 'guilty', mood: 'guilty', action: 'looking guilty' },
-    { id: 'excited', emoji: '🤩', label: 'Excited/Happy', scene: 'excited', mood: 'excited', action: 'being happy' },
-    { id: 'scared', emoji: '😱', label: 'Scared/Startled', scene: 'scared', mood: 'scared', action: 'being scared' },
-    { id: 'relaxed', emoji: '😌', label: 'Relaxed/Chilling', scene: 'sitting', mood: 'relaxed', action: 'just vibing' },
+    { id: 'sleeping', emoji: '💤', label: '3AM Crashed 💻😴', scene: 'sleeping', mood: 'peaceful', action: 'crashed after coding' },
+    { id: 'staring', emoji: '👀', label: 'Code Review 🔍', scene: 'staring', mood: 'judgmental', action: 'reviewing code' },
+    { id: 'playing', emoji: '🦴', label: 'Fetch() Success 🐶', scene: 'playing', mood: 'excited', action: 'fetching data' },
+    { id: 'eating', emoji: '☕', label: 'Coffee Break ☕', scene: 'eating', mood: 'hungry', action: 'refueling' },
+    { id: 'derpy', emoji: '🤪', label: 'Brain.exe Crashed 💀', scene: 'derpy', mood: 'confused', action: 'undefined' },
+    { id: 'dramatic', emoji: '🔥', label: 'Merge Conflict 😱', scene: 'being_dramatic', mood: 'dramatic', action: 'merge conflict' },
+    { id: 'guilty', emoji: '😬', label: 'Pushed to Prod 💀', scene: 'guilty', mood: 'guilty', action: 'force pushed' },
+    { id: 'excited', emoji: '🎉', label: 'Tests Passing ✅', scene: 'excited', mood: 'excited', action: 'all tests green' },
+    { id: 'scared', emoji: '😰', label: 'Friday Deploy 😱', scene: 'scared', mood: 'scared', action: 'deploying friday' },
+    { id: 'relaxed', emoji: '😎', label: 'Zero Bugs 🏆', scene: 'relaxed', mood: 'relaxed', action: 'bug free vibes' },
+    { id: 'judging', emoji: '🧐', label: 'PR Review Mode 👀', scene: 'judging', mood: 'skeptical', action: 'judging PRs' },
+    { id: 'sitting', emoji: '⌨️', label: 'Keyboard Cat 🐱', scene: 'sitting', mood: 'focused', action: 'on keyboard' },
   ];
   const { user, pet } = useAuthStore();
   const { showToast } = useUIStore();
@@ -202,10 +204,12 @@ export default function Create() {
     return null;
   };
   
-  // Generate captions based on image analysis + pet profile
+  // Generate CODING-THEMED captions based on image analysis + pet profile 🐱🐶💻
   const generateContextualCaptions = (petContext, imageContext) => {
     const { petName, breed, behaviors } = petContext;
     const petType = breed || 'pet';
+    const isCat = petType.toLowerCase().includes('cat') || petType.includes('🐱');
+    const isDog = petType.toLowerCase().includes('dog') || petType.includes('🐶');
     
     const captions = [];
     
@@ -219,87 +223,100 @@ export default function Create() {
       captions.push(`${petName}: ${imageContext.funny_element} 😂`);
     }
     
-    // Generate scene-specific captions
+    // Generate scene-specific CODING MEME captions! 💻
     const scene = imageContext?.scene || 'default';
-    const action = imageContext?.action || 'being cute';
     
     const sceneCaptions = {
       sleeping: [
-        `${petName}: "5 more minutes..." 😴`,
-        `Professional napper reporting for duty 💤`,
-        `Do not disturb: ${petName} is recharging 🔋`,
-        `Living the dream (literally) 💭`,
-        `${petName}'s to-do list: 1. Sleep 2. Repeat 😌`,
+        isCat ? `${petName}.exe has stopped working 😹💤` : `${petName}: Deployed to prod, time to nap 🐶💤`,
+        `${petName}: "Compiling... please wait" 💤`,
+        `Do not disturb: ${petName} is debugging in dreams 🔧`,
+        `WHEN THE BUILD FINALLY PASSES AT 3AM 😴`,
+        isCat ? `cat.sleep() // forever loop 😹` : `dog.napAfterDeploy() 🐶`,
       ],
       staring: [
-        `${petName} judging your life choices 👀`,
-        `"You gonna share that or...?" 🤨`,
-        `The AUDACITY to not pet me rn 😤`,
-        `POV: You have food 👁️👁️`,
-        `${petName} has been staring for 47 minutes straight`,
+        `${petName} reviewing your code like 👀`,
+        isCat ? `"This code smells... meow" 🐱👀` : `"Who wrote this? WOOF!" 🐶👀`,
+        `POV: Your PR has been open for 2 weeks 😤`,
+        `${petName} found the bug. It was you. 🔍`,
+        `WHEN SOMEONE SAYS "WORKS ON MY MACHINE" 👁️👁️`,
       ],
       playing: [
-        `Chaos mode: ACTIVATED 💥`,
-        `${petName} chose violence today 😈`,
-        `The zoomies hit different 💨`,
-        `No thoughts, just ZOOM 🏃`,
-        `${petName} vs. [literally anything]: FIGHT 🥊`,
+        isDog ? `FETCH() SUCCESSFUL! 🐶🦴` : `git push --force (YOLO!) 🐱💥`,
+        `Chaos mode: rm -rf / 💥`,
+        `${petName} when the tests finally pass 🎉`,
+        isCat ? `KEYBOARD CAT CODING SESSION 🐱⌨️` : `THE ZOOMIES HIT WHEN CI/CD GOES GREEN 🐶💨`,
+        `npm install happiness 📦`,
       ],
       eating: [
-        `Food is life. Life is food. 🍗`,
-        `${petName}'s entire personality in one photo 😋`,
-        `"Is that ALL I get?!" 🥺`,
-        `Heard the treat bag from 3 rooms away 👂`,
-        `${petName} speedrunning dinner any% 🏆`,
+        isDog ? `${petName} fetching() treats 🐶🦴` : `${petName}: "I need coffee to function" 🐱☕`,
+        `STACK OVERFLOW: TREAT NOT FOUND 404 🍗`,
+        `Refueling for another debugging session 🔋`,
+        isCat ? `caffeine.inject() // required 😹` : `const treats = await fetch('/snacks') 🐶`,
+        `${petName} speedrunning lunch.exe 🏆`,
       ],
       being_dramatic: [
-        `Oscar-worthy performance 🏆`,
-        `The DRAMA of it all 🎭`,
-        `${petName} when you say "no" once 😤`,
-        `*exists dramatically* ✨`,
-        `Main character syndrome activated 👑`,
+        `MERGE CONFLICT DETECTED 😱🔥`,
+        isCat ? `${petName} when there's a semicolon missing 🐱😤` : `${petName} when prod is down 🐶💀`,
+        `404: PATIENCE NOT FOUND 🎭`,
+        `THIS CODE REVIEW IS PERSONAL 😤`,
+        `*git blame intensifies* 👀`,
       ],
       derpy: [
-        `One brain cell and it's on vacation 🧠`,
-        `${petName}.exe has stopped working 💀`,
-        `No thoughts, head empty 🤪`,
-        `When the last brain cell is vibing 🎵`,
-        `Certified goofball hours 🤡`,
+        isCat ? `${petName}.exe has stopped responding 🐱🤪` : `${petName}'s brain: undefined 🐶🤪`,
+        `WHEN YOU FORGET TO SAVE 💀`,
+        `One brain cell and it's writing JavaScript 🧠`,
+        isCat ? `meow.undefined() 😹` : `woof === woof // true 🐶`,
+        `console.log("help") 🆘`,
       ],
       guilty: [
-        `"It wasn't me" - ${petName}, definitely lying 😬`,
-        `${petName} 5 seconds before I found the mess 👀`,
-        `The evidence: everywhere. The remorse: zero 🙃`,
-        `"Ok but hear me out..." 🥺`,
-        `Caught in 4K 📸`,
+        isCat ? `${petName} after git push --force 🐱😬` : `${petName} after deleting prod database 🐶😱`,
+        `"It wasn't me" *git log says otherwise* 📸`,
+        `${petName} 5 seconds before the rollback 👀`,
+        isCat ? `rm -rf /* "oops" 😹` : `DROP TABLE users; "my bad" 🐶`,
+        `Caught in production logs 📸`,
       ],
       excited: [
-        `BEST. DAY. EVER!!! 🤩`,
-        `Serotonin levels: 📈📈📈`,
-        `${petName} found out we're going to the park 🎉`,
-        `This is ${petName}'s happy dance 💃`,
-        `Happiness overload ⚡`,
+        isDog ? `TESTS PASSING! TAIL WAGGING! 🐶✅` : `MEOW FIXED THE BUG! 🐱🎉`,
+        `BEST. DEPLOY. EVER!!! 🚀`,
+        isCat ? `${petName} when PR is approved 🐱🎉` : `${petName} when the build is green 🐶💚`,
+        `Serotonin levels when no errors: 📈📈📈`,
+        `CI/CD is GREEN! PARTY TIME! 🎉`,
       ],
       scared: [
-        `${petName} saw a cucumber 🥒😱`,
-        `The vacuum cleaner has entered the chat 💀`,
-        `Bravery level: -100 😰`,
-        `"WHAT WAS THAT NOISE" 👀`,
-        `${petName} heard thunder for the first time 🌩️`,
+        `${petName} heard "deploy on Friday" 😱`,
+        isCat ? `${petName} saw production logs 🐱💀` : `${petName} saw a merge conflict 🐶😰`,
+        `WHEN THE SENIOR DEV REVIEWS YOUR CODE 👀`,
+        `Bravery level: -100 (it's a prod issue) 😰`,
+        `"UNEXPECTED TOKEN" 😱`,
       ],
       sitting: [
-        `Just vibing ✨`,
-        `${petName} being photogenic as usual 📸`,
-        `Existing gracefully 👑`,
-        `Model behavior only 💅`,
-        `This ${petType} runs this house`,
+        isCat ? `FIXING YOUR CODE BY SITTING ON KEYBOARD 🐱⌨️` : `${petName}: Ready to debug 🐶💻`,
+        `Just vibing while code compiles ✨`,
+        `${petName} being the 10x engineer 📸`,
+        isCat ? `Keyboard cat on standby 🐱` : `Good boy ready to fetch() 🐶`,
+        `Senior developer energy 💅`,
+      ],
+      judging: [
+        `${petName} during code review 👀`,
+        isCat ? `"This code is... interesting" 🐱👀` : `"Who approved this PR?" 🐶🧐`,
+        `WORKS ON MY MACHINE - MEOW 💻`,
+        `${petName} judging your variable names 😤`,
+        `var x = "really?" 👀`,
+      ],
+      relaxed: [
+        `${petName}: Zero bugs, all chilling 😌`,
+        isCat ? `npm run relax 🐱✨` : `await pet.relax() 🐶✨`,
+        `DEPLOYED TO PROD SUCCESSFULLY. NOW VIBING. 😎`,
+        `${petName} after closing 100 tabs 💆`,
+        `Refactoring complete. Nap time. 💤`,
       ],
       default: [
-        `${petName} being ${petName} 🐾`,
-        `Just ${petType} things ✨`,
-        `Certified good boi/girl moment 🏆`,
-        `${petName} said: 📸`,
-        `This is the content you signed up for`,
+        isCat ? `${petName}: Senior Dev Energy 🐱💻` : `${petName}: Good Boy Developer 🐶💻`,
+        `WORKS ON MY MACHINE 💻🐾`,
+        isCat ? `Meow fixed your bug 🐱🔧` : `Woof deployed to production 🐶🚀`,
+        `Certified 10x pet developer 🏆`,
+        `${petName} said: console.log('🐾')`,
       ],
     };
     
