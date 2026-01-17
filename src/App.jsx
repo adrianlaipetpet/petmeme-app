@@ -1,0 +1,126 @@
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from './config/firebase';
+import { useAuthStore } from './store/authStore';
+import { useUIStore } from './store/uiStore';
+
+// Layouts
+import MainLayout from './layouts/MainLayout';
+import AuthLayout from './layouts/AuthLayout';
+
+// Pages
+import Splash from './pages/Splash';
+import Login from './pages/auth/Login';
+import Onboarding from './pages/auth/Onboarding';
+import Home from './pages/Home';
+import Discover from './pages/Discover';
+import Create from './pages/Create';
+import Profile from './pages/Profile';
+import Campaigns from './pages/Campaigns';
+import Settings from './pages/Settings';
+import PostDetail from './pages/PostDetail';
+import FilteredContent from './pages/FilteredContent';
+
+// Components
+import ToastContainer from './components/ui/ToastContainer';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+
+function App() {
+  const { setUser, setLoading, isLoading, user, isOnboarded } = useAuthStore();
+  const { isDarkMode } = useUIStore();
+  
+  // Apply dark mode on mount
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDarkMode);
+    document.documentElement.classList.toggle('light', !isDarkMode);
+  }, [isDarkMode]);
+  
+  // Listen to Firebase auth state
+  useEffect(() => {
+    // Timeout to prevent infinite loading if Firebase isn't configured
+    const timeout = setTimeout(() => {
+      setLoading(false);
+    }, 2000);
+    
+    try {
+      const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+        clearTimeout(timeout);
+        if (firebaseUser) {
+          setUser({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+          });
+        } else {
+          setUser(null);
+        }
+      });
+      
+      return () => {
+        clearTimeout(timeout);
+        unsubscribe();
+      };
+    } catch (error) {
+      console.error('Firebase auth error:', error);
+      clearTimeout(timeout);
+      setLoading(false);
+    }
+  }, [setUser, setLoading]);
+  
+  // Show splash screen while loading
+  if (isLoading) {
+    return <Splash />;
+  }
+  
+  return (
+    <Router>
+      <div className="min-h-screen bg-petmeme-bg dark:bg-petmeme-bg-dark">
+        <Routes>
+          {/* Public routes */}
+          <Route element={<AuthLayout />}>
+            <Route 
+              path="/login" 
+              element={user ? <Navigate to={isOnboarded ? "/" : "/onboarding"} /> : <Login />} 
+            />
+            <Route 
+              path="/onboarding" 
+              element={
+                user 
+                  ? (isOnboarded ? <Navigate to="/" /> : <Onboarding />) 
+                  : <Navigate to="/login" />
+              } 
+            />
+          </Route>
+          
+          {/* Protected routes with main layout */}
+          <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+            <Route path="/" element={<Home />} />
+            <Route path="/discover" element={<Discover />} />
+            <Route path="/create" element={<Create />} />
+            <Route path="/campaigns" element={<Campaigns />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/profile/:petId" element={<Profile />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/browse/:type/:value" element={<FilteredContent />} />
+          </Route>
+          
+          {/* Post detail (full screen) */}
+          <Route 
+            path="/post/:postId" 
+            element={<ProtectedRoute><PostDetail /></ProtectedRoute>} 
+          />
+          
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+        
+        {/* Global toast notifications */}
+        <ToastContainer />
+      </div>
+    </Router>
+  );
+}
+
+export default App;

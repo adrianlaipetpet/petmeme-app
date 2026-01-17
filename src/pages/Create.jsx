@@ -1,0 +1,1026 @@
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db, storage } from '../config/firebase';
+import { useAuthStore } from '../store/authStore';
+import { useUIStore } from '../store/uiStore';
+import {
+  Image, Video, Camera, Sparkles, X, Plus, Hash,
+  Type, Smile, Wand2, Loader2, Send, ChevronDown,
+  AlignLeft, AlignCenter, AlignRight, MoveUp, MoveDown
+} from 'lucide-react';
+
+// Behavior options for tagging
+const behaviorTags = [
+  'zoomies', 'lazy', 'dramatic', 'foodie', 'destroyer', 'derpy',
+  'vocal', 'cuddly', 'scared', 'jealous', 'clingy', 'genius'
+];
+
+// Quick emoji overlays
+const quickEmojis = ['😂', '🤣', '😹', '💀', '🔥', '💯', '😍', '🥺', '😤', '🤪'];
+
+// Overlay position options
+const overlayPositions = [
+  { id: 'top', label: 'Top', icon: MoveUp },
+  { id: 'center', label: 'Center', icon: AlignCenter },
+  { id: 'bottom', label: 'Bottom', icon: MoveDown },
+];
+
+const overlayStyles = [
+  { id: 'classic', label: 'Classic', style: 'text-white font-bold text-2xl drop-shadow-lg' },
+  { id: 'impact', label: 'Impact', style: 'text-white font-black text-3xl uppercase tracking-wide', fontFamily: 'Impact, sans-serif' },
+  { id: 'comic', label: 'Comic', style: 'text-black font-bold text-2xl bg-white/90 px-3 py-1 rounded-lg' },
+  { id: 'neon', label: 'Neon', style: 'text-pink-400 font-bold text-2xl', textShadow: '0 0 10px #ff6b6b, 0 0 20px #ff6b6b' },
+  { id: 'minimal', label: 'Minimal', style: 'text-white font-medium text-xl' },
+];
+
+export default function Create() {
+  const [mediaFiles, setMediaFiles] = useState([]);
+  const [mediaPreviews, setMediaPreviews] = useState([]);
+  const [caption, setCaption] = useState('');
+  const [textOverlay, setTextOverlay] = useState('');
+  const [overlayPosition, setOverlayPosition] = useState('bottom');
+  const [overlayStyleId, setOverlayStyleId] = useState('classic');
+  const [selectedBehaviors, setSelectedBehaviors] = useState([]);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState([]);
+  const [showBehaviors, setShowBehaviors] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showOverlayEditor, setShowOverlayEditor] = useState(false);
+  const [selectedScenario, setSelectedScenario] = useState(null);
+  const [showScenarioSelector, setShowScenarioSelector] = useState(false);
+  
+  const fileInputRef = useRef(null);
+  
+  // Quick scenario options for manual selection (fallback when no AI)
+  const scenarioOptions = [
+    { id: 'sleeping', emoji: '😴', label: 'Sleeping/Napping', scene: 'sleeping', mood: 'peaceful', action: 'taking a nap' },
+    { id: 'staring', emoji: '👀', label: 'Staring/Judging', scene: 'staring', mood: 'judgmental', action: 'staring intensely' },
+    { id: 'playing', emoji: '🎾', label: 'Playing', scene: 'playing', mood: 'excited', action: 'playing around' },
+    { id: 'eating', emoji: '🍗', label: 'Eating/Begging', scene: 'eating', mood: 'hungry', action: 'wanting food' },
+    { id: 'derpy', emoji: '🤪', label: 'Derpy/Funny Face', scene: 'derpy', mood: 'confused', action: 'being derpy' },
+    { id: 'dramatic', emoji: '🎭', label: 'Being Dramatic', scene: 'being_dramatic', mood: 'dramatic', action: 'being extra' },
+    { id: 'guilty', emoji: '😬', label: 'Guilty Look', scene: 'guilty', mood: 'guilty', action: 'looking guilty' },
+    { id: 'excited', emoji: '🤩', label: 'Excited/Happy', scene: 'excited', mood: 'excited', action: 'being happy' },
+    { id: 'scared', emoji: '😱', label: 'Scared/Startled', scene: 'scared', mood: 'scared', action: 'being scared' },
+    { id: 'relaxed', emoji: '😌', label: 'Relaxed/Chilling', scene: 'sitting', mood: 'relaxed', action: 'just vibing' },
+  ];
+  const { user, pet } = useAuthStore();
+  const { showToast } = useUIStore();
+  const navigate = useNavigate();
+  
+  // Auto-generate AI captions when media is uploaded
+  useEffect(() => {
+    if (mediaPreviews.length > 0 && aiSuggestions.length === 0 && !isGeneratingAI) {
+      // Reset previous selections
+      setSelectedScenario(null);
+      setAiSuggestions([]);
+      setTextOverlay('');
+      setCaption('');
+      // Start AI generation
+      generateAICaptions();
+    }
+  }, [mediaPreviews.length]);
+  
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    
+    // Limit to 4 files
+    const newFiles = files.slice(0, 4 - mediaFiles.length);
+    
+    newFiles.forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setMediaPreviews(prev => [...prev, {
+          url: reader.result,
+          type: file.type.startsWith('video') ? 'video' : 'image'
+        }]);
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    setMediaFiles(prev => [...prev, ...newFiles]);
+  };
+  
+  const removeMedia = (index) => {
+    setMediaFiles(prev => prev.filter((_, i) => i !== index));
+    setMediaPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+  
+  const toggleBehavior = (behavior) => {
+    setSelectedBehaviors(prev =>
+      prev.includes(behavior)
+        ? prev.filter(b => b !== behavior)
+        : [...prev, behavior]
+    );
+  };
+  
+  // Analyze uploaded image using AI Vision
+  const analyzeImage = async () => {
+    if (mediaPreviews.length === 0) return null;
+    
+    const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+    
+    // If API key exists, use real AI vision
+    if (apiKey && apiKey.startsWith('sk-or-')) {
+      try {
+        const imageData = mediaPreviews[0].url;
+        
+        // Ensure image is in correct format
+        if (!imageData.startsWith('data:image')) {
+          console.error('Invalid image format');
+          return null;
+        }
+        
+        console.log('🤖 Calling Gemini Vision API...');
+        
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://petmemehub.app',
+            'X-Title': 'PetMeme Hub',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-3-flash-preview',
+            messages: [{
+              role: 'user',
+              content: [
+                {
+                  type: 'image_url',
+                  image_url: { url: imageData }
+                },
+                {
+                  type: 'text', 
+                  text: 'Look at this pet photo. What is the pet doing? Reply with ONLY one word from this list: sleeping, staring, playing, eating, sitting, derpy, guilty, excited, scared, judging, dramatic, relaxed. Just the one word, nothing else.'
+                }
+              ]
+            }],
+            max_tokens: 50,
+          }),
+        });
+        
+        if (!response.ok) {
+          const err = await response.text();
+          console.error('API Error:', response.status, err);
+          return null;
+        }
+        
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content?.toLowerCase().trim();
+        
+        if (content) {
+          console.log('✅ AI detected:', content);
+          
+          // Map the response to our scene format
+          const validScenes = ['sleeping', 'staring', 'playing', 'eating', 'sitting', 'derpy', 'guilty', 'excited', 'scared', 'judging', 'dramatic', 'relaxed'];
+          const scene = validScenes.find(s => content.includes(s)) || 'sitting';
+          
+          showToast(`AI detected: ${scene} 🧠`, 'success');
+          
+          return {
+            scene: scene,
+            mood: scene === 'sleeping' ? 'peaceful' : scene === 'excited' ? 'happy' : 'neutral',
+            action: content,
+          };
+        }
+      } catch (error) {
+        console.error('Vision API error:', error.message);
+      }
+    }
+    
+    // Fallback: Use the user-selected scenario if available
+    if (selectedScenario) {
+      return selectedScenario;
+    }
+    
+    // No API key or error - prompt user to select manually
+    return null;
+  };
+  
+  // Generate captions based on image analysis + pet profile
+  const generateContextualCaptions = (petContext, imageContext) => {
+    const { petName, breed, behaviors } = petContext;
+    const petType = breed || 'pet';
+    
+    const captions = [];
+    
+    // If AI provided a suggested caption, use it first!
+    if (imageContext?.suggested_caption) {
+      captions.push(imageContext.suggested_caption);
+    }
+    
+    // If AI provided a funny element, create a caption from it
+    if (imageContext?.funny_element) {
+      captions.push(`${petName}: ${imageContext.funny_element} 😂`);
+    }
+    
+    // Generate scene-specific captions
+    const scene = imageContext?.scene || 'default';
+    const action = imageContext?.action || 'being cute';
+    
+    const sceneCaptions = {
+      sleeping: [
+        `${petName}: "5 more minutes..." 😴`,
+        `Professional napper reporting for duty 💤`,
+        `Do not disturb: ${petName} is recharging 🔋`,
+        `Living the dream (literally) 💭`,
+        `${petName}'s to-do list: 1. Sleep 2. Repeat 😌`,
+      ],
+      staring: [
+        `${petName} judging your life choices 👀`,
+        `"You gonna share that or...?" 🤨`,
+        `The AUDACITY to not pet me rn 😤`,
+        `POV: You have food 👁️👁️`,
+        `${petName} has been staring for 47 minutes straight`,
+      ],
+      playing: [
+        `Chaos mode: ACTIVATED 💥`,
+        `${petName} chose violence today 😈`,
+        `The zoomies hit different 💨`,
+        `No thoughts, just ZOOM 🏃`,
+        `${petName} vs. [literally anything]: FIGHT 🥊`,
+      ],
+      eating: [
+        `Food is life. Life is food. 🍗`,
+        `${petName}'s entire personality in one photo 😋`,
+        `"Is that ALL I get?!" 🥺`,
+        `Heard the treat bag from 3 rooms away 👂`,
+        `${petName} speedrunning dinner any% 🏆`,
+      ],
+      being_dramatic: [
+        `Oscar-worthy performance 🏆`,
+        `The DRAMA of it all 🎭`,
+        `${petName} when you say "no" once 😤`,
+        `*exists dramatically* ✨`,
+        `Main character syndrome activated 👑`,
+      ],
+      derpy: [
+        `One brain cell and it's on vacation 🧠`,
+        `${petName}.exe has stopped working 💀`,
+        `No thoughts, head empty 🤪`,
+        `When the last brain cell is vibing 🎵`,
+        `Certified goofball hours 🤡`,
+      ],
+      guilty: [
+        `"It wasn't me" - ${petName}, definitely lying 😬`,
+        `${petName} 5 seconds before I found the mess 👀`,
+        `The evidence: everywhere. The remorse: zero 🙃`,
+        `"Ok but hear me out..." 🥺`,
+        `Caught in 4K 📸`,
+      ],
+      excited: [
+        `BEST. DAY. EVER!!! 🤩`,
+        `Serotonin levels: 📈📈📈`,
+        `${petName} found out we're going to the park 🎉`,
+        `This is ${petName}'s happy dance 💃`,
+        `Happiness overload ⚡`,
+      ],
+      scared: [
+        `${petName} saw a cucumber 🥒😱`,
+        `The vacuum cleaner has entered the chat 💀`,
+        `Bravery level: -100 😰`,
+        `"WHAT WAS THAT NOISE" 👀`,
+        `${petName} heard thunder for the first time 🌩️`,
+      ],
+      sitting: [
+        `Just vibing ✨`,
+        `${petName} being photogenic as usual 📸`,
+        `Existing gracefully 👑`,
+        `Model behavior only 💅`,
+        `This ${petType} runs this house`,
+      ],
+      default: [
+        `${petName} being ${petName} 🐾`,
+        `Just ${petType} things ✨`,
+        `Certified good boi/girl moment 🏆`,
+        `${petName} said: 📸`,
+        `This is the content you signed up for`,
+      ],
+    };
+    
+    // Add scene-specific captions
+    const sceneList = sceneCaptions[scene] || sceneCaptions.default;
+    captions.push(...sceneList);
+    
+    // Add behavior-based captions
+    if (behaviors.includes('dramatic') && scene !== 'being_dramatic') {
+      captions.push(`${petName}: *makes everything dramatic* 🎭`);
+    }
+    if (behaviors.includes('foodie') && scene !== 'eating') {
+      captions.push(`${petName} is always thinking about food 🍗`);
+    }
+    if (behaviors.includes('zoomies') && scene !== 'playing') {
+      captions.push(`${petName} pre-zoomies energy building... 💨`);
+    }
+    if (behaviors.includes('lazy') && scene !== 'sleeping') {
+      captions.push(`${petName} will nap after this 😴`);
+    }
+    if (behaviors.includes('clingy')) {
+      captions.push(`${petName} won't let you leave their sight 🥺`);
+    }
+    
+    // Return unique captions, max 5
+    const unique = [...new Set(captions)];
+    return unique.slice(0, 5);
+  };
+  
+  const generateAICaptions = async (manualScenario = null) => {
+    if (!pet) {
+      showToast('Set up your pet profile first!', 'error');
+      return;
+    }
+    
+    setIsGeneratingAI(true);
+    setShowScenarioSelector(false);
+    
+    try {
+      // Build context from pet profile
+      const petContext = {
+        petName: pet.name,
+        petType: pet.type,
+        breed: pet.breed,
+        behaviors: [...(pet.behaviors || []), ...selectedBehaviors],
+      };
+      
+      let imageContext;
+      
+      if (manualScenario) {
+        // User manually selected a scenario
+        imageContext = manualScenario;
+        setSelectedScenario(manualScenario);
+      } else {
+        // Try AI analysis
+        imageContext = await analyzeImage();
+        
+        // If no AI result and no manual selection, show selector
+        if (!imageContext && !selectedScenario) {
+          setIsGeneratingAI(false);
+          setShowScenarioSelector(true);
+          showToast('Pick what\'s happening in the photo! 👇', 'info');
+          return;
+        }
+        
+        imageContext = imageContext || selectedScenario;
+      }
+      
+      // Log what AI detected (for debugging)
+      if (imageContext?.scene) {
+        console.log('🧠 AI detected scene:', imageContext.scene);
+        if (imageContext.funny_element) {
+          console.log('😂 Funny element:', imageContext.funny_element);
+        }
+      }
+      
+      // Generate contextual captions
+      const suggestions = generateContextualCaptions(petContext, imageContext);
+      
+      setAiSuggestions(suggestions);
+      
+      // Auto-apply the FIRST suggestion as default overlay
+      if (suggestions.length > 0) {
+        setTextOverlay(suggestions[0]);
+        setCaption(suggestions[0]);
+        showToast('Caption generated! ✨', 'success');
+      }
+      
+    } catch (error) {
+      console.error('AI generation error:', error);
+      showToast('Could not generate suggestions', 'error');
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+  
+  const handleSubmit = async () => {
+    if (mediaFiles.length === 0) {
+      showToast('Add at least one photo or video', 'error');
+      return;
+    }
+    
+    if (!caption.trim()) {
+      showToast('Add a caption for your meme', 'error');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      // Upload media files
+      const mediaUrls = await Promise.all(
+        mediaFiles.map(async (file, index) => {
+          const mediaRef = ref(storage, `posts/${user.uid}/${Date.now()}_${index}_${file.name}`);
+          await uploadBytes(mediaRef, file);
+          return {
+            url: await getDownloadURL(mediaRef),
+            type: file.type.startsWith('video') ? 'video' : 'image',
+          };
+        })
+      );
+      
+      // Create post document
+      const postData = {
+        ownerId: user.uid,
+        pet: {
+          id: user.uid,
+          name: pet?.name || 'Anonymous Pet',
+          breed: pet?.breed || null,
+          photoUrl: pet?.photoURL || null,
+        },
+        type: mediaUrls[0].type,
+        mediaUrl: mediaUrls[0].url,
+        mediaItems: mediaUrls,
+        caption: caption.trim(),
+        textOverlay: textOverlay.trim() || null,
+        behaviors: selectedBehaviors,
+        likeCount: 0,
+        commentCount: 0,
+        shareCount: 0,
+        createdAt: serverTimestamp(),
+        isBrandPost: false,
+      };
+      
+      await addDoc(collection(db, 'posts'), postData);
+      
+      showToast('Meme posted! 🎉', 'success');
+      navigate('/');
+    } catch (error) {
+      console.error('Post creation error:', error);
+      showToast('Failed to create post', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  return (
+    <div className="min-h-screen pb-8">
+      {/* Header */}
+      <header className="sticky top-0 z-40 bg-petmeme-bg/80 dark:bg-petmeme-bg-dark/80 backdrop-blur-lg border-b border-gray-100 dark:border-gray-800">
+        <div className="px-4 py-4 flex items-center justify-between">
+          <h1 className="font-heading text-2xl font-bold">Create Meme</h1>
+          
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={handleSubmit}
+            disabled={isSubmitting || mediaFiles.length === 0}
+            className="btn-primary flex items-center gap-2 disabled:opacity-50"
+          >
+            {isSubmitting ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Send className="w-5 h-5" />
+            )}
+            Post
+          </motion.button>
+        </div>
+      </header>
+      
+      <div className="p-4 space-y-6">
+        {/* Media upload area */}
+        <div className="space-y-4">
+          {mediaPreviews.length === 0 ? (
+            <motion.div
+              whileTap={{ scale: 0.98 }}
+              onClick={() => fileInputRef.current?.click()}
+              className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-3xl p-8 cursor-pointer hover:border-primary-400 transition-colors"
+            >
+              <div className="flex flex-col items-center text-center">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-100 to-accent-lavender dark:from-primary-900/30 dark:to-accent-lavender/20 flex items-center justify-center mb-4">
+                  <Camera className="w-10 h-10 text-primary-500" />
+                </div>
+                <p className="font-semibold text-petmeme-text dark:text-petmeme-text-dark mb-1">
+                  Add photos or videos
+                </p>
+                <p className="text-sm text-petmeme-muted">
+                  Tap to upload (max 4)
+                </p>
+              </div>
+            </motion.div>
+          ) : (
+            <div 
+              className="relative aspect-square rounded-3xl overflow-hidden bg-gray-100 dark:bg-gray-800 cursor-pointer"
+              onClick={() => setShowOverlayEditor(true)}
+            >
+              {mediaPreviews[0].type === 'video' ? (
+                <video
+                  src={mediaPreviews[0].url}
+                  className="w-full h-full object-cover"
+                  muted
+                  autoPlay
+                  loop
+                  playsInline
+                />
+              ) : (
+                <img
+                  src={mediaPreviews[0].url}
+                  alt="Upload preview"
+                  className="w-full h-full object-cover"
+                />
+              )}
+              
+              {/* Text overlay preview */}
+              {textOverlay && (
+                <div className={`absolute inset-x-0 p-4 flex items-center justify-center ${
+                  overlayPosition === 'top' ? 'top-0 bg-gradient-to-b from-black/70 to-transparent pt-6' :
+                  overlayPosition === 'center' ? 'top-1/2 -translate-y-1/2' :
+                  'bottom-0 bg-gradient-to-t from-black/70 to-transparent pb-6'
+                }`}>
+                  <p 
+                    className={`text-center max-w-[90%] ${overlayStyles.find(s => s.id === overlayStyleId)?.style || ''}`}
+                    style={{ 
+                      fontFamily: overlayStyles.find(s => s.id === overlayStyleId)?.fontFamily,
+                      textShadow: overlayStyles.find(s => s.id === overlayStyleId)?.textShadow 
+                    }}
+                  >
+                    {textOverlay}
+                  </p>
+                </div>
+              )}
+              
+              {/* AI generating indicator */}
+              {isGeneratingAI && (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                  <div className="bg-white dark:bg-petmeme-card-dark rounded-2xl p-4 flex items-center gap-3">
+                    <Loader2 className="w-6 h-6 text-primary-500 animate-spin" />
+                    <span className="font-medium text-petmeme-text dark:text-petmeme-text-dark">
+                      Generating meme ideas...
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              {/* Tap to edit overlay hint */}
+              {!textOverlay && !isGeneratingAI && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                  <div className="bg-white/90 dark:bg-petmeme-card-dark/90 backdrop-blur-sm rounded-2xl px-4 py-3 flex items-center gap-2">
+                    <Wand2 className="w-5 h-5 text-primary-500" />
+                    <span className="font-medium text-petmeme-text dark:text-petmeme-text-dark">
+                      Tap to add meme text
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              <button
+                onClick={(e) => { e.stopPropagation(); removeMedia(0); }}
+                className="absolute top-3 right-3 w-10 h-10 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              
+              {mediaPreviews[0].type === 'video' && (
+                <div className="absolute bottom-3 left-3 px-3 py-1.5 bg-black/50 rounded-full flex items-center gap-1.5 text-white text-sm">
+                  <Video className="w-4 h-4" />
+                  Video
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Thumbnail strip for multiple uploads */}
+          {mediaPreviews.length > 1 && (
+            <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar">
+              {mediaPreviews.map((media, index) => (
+                <div 
+                  key={index} 
+                  className={`relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 cursor-pointer border-2 ${
+                    index === 0 ? 'border-primary-500' : 'border-transparent'
+                  }`}
+                >
+                  {media.type === 'video' ? (
+                    <video src={media.url} className="w-full h-full object-cover" muted />
+                  ) : (
+                    <img src={media.url} alt="" className="w-full h-full object-cover" />
+                  )}
+                  <button
+                    onClick={() => removeMedia(index)}
+                    className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity"
+                  >
+                    <X className="w-4 h-4 text-white" />
+                  </button>
+                </div>
+              ))}
+              
+              {mediaPreviews.length < 4 && (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-16 h-16 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center text-petmeme-muted hover:border-primary-400 flex-shrink-0"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+          )}
+          
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,video/*"
+            multiple
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+        </div>
+        
+        {/* Scenario Selector (shown when no API key) */}
+        <AnimatePresence>
+          {showScenarioSelector && mediaPreviews.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="card p-4"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <Wand2 className="w-5 h-5 text-primary-500" />
+                <h3 className="font-semibold text-petmeme-text dark:text-petmeme-text-dark">
+                  What's happening in this photo?
+                </h3>
+              </div>
+              <p className="text-sm text-petmeme-muted mb-4">
+                Pick the closest match to generate perfect meme captions:
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {scenarioOptions.map((option) => (
+                  <motion.button
+                    key={option.id}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => generateAICaptions(option)}
+                    className={`p-3 rounded-xl text-left flex items-center gap-2 transition-colors ${
+                      selectedScenario?.id === option.id
+                        ? 'bg-primary-500 text-white'
+                        : 'bg-gray-100 dark:bg-gray-800 hover:bg-primary-100 dark:hover:bg-primary-900/30'
+                    }`}
+                  >
+                    <span className="text-xl">{option.emoji}</span>
+                    <span className="text-sm font-medium">{option.label}</span>
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
+        {/* Text overlay */}
+        <div className="card p-4">
+          <label className="flex items-center gap-2 text-sm font-medium text-petmeme-text dark:text-petmeme-text-dark mb-3">
+            <Type className="w-4 h-4" />
+            Text Overlay (optional)
+          </label>
+          <input
+            type="text"
+            value={textOverlay}
+            onChange={(e) => setTextOverlay(e.target.value)}
+            placeholder="Add meme text..."
+            className="input-field"
+            maxLength={100}
+          />
+          
+          {/* Quick emojis */}
+          <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar py-1">
+            {quickEmojis.map((emoji) => (
+              <button
+                key={emoji}
+                onClick={() => setTextOverlay(prev => prev + emoji)}
+                className="w-10 h-10 flex-shrink-0 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center text-xl hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors"
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        {/* Caption */}
+        <div className="card p-4">
+          <label className="flex items-center gap-2 text-sm font-medium text-petmeme-text dark:text-petmeme-text-dark mb-3">
+            <Smile className="w-4 h-4" />
+            Caption
+          </label>
+          <textarea
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            placeholder="Write something funny..."
+            rows={3}
+            className="input-field resize-none"
+            maxLength={500}
+          />
+          <p className="text-xs text-petmeme-muted mt-2 text-right">
+            {caption.length}/500
+          </p>
+        </div>
+        
+        {/* AI Caption Generator */}
+        <div className="card p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-accent-coral flex items-center justify-center">
+                <Wand2 className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <p className="font-semibold text-petmeme-text dark:text-petmeme-text-dark">
+                  AI Meme Generator
+                </p>
+                <p className="text-xs text-petmeme-muted">
+                  Get caption ideas based on your pet
+                </p>
+              </div>
+            </div>
+            
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={generateAICaptions}
+              disabled={isGeneratingAI}
+              className="btn-secondary flex items-center gap-2 text-sm disabled:opacity-50"
+            >
+              {isGeneratingAI ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4" />
+              )}
+              Generate
+            </motion.button>
+          </div>
+          
+          {/* AI Suggestions */}
+          <AnimatePresence>
+            {aiSuggestions.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-2"
+              >
+                <p className="text-xs text-petmeme-muted mb-2">
+                  Tap to apply as overlay, or use as caption:
+                </p>
+                {aiSuggestions.map((suggestion, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="flex gap-2"
+                  >
+                    <button
+                      onClick={() => {
+                        setTextOverlay(suggestion);
+                        setShowOverlayEditor(true);
+                        showToast('Applied as overlay! ✨', 'success');
+                      }}
+                      className="flex-1 text-left p-3 bg-gradient-to-r from-primary-50 to-transparent dark:from-primary-900/20 rounded-xl text-sm text-petmeme-text dark:text-petmeme-text-dark hover:from-primary-100 dark:hover:from-primary-900/30 transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Type className="w-4 h-4 text-primary-500 flex-shrink-0" />
+                        {suggestion}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setCaption(suggestion);
+                        showToast('Added to caption!', 'success');
+                      }}
+                      className="px-3 bg-gray-100 dark:bg-gray-800 rounded-xl text-xs text-petmeme-muted hover:bg-gray-200 dark:hover:bg-gray-700 flex-shrink-0"
+                    >
+                      Caption
+                    </button>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+        
+        {/* Behavior tags */}
+        <div className="card p-4">
+          <button
+            onClick={() => setShowBehaviors(!showBehaviors)}
+            className="w-full flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2">
+              <Hash className="w-4 h-4 text-primary-500" />
+              <span className="font-semibold text-petmeme-text dark:text-petmeme-text-dark">
+                Tag Behaviors
+              </span>
+              {selectedBehaviors.length > 0 && (
+                <span className="badge text-xs">{selectedBehaviors.length}</span>
+              )}
+            </div>
+            <ChevronDown className={`w-5 h-5 text-petmeme-muted transition-transform ${showBehaviors ? 'rotate-180' : ''}`} />
+          </button>
+          
+          <AnimatePresence>
+            {showBehaviors && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-4"
+              >
+                <div className="flex flex-wrap gap-2">
+                  {behaviorTags.map((behavior) => (
+                    <button
+                      key={behavior}
+                      onClick={() => toggleBehavior(behavior)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                        selectedBehaviors.includes(behavior)
+                          ? 'bg-primary-500 text-white'
+                          : 'bg-gray-100 dark:bg-gray-800 text-petmeme-text dark:text-petmeme-text-dark hover:bg-primary-100 dark:hover:bg-primary-900/30'
+                      }`}
+                    >
+                      #{behavior}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+      
+      {/* Overlay Editor Modal */}
+      <AnimatePresence>
+        {showOverlayEditor && mediaPreviews.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/90 flex flex-col"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 text-white">
+              <button
+                onClick={() => setShowOverlayEditor(false)}
+                className="p-2 hover:bg-white/10 rounded-full"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              <h2 className="font-heading text-lg font-bold">Edit Meme Text</h2>
+              <button
+                onClick={() => {
+                  setShowOverlayEditor(false);
+                  showToast('Overlay saved!', 'success');
+                }}
+                className="px-4 py-2 bg-primary-500 rounded-full font-semibold text-sm"
+              >
+                Done
+              </button>
+            </div>
+            
+            {/* Preview */}
+            <div className="flex-1 flex items-center justify-center p-4">
+              <div className="relative w-full max-w-sm aspect-square rounded-2xl overflow-hidden">
+                {mediaPreviews[0].type === 'video' ? (
+                  <video
+                    src={mediaPreviews[0].url}
+                    className="w-full h-full object-cover"
+                    muted
+                    autoPlay
+                    loop
+                    playsInline
+                  />
+                ) : (
+                  <img
+                    src={mediaPreviews[0].url}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
+                )}
+                
+                {/* Live overlay preview */}
+                {textOverlay && (
+                  <div className={`absolute inset-x-0 p-4 flex items-center justify-center ${
+                    overlayPosition === 'top' ? 'top-0 bg-gradient-to-b from-black/70 to-transparent pt-6' :
+                    overlayPosition === 'center' ? 'top-1/2 -translate-y-1/2' :
+                    'bottom-0 bg-gradient-to-t from-black/70 to-transparent pb-6'
+                  }`}>
+                    <p 
+                      className={`text-center max-w-[90%] ${overlayStyles.find(s => s.id === overlayStyleId)?.style || ''}`}
+                      style={{ 
+                        fontFamily: overlayStyles.find(s => s.id === overlayStyleId)?.fontFamily,
+                        textShadow: overlayStyles.find(s => s.id === overlayStyleId)?.textShadow 
+                      }}
+                    >
+                      {textOverlay}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Editor controls */}
+            <div className="bg-petmeme-card dark:bg-petmeme-card-dark rounded-t-3xl p-6 space-y-5 max-h-[50vh] overflow-y-auto">
+              {/* Text input */}
+              <div>
+                <label className="block text-sm font-medium text-petmeme-text dark:text-petmeme-text-dark mb-2">
+                  Meme Text
+                </label>
+                <textarea
+                  value={textOverlay}
+                  onChange={(e) => setTextOverlay(e.target.value)}
+                  placeholder="Enter your meme text..."
+                  rows={2}
+                  className="input-field resize-none"
+                  maxLength={100}
+                  autoFocus
+                />
+              </div>
+              
+              {/* Quick emojis */}
+              <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
+                {quickEmojis.map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => setTextOverlay(prev => prev + emoji)}
+                    className="w-10 h-10 flex-shrink-0 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center text-xl hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Position selector */}
+              <div>
+                <label className="block text-sm font-medium text-petmeme-text dark:text-petmeme-text-dark mb-2">
+                  Position
+                </label>
+                <div className="flex gap-2">
+                  {overlayPositions.map(({ id, label, icon: Icon }) => (
+                    <button
+                      key={id}
+                      onClick={() => setOverlayPosition(id)}
+                      className={`flex-1 py-3 rounded-xl flex flex-col items-center gap-1 transition-colors ${
+                        overlayPosition === id
+                          ? 'bg-primary-500 text-white'
+                          : 'bg-gray-100 dark:bg-gray-800 text-petmeme-text dark:text-petmeme-text-dark'
+                      }`}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span className="text-xs font-medium">{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Style selector */}
+              <div>
+                <label className="block text-sm font-medium text-petmeme-text dark:text-petmeme-text-dark mb-2">
+                  Style
+                </label>
+                <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                  {overlayStyles.map(({ id, label }) => (
+                    <button
+                      key={id}
+                      onClick={() => setOverlayStyleId(id)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors flex-shrink-0 ${
+                        overlayStyleId === id
+                          ? 'bg-primary-500 text-white'
+                          : 'bg-gray-100 dark:bg-gray-800 text-petmeme-text dark:text-petmeme-text-dark'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* AI suggestions in modal */}
+              {aiSuggestions.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-petmeme-text dark:text-petmeme-text-dark mb-2 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary-500" />
+                    AI Suggestions
+                  </label>
+                  <div className="space-y-2">
+                    {aiSuggestions.slice(0, 3).map((suggestion, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setTextOverlay(suggestion)}
+                        className="w-full text-left p-3 bg-gray-100 dark:bg-gray-800 rounded-xl text-sm hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Clear button */}
+              {textOverlay && (
+                <button
+                  onClick={() => setTextOverlay('')}
+                  className="w-full py-3 text-red-500 font-medium"
+                >
+                  Remove Text Overlay
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

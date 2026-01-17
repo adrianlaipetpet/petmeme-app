@@ -1,0 +1,19 @@
+{
+  "name": "PetMeme Hub",
+  "short_name": "PetMeme",
+  "description": "Create & share funny pet memes and viral short videos!",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fefbf6",
+  "theme_color": "#d946ef",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/paw-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["social", "entertainment", "lifestyle"]
+}
