@@ -1,0 +1,586 @@
+{
+  "version": "1.0",
+  "description": "Viral pet meme templates database - pet coding memes 🐱🐶💻",
+  "templates": [
+    {
+      "id": "monday_mood",
+      "pattern": "When it's [time] and [behavior]...",
+      "examples": [
+        "When it's Monday and I haven't had coffee yet...",
+        "When it's 3AM and the code finally works..."
+      ],
+      "scenes": ["sleeping", "derpy", "dramatic"],
+      "viralScore": 95,
+      "category": "relatable"
+    },
+    {
+      "id": "i_didnt_do_it",
+      "pattern": "[name] 5 minutes after [action]",
+      "examples": [
+        "Me 5 minutes after pushing to production",
+        "The intern 5 minutes after dropping the database"
+      ],
+      "scenes": ["guilty", "scared"],
+      "viralScore": 92,
+      "category": "chaos"
+    },
+    {
+      "id": "when_you_hear",
+      "pattern": "When you hear [trigger]:",
+      "examples": [
+        "When you hear 'tests are passing':",
+        "When you hear 'quick meeting':"
+      ],
+      "scenes": ["excited", "staring", "scared"],
+      "viralScore": 94,
+      "category": "reaction"
+    },
+    {
+      "id": "this_is_fine",
+      "pattern": "This is fine. *[chaos happening]*",
+      "examples": [
+        "This is fine. *production on fire*",
+        "This is fine. *100 merge conflicts*"
+      ],
+      "scenes": ["relaxed", "derpy", "dramatic"],
+      "viralScore": 97,
+      "category": "chaos"
+    },
+    {
+      "id": "nobody_me",
+      "pattern": "Nobody:\nMe at [time]: [action]",
+      "examples": [
+        "Nobody:\nMe at 2AM: debugging this again",
+        "Nobody:\nMe after one bug fix: 'I am the greatest developer'"
+      ],
+      "scenes": ["derpy", "excited", "sleeping"],
+      "viralScore": 93,
+      "category": "chaos"
+    },
+    {
+      "id": "pov",
+      "pattern": "POV: [situation]",
+      "examples": [
+        "POV: The senior dev is reviewing your PR",
+        "POV: You just pushed untested code"
+      ],
+      "scenes": ["staring", "judging", "scared"],
+      "viralScore": 96,
+      "category": "reaction"
+    },
+    {
+      "id": "me_explaining",
+      "pattern": "Me explaining to [person] why [reason]",
+      "examples": [
+        "Me explaining to my cat why I can't pet them right now",
+        "Me explaining to my dog that it's the code, not them"
+      ],
+      "scenes": ["staring", "dramatic", "judging"],
+      "viralScore": 91,
+      "category": "relatable"
+    },
+    {
+      "id": "works_on_my_machine",
+      "pattern": "\"It works on my machine\" 🤷",
+      "examples": [
+        "\"It works on my machine\" - Famous last words",
+        "\"Works on my machine\" *deploys anyway*"
+      ],
+      "scenes": ["relaxed", "derpy", "guilty"],
+      "viralScore": 98,
+      "category": "dev-classic"
+    },
+    {
+      "id": "expectation_reality",
+      "pattern": "Expectation: [good]\nReality: [bad]",
+      "examples": [
+        "Expectation: Quick 5-minute fix\nReality: 3 hours later...",
+        "Expectation: Easy deployment\nReality: Everything is broken"
+      ],
+      "scenes": ["excited", "scared", "dramatic"],
+      "viralScore": 90,
+      "category": "relatable"
+    },
+    {
+      "id": "before_after_coffee",
+      "pattern": "[name] before/after [thing]",
+      "examples": [
+        "Me before coffee vs after coffee",
+        "Me before standup vs after standup"
+      ],
+      "scenes": ["sleeping", "excited", "eating"],
+      "viralScore": 89,
+      "category": "relatable"
+    },
+    {
+      "id": "friday_deploy",
+      "pattern": "Friday deploy energy 💀",
+      "examples": [
+        "Me: I'll just deploy this real quick on Friday",
+        "Friday 4:59 PM: Just one more commit..."
+      ],
+      "scenes": ["scared", "guilty", "dramatic"],
+      "viralScore": 96,
+      "category": "dev-classic"
+    },
+    {
+      "id": "code_review",
+      "pattern": "[pet] reviewing your code be like:",
+      "examples": [
+        "Your cat reviewing your code be like:",
+        "Senior dev energy right here 👀"
+      ],
+      "scenes": ["staring", "judging"],
+      "viralScore": 94,
+      "category": "reaction"
+    },
+    {
+      "id": "merge_conflict",
+      "pattern": "MERGE CONFLICT DETECTED 😱",
+      "examples": [
+        "When you see 47 merge conflicts",
+        "The merge conflict that ended friendships"
+      ],
+      "scenes": ["dramatic", "scared", "staring"],
+      "viralScore": 93,
+      "category": "chaos"
+    },
+    {
+      "id": "debug_mode",
+      "pattern": "[time] hours into debugging:",
+      "examples": [
+        "5 hours into debugging:",
+        "When the bug was a typo all along:"
+      ],
+      "scenes": ["derpy", "sleeping", "dramatic"],
+      "viralScore": 95,
+      "category": "relatable"
+    },
+    {
+      "id": "prod_down",
+      "pattern": "Production is down. Everyone stay calm.",
+      "examples": [
+        "PRODUCTION IS DOWN *internal screaming*",
+        "\"It's just a warning\" - narrator: it was not just a warning"
+      ],
+      "scenes": ["scared", "dramatic", "guilty"],
+      "viralScore": 97,
+      "category": "chaos"
+    },
+    {
+      "id": "copy_stackoverflow",
+      "pattern": "ctrl+c ctrl+v from Stack Overflow energy",
+      "examples": [
+        "Me pretending I wrote this code myself",
+        "This code? Yeah I definitely wrote it 👀"
+      ],
+      "scenes": ["guilty", "relaxed", "derpy"],
+      "viralScore": 96,
+      "category": "dev-classic"
+    },
+    {
+      "id": "one_more_bug",
+      "pattern": "Fixed 1 bug. Created [N] more.",
+      "examples": [
+        "Fixed 1 bug. Created 3 more. As is tradition.",
+        "Task: Fix bug. Actual: Create bug family"
+      ],
+      "scenes": ["dramatic", "derpy", "scared"],
+      "viralScore": 94,
+      "category": "chaos"
+    },
+    {
+      "id": "meeting_could_email",
+      "pattern": "This meeting could have been an email 😤",
+      "examples": [
+        "Hour 2 of a meeting that could've been a Slack message",
+        "My face in unnecessary meetings:"
+      ],
+      "scenes": ["sleeping", "judging", "dramatic"],
+      "viralScore": 91,
+      "category": "relatable"
+    },
+    {
+      "id": "tests_passing",
+      "pattern": "ALL TESTS PASSING ✅✅✅",
+      "examples": [
+        "When all tests pass on first try 🎉",
+        "0 errors. 0 warnings. Is this real life?"
+      ],
+      "scenes": ["excited", "relaxed"],
+      "viralScore": 92,
+      "category": "celebration"
+    },
+    {
+      "id": "git_blame",
+      "pattern": "*runs git blame* Oh no. It was me.",
+      "examples": [
+        "git blame: It was you 6 months ago",
+        "Past me really said 'future me problem'"
+      ],
+      "scenes": ["guilty", "scared", "derpy"],
+      "viralScore": 95,
+      "category": "dev-classic"
+    },
+    {
+      "id": "semicolon",
+      "pattern": "The bug was a [small thing] 💀",
+      "examples": [
+        "The bug was a missing semicolon the whole time",
+        "2 hours. It was a typo. ONE TYPO."
+      ],
+      "scenes": ["dramatic", "derpy", "guilty"],
+      "viralScore": 94,
+      "category": "chaos"
+    },
+    {
+      "id": "legacy_code",
+      "pattern": "Opening legacy code like 👀",
+      "examples": [
+        "Me opening code from 2019:",
+        "This code has been here since before I was hired..."
+      ],
+      "scenes": ["scared", "staring", "judging"],
+      "viralScore": 93,
+      "category": "relatable"
+    },
+    {
+      "id": "no_documentation",
+      "pattern": "Documentation? What documentation? 📄",
+      "examples": [
+        "The documentation: *doesn't exist*",
+        "// TODO: add documentation (written in 2018)"
+      ],
+      "scenes": ["derpy", "scared", "judging"],
+      "viralScore": 92,
+      "category": "dev-classic"
+    },
+    {
+      "id": "keyboard_warrior",
+      "pattern": "Professional keyboard warrior 💻⌨️",
+      "examples": [
+        "Fixing bugs by sitting on the keyboard",
+        "Cat.exe contributing to open source"
+      ],
+      "scenes": ["sitting", "playing"],
+      "viralScore": 93,
+      "category": "cute"
+    },
+    {
+      "id": "sleep_is_overrated",
+      "pattern": "Sleep is for the weak (or so I tell myself)",
+      "examples": [
+        "Just one more commit... *3 hours later*",
+        "Who needs sleep when you have bugs to fix"
+      ],
+      "scenes": ["sleeping", "derpy"],
+      "viralScore": 90,
+      "category": "relatable"
+    },
+    {
+      "id": "imposter_syndrome",
+      "pattern": "Imposter syndrome hitting hard 🥺",
+      "examples": [
+        "Everyone else: Senior dev vibes\nMe:",
+        "Googling how to exit vim... again"
+      ],
+      "scenes": ["scared", "derpy", "guilty"],
+      "viralScore": 94,
+      "category": "relatable"
+    },
+    {
+      "id": "rubber_duck",
+      "pattern": "Explaining the bug to [pet] and suddenly getting it",
+      "examples": [
+        "My cat is the best rubber duck debugger",
+        "Talked to my dog about the bug. Fixed it."
+      ],
+      "scenes": ["staring", "sitting", "judging"],
+      "viralScore": 91,
+      "category": "cute"
+    },
+    {
+      "id": "feature_not_bug",
+      "pattern": "It's not a bug, it's a feature ✨",
+      "examples": [
+        "PM: This is broken\nMe: It's a feature",
+        "Unexpected behavior? Nah, undocumented feature."
+      ],
+      "scenes": ["relaxed", "derpy", "guilty"],
+      "viralScore": 95,
+      "category": "dev-classic"
+    },
+    {
+      "id": "commit_message",
+      "pattern": "git commit -m \"[funny message]\"",
+      "examples": [
+        "git commit -m \"please work\"",
+        "git commit -m \"idk what I changed but it works\""
+      ],
+      "scenes": ["guilty", "derpy", "scared"],
+      "viralScore": 94,
+      "category": "dev-classic"
+    },
+    {
+      "id": "sprint_planning",
+      "pattern": "Sprint planning be like: 📋",
+      "examples": [
+        "This will take 2 hours *takes 2 weeks*",
+        "Sprint goals vs Sprint reality"
+      ],
+      "scenes": ["dramatic", "scared", "derpy"],
+      "viralScore": 89,
+      "category": "relatable"
+    },
+    {
+      "id": "console_log",
+      "pattern": "console.log('[funny text]') 🔍",
+      "examples": [
+        "console.log('why are you like this')",
+        "console.log('HELP') x 47 times"
+      ],
+      "scenes": ["derpy", "dramatic", "scared"],
+      "viralScore": 93,
+      "category": "dev-classic"
+    },
+    {
+      "id": "rm_rf",
+      "pattern": "rm -rf / energy 💥",
+      "examples": [
+        "When you accidentally rm -rf the wrong folder",
+        "DELETE FROM users; // forgot WHERE clause"
+      ],
+      "scenes": ["guilty", "scared", "dramatic"],
+      "viralScore": 96,
+      "category": "chaos"
+    },
+    {
+      "id": "deploy_pray",
+      "pattern": "Deploy and pray 🙏",
+      "examples": [
+        "Deployed. Now we wait and hope.",
+        "*deploys* *prays* *refreshes obsessively*"
+      ],
+      "scenes": ["scared", "excited", "relaxed"],
+      "viralScore": 92,
+      "category": "relatable"
+    },
+    {
+      "id": "100_tabs",
+      "pattern": "[N] tabs open trying to fix one bug",
+      "examples": [
+        "47 Stack Overflow tabs for one error",
+        "My browser: 🔥 My code: still broken"
+      ],
+      "scenes": ["derpy", "dramatic", "sleeping"],
+      "viralScore": 93,
+      "category": "relatable"
+    },
+    {
+      "id": "quick_fix",
+      "pattern": "\"Quick fix\" that took [time]",
+      "examples": [
+        "Quick 5-minute fix *6 hours later*",
+        "It's just a small change... *famous last words*"
+      ],
+      "scenes": ["dramatic", "sleeping", "derpy"],
+      "viralScore": 94,
+      "category": "chaos"
+    },
+    {
+      "id": "error_message",
+      "pattern": "Error: [funny error]",
+      "examples": [
+        "Error: undefined is not a function (surprise!)",
+        "Error: Task failed successfully 🤷"
+      ],
+      "scenes": ["derpy", "dramatic", "scared"],
+      "viralScore": 95,
+      "category": "dev-classic"
+    },
+    {
+      "id": "pet_developer",
+      "pattern": "[pet] the 10x developer 💅",
+      "examples": [
+        "Senior developer energy right here",
+        "They write better code than me tbh"
+      ],
+      "scenes": ["sitting", "relaxed", "judging"],
+      "viralScore": 92,
+      "category": "cute"
+    },
+    {
+      "id": "fetch_success",
+      "pattern": "fetch() was SUCCESSFUL! 🐶🦴",
+      "examples": [
+        "await fetch('/treats') // 200 OK",
+        "Good boy successfully fetched the data"
+      ],
+      "scenes": ["playing", "excited"],
+      "viralScore": 94,
+      "category": "cute"
+    },
+    {
+      "id": "cat_exe",
+      "pattern": "cat.exe has stopped responding",
+      "examples": [
+        "cat.exe is not responding. Close program?",
+        "sudo restart cat.service // fails"
+      ],
+      "scenes": ["sleeping", "derpy", "staring"],
+      "viralScore": 95,
+      "category": "cute"
+    },
+    {
+      "id": "null_pointer",
+      "pattern": "NullPointerException at [pet].brain",
+      "examples": [
+        "Brain.exe returned null",
+        "Object reference not set: one brain cell"
+      ],
+      "scenes": ["derpy", "sleeping", "staring"],
+      "viralScore": 91,
+      "category": "chaos"
+    },
+    {
+      "id": "async_await",
+      "pattern": "await [pet].doTask() // never resolves",
+      "examples": [
+        "await cat.moveFromKeyboard() // timeout",
+        "Promise<treat> still pending..."
+      ],
+      "scenes": ["sleeping", "sitting", "relaxed"],
+      "viralScore": 93,
+      "category": "dev-classic"
+    },
+    {
+      "id": "infinite_loop",
+      "pattern": "while(true) { [action] } 🔄",
+      "examples": [
+        "while(true) { zoomies() }",
+        "while(hungry) { meow() } // infinite loop"
+      ],
+      "scenes": ["playing", "excited", "eating"],
+      "viralScore": 92,
+      "category": "cute"
+    },
+    {
+      "id": "push_force",
+      "pattern": "git push --force 💥",
+      "examples": [
+        "When in doubt, force push it out",
+        "--force: because regular push is for cowards"
+      ],
+      "scenes": ["guilty", "relaxed", "dramatic"],
+      "viralScore": 95,
+      "category": "chaos"
+    },
+    {
+      "id": "code_smell",
+      "pattern": "This code smells... 👃",
+      "examples": [
+        "Code reviewer: 'This smells funny'",
+        "*sniffs code* Something's not right here"
+      ],
+      "scenes": ["judging", "staring", "derpy"],
+      "viralScore": 90,
+      "category": "reaction"
+    },
+    {
+      "id": "refactor_later",
+      "pattern": "// TODO: refactor later (written [year])",
+      "examples": [
+        "// TODO: fix this - written 2019",
+        "// temporary solution (3 years old)"
+      ],
+      "scenes": ["guilty", "relaxed", "derpy"],
+      "viralScore": 94,
+      "category": "dev-classic"
+    },
+    {
+      "id": "spaghetti_code",
+      "pattern": "Spaghetti code is an art form 🍝",
+      "examples": [
+        "Me writing clean code vs legacy codebase:",
+        "The more indentation, the better, right?"
+      ],
+      "scenes": ["derpy", "dramatic", "guilty"],
+      "viralScore": 91,
+      "category": "chaos"
+    },
+    {
+      "id": "dependency_hell",
+      "pattern": "npm install hell 📦",
+      "examples": [
+        "69420 packages installed. 47 vulnerabilities.",
+        "node_modules heavier than the sun"
+      ],
+      "scenes": ["scared", "dramatic", "derpy"],
+      "viralScore": 93,
+      "category": "dev-classic"
+    },
+    {
+      "id": "rubber_duck_debug",
+      "pattern": "My pet > actual debugger",
+      "examples": [
+        "Rubber duck debugging but it's my cat",
+        "Explained the bug to my dog. Solved it."
+      ],
+      "scenes": ["staring", "sitting", "judging"],
+      "viralScore": 92,
+      "category": "cute"
+    },
+    {
+      "id": "pair_programming",
+      "pattern": "Pair programming with my [pet] 💻🐾",
+      "examples": [
+        "My cat: *sits on keyboard* I'm helping!",
+        "Best pair programming partner 10/10"
+      ],
+      "scenes": ["sitting", "playing", "staring"],
+      "viralScore": 94,
+      "category": "cute"
+    },
+    {
+      "id": "standup_vibe",
+      "pattern": "What I did yesterday: [same as today]",
+      "examples": [
+        "Yesterday: bugs. Today: same bugs. Tomorrow: probably bugs.",
+        "Standup: 'Still working on it' x 5 days"
+      ],
+      "scenes": ["sleeping", "derpy", "relaxed"],
+      "viralScore": 90,
+      "category": "relatable"
+    }
+  ],
+  "fillers": {
+    "times": ["Monday 9AM", "3AM", "Friday 4:59PM", "during standup", "right before demo", "after coffee", "during production outage"],
+    "actions": ["pushed to production", "deleted the database", "merged to main", "ran npm install", "closed 50 tabs", "fixed the bug", "created 5 new bugs"],
+    "triggers": ["'quick meeting'", "'tests passing'", "'production is down'", "'merge conflict'", "'code review'", "'treat time'", "'walkies'"],
+    "errors": ["undefined is not a function", "cannot read property of null", "stack overflow", "segfault", "out of memory", "connection timeout"]
+  },
+  "catSpecific": [
+    "cat.exe has stopped working 😹",
+    "sudo restart cat.service // permission denied 🐱",
+    "Keyboard cat reporting for duty ⌨️🐱",
+    "Meow fixed your bug (by sitting on it) 🐱🔧",
+    "cat.sleep() // runs forever 😹💤",
+    "Senior meow-veloper energy 💅🐱",
+    "HISS-ue tracking: bug found 🐱🔍",
+    "Purrfect code, no changes needed 😸",
+    "cat.interrupt(human.work) ✅",
+    "404: Zero f*cks given 🐱"
+  ],
+  "dogSpecific": [
+    "Good boy deployed to production 🐶🚀",
+    "await dog.fetch() // always returns! 🐶🦴",
+    "WOOF: Works Only On Friday 🐶💼",
+    "Dog.prototype.bestBoy = true 🐶",
+    "Tail-wagging driven development 🐶💻",
+    "Bark.js - the goodest framework 🐶",
+    "fetch('/treats').then(wag) 🐶🦴",
+    "Runtime: unlimited zoomies 🐶💨",
+    "git commit -m 'BORK BORK' 🐶",
+    "Very code. Much deploy. Wow. 🐶"
+  ]
+}

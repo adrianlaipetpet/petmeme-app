@@ -6,10 +6,12 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, storage } from '../config/firebase';
 import { useAuthStore } from '../store/authStore';
 import { useUIStore } from '../store/uiStore';
+import viralTemplates from '../data/viralTemplates.json';
 import {
   Image, Video, Camera, Sparkles, X, Plus, Hash,
   Type, Smile, Wand2, Loader2, Send, ChevronDown,
-  AlignLeft, AlignCenter, AlignRight, MoveUp, MoveDown
+  AlignLeft, AlignCenter, AlignRight, MoveUp, MoveDown,
+  Zap, RefreshCw
 } from 'lucide-react';
 
 // Behavior options for tagging
@@ -204,146 +206,177 @@ export default function Create() {
     return null;
   };
   
-  // Generate CODING-THEMED captions based on image analysis + pet profile 🐱🐶💻
-  const generateContextualCaptions = (petContext, imageContext) => {
-    const { petName, breed, behaviors } = petContext;
-    const petType = breed || 'pet';
-    const isCat = petType.toLowerCase().includes('cat') || petType.includes('🐱');
-    const isDog = petType.toLowerCase().includes('dog') || petType.includes('🐶');
+  // 🔥 VIRAL MEME GENERATOR ALGORITHM 🔥
+  // Uses template database + AI for maximum viral potential!
+  
+  // Get matching viral templates for the detected scene
+  const getMatchingTemplates = (scene, petType) => {
+    const templates = viralTemplates.templates || [];
     
+    // Filter templates that match the scene
+    const matchingTemplates = templates.filter(t => 
+      t.scenes && t.scenes.includes(scene)
+    );
+    
+    // Sort by viral score (higher = more viral)
+    matchingTemplates.sort((a, b) => (b.viralScore || 0) - (a.viralScore || 0));
+    
+    // Take top 5 matching templates
+    return matchingTemplates.slice(0, 5);
+  };
+  
+  // Fill template with pet-specific data
+  const fillTemplate = (template, petContext, scene) => {
+    const { petName, breed, behaviors } = petContext;
+    const isCat = breed?.toLowerCase().includes('cat') || petContext.petType === 'cat';
+    const isDog = breed?.toLowerCase().includes('dog') || petContext.petType === 'dog';
+    
+    // Pick a random example from the template
+    const examples = template.examples || [];
+    let caption = examples[Math.floor(Math.random() * examples.length)] || template.pattern;
+    
+    // Replace placeholders
+    caption = caption.replace(/\[name\]/gi, petName || (isCat ? 'Kitty' : 'Doggo'));
+    caption = caption.replace(/\[pet\]/gi, isCat ? 'cat' : isDog ? 'dog' : 'pet');
+    caption = caption.replace(/\[breed\]/gi, breed || (isCat ? 'cat' : 'dog'));
+    
+    // Replace time/action with random fillers
+    const fillers = viralTemplates.fillers || {};
+    if (caption.includes('[time]')) {
+      const times = fillers.times || ['3AM'];
+      caption = caption.replace(/\[time\]/gi, times[Math.floor(Math.random() * times.length)]);
+    }
+    if (caption.includes('[action]')) {
+      const actions = fillers.actions || ['pushed to production'];
+      caption = caption.replace(/\[action\]/gi, actions[Math.floor(Math.random() * actions.length)]);
+    }
+    if (caption.includes('[trigger]')) {
+      const triggers = fillers.triggers || ["'tests passing'"];
+      caption = caption.replace(/\[trigger\]/gi, triggers[Math.floor(Math.random() * triggers.length)]);
+    }
+    
+    // Add behavior-specific flavor
+    if (behaviors?.includes('dramatic')) {
+      caption = caption.replace('🔥', '🔥🎭');
+    }
+    if (behaviors?.includes('lazy')) {
+      caption = caption.replace('💻', '💻😴');
+    }
+    
+    return caption;
+  };
+  
+  // Get pet-specific viral captions
+  const getPetSpecificCaptions = (petContext) => {
+    const isCat = petContext.breed?.toLowerCase().includes('cat') || petContext.petType === 'cat';
+    const isDog = petContext.breed?.toLowerCase().includes('dog') || petContext.petType === 'dog';
+    const petName = petContext.petName || (isCat ? 'Kitty' : 'Doggo');
+    
+    if (isCat) {
+      return (viralTemplates.catSpecific || []).map(c => c.replace(/\[name\]/gi, petName));
+    } else if (isDog) {
+      return (viralTemplates.dogSpecific || []).map(c => c.replace(/\[name\]/gi, petName));
+    }
+    return [];
+  };
+  
+  // 🧠 MAIN VIRAL CAPTION GENERATOR - Template + AI powered!
+  const generateViralCaptions = async (petContext, imageContext) => {
+    const scene = imageContext?.scene || 'default';
     const captions = [];
     
-    // If AI provided a suggested caption, use it first!
-    if (imageContext?.suggested_caption) {
-      captions.push(imageContext.suggested_caption);
+    // 1️⃣ Get matching viral templates
+    const matchingTemplates = getMatchingTemplates(scene, petContext.petType);
+    
+    // 2️⃣ Fill templates with pet data
+    matchingTemplates.forEach(template => {
+      const filled = fillTemplate(template, petContext, scene);
+      if (filled && !captions.includes(filled)) {
+        captions.push(filled);
+      }
+    });
+    
+    // 3️⃣ Add pet-specific viral captions
+    const petCaptions = getPetSpecificCaptions(petContext);
+    // Pick 2 random pet-specific ones
+    const shuffledPet = petCaptions.sort(() => Math.random() - 0.5).slice(0, 2);
+    captions.push(...shuffledPet);
+    
+    // 4️⃣ Try AI enhancement if API key is available
+    const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+    if (apiKey && apiKey.startsWith('sk-or-') && mediaPreviews.length > 0) {
+      try {
+        console.log('🤖 Enhancing with AI...');
+        const imageData = mediaPreviews[0].url;
+        
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://lmeow.app',
+            'X-Title': 'Lmeow Meme Generator',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-3-flash-preview',
+            messages: [{
+              role: 'user',
+              content: [
+                {
+                  type: 'image_url',
+                  image_url: { url: imageData }
+                },
+                {
+                  type: 'text',
+                  text: `You are a viral pet meme generator. Look at this ${petContext.petType || 'pet'} photo.
+                  
+Pet name: ${petContext.petName || 'pet'}
+Breed: ${petContext.breed || 'unknown'}
+Behaviors: ${petContext.behaviors?.join(', ') || 'none specified'}
+Detected scene: ${scene}
+
+Generate 2 VIRAL meme captions that would go viral on social media. Make them:
+- SHORT (under 50 chars ideal, max 80)
+- FUNNY with programming/coding jokes (cats on keyboards, dogs fetching data, etc.)
+- Use emojis sparingly but effectively
+- Reference common dev experiences (bugs, deploys, code review, etc.)
+
+Output ONLY the 2 captions, one per line. No numbering, no explanations.`
+                }
+              ]
+            }],
+            max_tokens: 150,
+          }),
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const content = data.choices?.[0]?.message?.content?.trim();
+          if (content) {
+            const aiCaptions = content.split('\n').filter(c => c.trim().length > 0).slice(0, 2);
+            // Add AI captions at the TOP (they're usually best!)
+            captions.unshift(...aiCaptions);
+            console.log('✅ AI added captions:', aiCaptions);
+          }
+        }
+      } catch (error) {
+        console.log('AI enhancement skipped:', error.message);
+      }
     }
     
-    // If AI provided a funny element, create a caption from it
-    if (imageContext?.funny_element) {
-      captions.push(`${petName}: ${imageContext.funny_element} 😂`);
-    }
-    
-    // Generate scene-specific CODING MEME captions! 💻
-    const scene = imageContext?.scene || 'default';
-    
-    const sceneCaptions = {
-      sleeping: [
-        isCat ? `${petName}.exe has stopped working 😹💤` : `${petName}: Deployed to prod, time to nap 🐶💤`,
-        `${petName}: "Compiling... please wait" 💤`,
-        `Do not disturb: ${petName} is debugging in dreams 🔧`,
-        `WHEN THE BUILD FINALLY PASSES AT 3AM 😴`,
-        isCat ? `cat.sleep() // forever loop 😹` : `dog.napAfterDeploy() 🐶`,
-      ],
-      staring: [
-        `${petName} reviewing your code like 👀`,
-        isCat ? `"This code smells... meow" 🐱👀` : `"Who wrote this? WOOF!" 🐶👀`,
-        `POV: Your PR has been open for 2 weeks 😤`,
-        `${petName} found the bug. It was you. 🔍`,
-        `WHEN SOMEONE SAYS "WORKS ON MY MACHINE" 👁️👁️`,
-      ],
-      playing: [
-        isDog ? `FETCH() SUCCESSFUL! 🐶🦴` : `git push --force (YOLO!) 🐱💥`,
-        `Chaos mode: rm -rf / 💥`,
-        `${petName} when the tests finally pass 🎉`,
-        isCat ? `KEYBOARD CAT CODING SESSION 🐱⌨️` : `THE ZOOMIES HIT WHEN CI/CD GOES GREEN 🐶💨`,
-        `npm install happiness 📦`,
-      ],
-      eating: [
-        isDog ? `${petName} fetching() treats 🐶🦴` : `${petName}: "I need coffee to function" 🐱☕`,
-        `STACK OVERFLOW: TREAT NOT FOUND 404 🍗`,
-        `Refueling for another debugging session 🔋`,
-        isCat ? `caffeine.inject() // required 😹` : `const treats = await fetch('/snacks') 🐶`,
-        `${petName} speedrunning lunch.exe 🏆`,
-      ],
-      being_dramatic: [
-        `MERGE CONFLICT DETECTED 😱🔥`,
-        isCat ? `${petName} when there's a semicolon missing 🐱😤` : `${petName} when prod is down 🐶💀`,
-        `404: PATIENCE NOT FOUND 🎭`,
-        `THIS CODE REVIEW IS PERSONAL 😤`,
-        `*git blame intensifies* 👀`,
-      ],
-      derpy: [
-        isCat ? `${petName}.exe has stopped responding 🐱🤪` : `${petName}'s brain: undefined 🐶🤪`,
-        `WHEN YOU FORGET TO SAVE 💀`,
-        `One brain cell and it's writing JavaScript 🧠`,
-        isCat ? `meow.undefined() 😹` : `woof === woof // true 🐶`,
-        `console.log("help") 🆘`,
-      ],
-      guilty: [
-        isCat ? `${petName} after git push --force 🐱😬` : `${petName} after deleting prod database 🐶😱`,
-        `"It wasn't me" *git log says otherwise* 📸`,
-        `${petName} 5 seconds before the rollback 👀`,
-        isCat ? `rm -rf /* "oops" 😹` : `DROP TABLE users; "my bad" 🐶`,
-        `Caught in production logs 📸`,
-      ],
-      excited: [
-        isDog ? `TESTS PASSING! TAIL WAGGING! 🐶✅` : `MEOW FIXED THE BUG! 🐱🎉`,
-        `BEST. DEPLOY. EVER!!! 🚀`,
-        isCat ? `${petName} when PR is approved 🐱🎉` : `${petName} when the build is green 🐶💚`,
-        `Serotonin levels when no errors: 📈📈📈`,
-        `CI/CD is GREEN! PARTY TIME! 🎉`,
-      ],
-      scared: [
-        `${petName} heard "deploy on Friday" 😱`,
-        isCat ? `${petName} saw production logs 🐱💀` : `${petName} saw a merge conflict 🐶😰`,
-        `WHEN THE SENIOR DEV REVIEWS YOUR CODE 👀`,
-        `Bravery level: -100 (it's a prod issue) 😰`,
-        `"UNEXPECTED TOKEN" 😱`,
-      ],
-      sitting: [
-        isCat ? `FIXING YOUR CODE BY SITTING ON KEYBOARD 🐱⌨️` : `${petName}: Ready to debug 🐶💻`,
-        `Just vibing while code compiles ✨`,
-        `${petName} being the 10x engineer 📸`,
-        isCat ? `Keyboard cat on standby 🐱` : `Good boy ready to fetch() 🐶`,
-        `Senior developer energy 💅`,
-      ],
-      judging: [
-        `${petName} during code review 👀`,
-        isCat ? `"This code is... interesting" 🐱👀` : `"Who approved this PR?" 🐶🧐`,
-        `WORKS ON MY MACHINE - MEOW 💻`,
-        `${petName} judging your variable names 😤`,
-        `var x = "really?" 👀`,
-      ],
-      relaxed: [
-        `${petName}: Zero bugs, all chilling 😌`,
-        isCat ? `npm run relax 🐱✨` : `await pet.relax() 🐶✨`,
-        `DEPLOYED TO PROD SUCCESSFULLY. NOW VIBING. 😎`,
-        `${petName} after closing 100 tabs 💆`,
-        `Refactoring complete. Nap time. 💤`,
-      ],
-      default: [
-        isCat ? `${petName}: Senior Dev Energy 🐱💻` : `${petName}: Good Boy Developer 🐶💻`,
-        `WORKS ON MY MACHINE 💻🐾`,
-        isCat ? `Meow fixed your bug 🐱🔧` : `Woof deployed to production 🐶🚀`,
-        `Certified 10x pet developer 🏆`,
-        `${petName} said: console.log('🐾')`,
-      ],
-    };
-    
-    // Add scene-specific captions
-    const sceneList = sceneCaptions[scene] || sceneCaptions.default;
-    captions.push(...sceneList);
-    
-    // Add behavior-based captions
-    if (behaviors.includes('dramatic') && scene !== 'being_dramatic') {
-      captions.push(`${petName}: *makes everything dramatic* 🎭`);
-    }
-    if (behaviors.includes('foodie') && scene !== 'eating') {
-      captions.push(`${petName} is always thinking about food 🍗`);
-    }
-    if (behaviors.includes('zoomies') && scene !== 'playing') {
-      captions.push(`${petName} pre-zoomies energy building... 💨`);
-    }
-    if (behaviors.includes('lazy') && scene !== 'sleeping') {
-      captions.push(`${petName} will nap after this 😴`);
-    }
-    if (behaviors.includes('clingy')) {
-      captions.push(`${petName} won't let you leave their sight 🥺`);
-    }
-    
-    // Return unique captions, max 5
+    // 5️⃣ Dedupe and return top 5 viral captions
     const unique = [...new Set(captions)];
     return unique.slice(0, 5);
+  };
+  
+  // Legacy function for backwards compatibility
+  const generateContextualCaptions = (petContext, imageContext) => {
+    // This now just calls the viral generator synchronously with basic templates
+    const scene = imageContext?.scene || 'default';
+    const matchingTemplates = getMatchingTemplates(scene, petContext.petType);
+    const captions = matchingTemplates.map(t => fillTemplate(t, petContext, scene));
+    const petCaptions = getPetSpecificCaptions(petContext).slice(0, 2);
+    return [...new Set([...captions, ...petCaptions])].slice(0, 5);
   };
   
   const generateAICaptions = async (manualScenario = null) => {
@@ -356,7 +389,7 @@ export default function Create() {
     setShowScenarioSelector(false);
     
     try {
-      // Build context from pet profile
+      // Build context from pet profile + user behaviors
       const petContext = {
         petName: pet.name,
         petType: pet.type,
@@ -388,21 +421,19 @@ export default function Create() {
       // Log what AI detected (for debugging)
       if (imageContext?.scene) {
         console.log('🧠 AI detected scene:', imageContext.scene);
-        if (imageContext.funny_element) {
-          console.log('😂 Funny element:', imageContext.funny_element);
-        }
+        console.log('📊 Using viral template matching...');
       }
       
-      // Generate contextual captions
-      const suggestions = generateContextualCaptions(petContext, imageContext);
+      // 🔥 Use the NEW VIRAL GENERATOR! 🔥
+      const suggestions = await generateViralCaptions(petContext, imageContext);
       
       setAiSuggestions(suggestions);
       
-      // Auto-apply the FIRST suggestion as default overlay
+      // Auto-apply the BEST (first) suggestion as overlay
       if (suggestions.length > 0) {
         setTextOverlay(suggestions[0]);
         setCaption(suggestions[0]);
-        showToast('Caption generated! ✨', 'success');
+        showToast(`🔥 ${suggestions.length} viral captions ready!`, 'success');
       }
       
     } catch (error) {
@@ -410,6 +441,13 @@ export default function Create() {
       showToast('Could not generate suggestions', 'error');
     } finally {
       setIsGeneratingAI(false);
+    }
+  };
+  
+  // Regenerate captions with fresh templates
+  const regenerateCaptions = async () => {
+    if (selectedScenario || mediaPreviews.length > 0) {
+      await generateAICaptions(selectedScenario);
     }
   };
   
@@ -730,39 +768,57 @@ export default function Create() {
           </p>
         </div>
         
-        {/* AI Caption Generator */}
-        <div className="card p-4">
+        {/* 🔥 VIRAL AI Meme Generator 🔥 */}
+        <div className="card p-4 border-2 border-primary-200 dark:border-primary-800">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-accent-coral flex items-center justify-center">
-                <Wand2 className="w-4 h-4 text-white" />
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 via-accent-coral to-yellow-400 flex items-center justify-center animate-pulse">
+                <Zap className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="font-semibold text-petmeme-text dark:text-petmeme-text-dark">
-                  AI Meme Generator
+                <p className="font-bold text-petmeme-text dark:text-petmeme-text-dark flex items-center gap-2">
+                  🔥 Viral Meme Generator
+                  <span className="text-xs bg-gradient-to-r from-primary-500 to-accent-coral text-white px-2 py-0.5 rounded-full">
+                    AI + 50 Templates
+                  </span>
                 </p>
                 <p className="text-xs text-petmeme-muted">
-                  Get caption ideas based on your pet
+                  Powered by viral meme patterns that get shares!
                 </p>
               </div>
             </div>
-            
+          </div>
+          
+          {/* Action buttons */}
+          <div className="flex gap-2 mb-4">
             <motion.button
               whileTap={{ scale: 0.95 }}
-              onClick={generateAICaptions}
+              onClick={() => generateAICaptions()}
               disabled={isGeneratingAI}
-              className="btn-secondary flex items-center gap-2 text-sm disabled:opacity-50"
+              className="flex-1 btn-primary flex items-center justify-center gap-2 text-sm disabled:opacity-50"
             >
               {isGeneratingAI ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Sparkles className="w-4 h-4" />
               )}
-              Generate
+              {aiSuggestions.length > 0 ? 'Generate More' : 'Generate Viral Captions'}
             </motion.button>
+            
+            {aiSuggestions.length > 0 && (
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={regenerateCaptions}
+                disabled={isGeneratingAI}
+                className="btn-secondary flex items-center gap-2 text-sm disabled:opacity-50 px-4"
+                title="Get fresh variations"
+              >
+                <RefreshCw className={`w-4 h-4 ${isGeneratingAI ? 'animate-spin' : ''}`} />
+              </motion.button>
+            )}
           </div>
           
-          {/* AI Suggestions */}
+          {/* Viral Caption Variations */}
           <AnimatePresence>
             {aiSuggestions.length > 0 && (
               <motion.div
@@ -771,41 +827,54 @@ export default function Create() {
                 exit={{ opacity: 0, height: 0 }}
                 className="space-y-2"
               >
-                <p className="text-xs text-petmeme-muted mb-2">
-                  Tap to apply as overlay, or use as caption:
-                </p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-petmeme-muted flex items-center gap-1">
+                    <span>🎯</span> Pick your favorite variation:
+                  </p>
+                  <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full">
+                    {aiSuggestions.length} options
+                  </span>
+                </div>
                 {aiSuggestions.map((suggestion, index) => (
                   <motion.div
-                    key={index}
-                    initial={{ opacity: 0, x: -10 }}
+                    key={`${suggestion}-${index}`}
+                    initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
+                    transition={{ delay: index * 0.08 }}
                     className="flex gap-2"
                   >
                     <button
                       onClick={() => {
                         setTextOverlay(suggestion);
-                        setShowOverlayEditor(true);
-                        showToast('Applied as overlay! ✨', 'success');
-                      }}
-                      className="flex-1 text-left p-3 bg-gradient-to-r from-primary-50 to-transparent dark:from-primary-900/20 rounded-xl text-sm text-petmeme-text dark:text-petmeme-text-dark hover:from-primary-100 dark:hover:from-primary-900/30 transition-colors"
-                    >
-                      <span className="flex items-center gap-2">
-                        <Type className="w-4 h-4 text-primary-500 flex-shrink-0" />
-                        {suggestion}
-                      </span>
-                    </button>
-                    <button
-                      onClick={() => {
                         setCaption(suggestion);
-                        showToast('Added to caption!', 'success');
+                        setShowOverlayEditor(true);
+                        showToast(`Applied variation ${index + 1}! 🔥`, 'success');
                       }}
-                      className="px-3 bg-gray-100 dark:bg-gray-800 rounded-xl text-xs text-petmeme-muted hover:bg-gray-200 dark:hover:bg-gray-700 flex-shrink-0"
+                      className={`flex-1 text-left p-3 rounded-xl text-sm transition-all border-2 ${
+                        textOverlay === suggestion 
+                          ? 'bg-primary-100 dark:bg-primary-900/40 border-primary-500 text-petmeme-text dark:text-petmeme-text-dark' 
+                          : 'bg-gradient-to-r from-primary-50 to-transparent dark:from-primary-900/20 border-transparent hover:border-primary-300 dark:hover:border-primary-700 text-petmeme-text dark:text-petmeme-text-dark'
+                      }`}
                     >
-                      Caption
+                      <span className="flex items-start gap-2">
+                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                          textOverlay === suggestion 
+                            ? 'bg-primary-500 text-white' 
+                            : 'bg-primary-200 dark:bg-primary-800 text-primary-600 dark:text-primary-400'
+                        }`}>
+                          {index + 1}
+                        </span>
+                        <span className="leading-snug">{suggestion}</span>
+                      </span>
                     </button>
                   </motion.div>
                 ))}
+                
+                {/* Quick action hint */}
+                <p className="text-xs text-center text-petmeme-muted mt-3 flex items-center justify-center gap-2">
+                  <RefreshCw className="w-3 h-3" />
+                  Tap refresh above for more viral options!
+                </p>
               </motion.div>
             )}
           </AnimatePresence>
