@@ -15,7 +15,8 @@ import {
   arrayRemove,
   addDoc,
   serverTimestamp,
-  getDoc
+  getDoc,
+  deleteDoc
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
@@ -46,10 +47,96 @@ export const useFeedStore = create((set, get) => ({
     )
   })),
   
-  // Remove post
+  // Remove post from local state
   removePost: (postId) => set((state) => ({
     posts: state.posts.filter(post => post.id !== postId)
   })),
+  
+  // Soft delete post (moves to trash, can be restored)
+  deletePost: async (postId) => {
+    try {
+      console.log('🗑️ Soft deleting post:', postId);
+      
+      // Soft delete - add deleted flag instead of removing
+      const postRef = doc(db, 'posts', postId);
+      await updateDoc(postRef, {
+        deleted: true,
+        deletedAt: serverTimestamp(),
+      });
+      
+      // Remove from local state (but still exists in Firestore)
+      set((state) => ({
+        posts: state.posts.filter(post => post.id !== postId)
+      }));
+      
+      console.log('✅ Post moved to trash');
+      return true;
+    } catch (error) {
+      console.error('❌ Error deleting post:', error);
+      return false;
+    }
+  },
+  
+  // Restore a deleted post
+  restorePost: async (postId) => {
+    try {
+      console.log('♻️ Restoring post:', postId);
+      
+      const postRef = doc(db, 'posts', postId);
+      await updateDoc(postRef, {
+        deleted: false,
+        deletedAt: null,
+      });
+      
+      console.log('✅ Post restored');
+      return true;
+    } catch (error) {
+      console.error('❌ Error restoring post:', error);
+      return false;
+    }
+  },
+  
+  // Permanently delete a post (cannot be undone!)
+  permanentlyDeletePost: async (postId) => {
+    try {
+      console.log('🔥 Permanently deleting post:', postId);
+      
+      const postRef = doc(db, 'posts', postId);
+      await deleteDoc(postRef);
+      
+      console.log('✅ Post permanently deleted');
+      return true;
+    } catch (error) {
+      console.error('❌ Error permanently deleting post:', error);
+      return false;
+    }
+  },
+  
+  // Load deleted posts (trash) for a user
+  loadDeletedPosts: async (userId) => {
+    try {
+      const postsRef = collection(db, 'posts');
+      const q = query(
+        postsRef,
+        where('ownerId', '==', userId),
+        where('deleted', '==', true),
+        limit(50)
+      );
+      
+      const snapshot = await getDocs(q);
+      const deletedPosts = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() || new Date(),
+        deletedAt: doc.data().deletedAt?.toDate() || new Date(),
+      }));
+      
+      return deletedPosts;
+    } catch (error) {
+      console.error('Error loading deleted posts:', error);
+      return [];
+    }
+  },
   
   // Toggle like on a post (with optional Firestore sync)
   // If userId is null, it's demo mode - just update locally
@@ -150,53 +237,27 @@ export const useFeedStore = create((set, get) => ({
   
   // Load posts from Firestore (with pagination)
   loadPosts: async (isInitial = false, userId = null) => {
-    const state = get();
-    if (state.isLoading) return;
+    console.log('🔥🔥🔥 loadPosts called! isInitial:', isInitial);
     
+    // Don't skip if loading - let it run
     set({ isLoading: true });
     
     try {
+      console.log('🔥 feedStore: Starting Firestore query...');
+      
       const postsRef = collection(db, 'posts');
-      let q;
       
-      // Build query based on active tab
-      switch (state.activeTab) {
-        case 'trending':
-          // Trending: order by like count
-          q = query(
-            postsRef,
-            orderBy('likeCount', 'desc'),
-            limit(POSTS_PER_PAGE)
-          );
-          break;
-        case 'following':
-          // Following: would need a following list, for now just show recent
-          // TODO: Add following functionality
-          q = query(
-            postsRef,
-            orderBy('createdAt', 'desc'),
-            limit(POSTS_PER_PAGE)
-          );
-          break;
-        default: // 'foryou'
-          q = query(
-            postsRef,
-            orderBy('createdAt', 'desc'),
-            limit(POSTS_PER_PAGE)
-          );
-      }
-      
-      // Add pagination cursor
-      if (!isInitial && state.lastDoc) {
-        q = query(
-          collection(db, 'posts'),
-          orderBy(state.activeTab === 'trending' ? 'likeCount' : 'createdAt', 'desc'),
-          startAfter(state.lastDoc),
-          limit(POSTS_PER_PAGE)
-        );
-      }
+      // Super simple query - no filters, no orderBy
+      const q = query(postsRef, limit(20));
+      console.log('🔥 feedStore: Executing query...');
       
       const snapshot = await getDocs(q);
+      console.log('🔥🔥🔥 feedStore: Got', snapshot.docs.length, 'documents from Firestore!');
+      
+      // Log each document ID
+      snapshot.docs.forEach((doc, i) => {
+        console.log(`📄 Doc ${i}:`, doc.id);
+      });
       
       const newPosts = snapshot.docs.map(doc => {
         const data = doc.data();
@@ -209,6 +270,9 @@ export const useFeedStore = create((set, get) => ({
           isLiked: userId ? (data.likedBy || []).includes(userId) : false,
         };
       });
+      
+      // Sort by createdAt in memory (newest first)
+      newPosts.sort((a, b) => b.createdAt - a.createdAt);
       
       const lastDoc = snapshot.docs[snapshot.docs.length - 1] || null;
       
@@ -226,41 +290,53 @@ export const useFeedStore = create((set, get) => ({
         }));
       }
       
+      console.log('🔥🔥🔥 Returning', newPosts.length, 'posts to Home');
       return newPosts;
     } catch (error) {
-      console.error('Error loading posts from Firestore:', error);
+      console.error('❌ feedStore: Error loading posts from Firestore:', error);
+      console.error('❌ Error code:', error.code);
+      console.error('❌ Error message:', error.message);
       return [];
     } finally {
       set({ isLoading: false });
     }
   },
   
-  // Subscribe to real-time updates (optional - for live feed)
+  // Subscribe to real-time updates (live feed - updates automatically!)
+  // Filters out deleted posts
   subscribeToFeed: (userId = null) => {
     const { unsubscribe: existingUnsub } = get();
     if (existingUnsub) existingUnsub();
     
+    console.log('🔴 Setting up real-time feed listener...');
+    
     const postsRef = collection(db, 'posts');
-    const q = query(
-      postsRef,
-      orderBy('createdAt', 'desc'),
-      limit(20)
-    );
+    // Simple query without orderBy to avoid index requirement
+    const q = query(postsRef, limit(50));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const posts = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate() || new Date(),
-          isLiked: userId ? (data.likedBy || []).includes(userId) : false,
-        };
-      });
+      console.log('🔴 Real-time update: got', snapshot.docs.length, 'posts');
       
-      set({ posts, isLoading: false });
+      const posts = snapshot.docs
+        .map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate() || new Date(),
+            isLiked: userId ? (data.likedBy || []).includes(userId) : false,
+          };
+        })
+        // Filter out deleted posts
+        .filter(post => !post.deleted);
+      
+      // Sort by createdAt in memory (newest first)
+      posts.sort((a, b) => b.createdAt - a.createdAt);
+      
+      console.log('🔴 Showing', posts.length, 'active posts (deleted filtered out)');
+      set({ posts, isLoading: false, hasMore: posts.length >= 30 });
     }, (error) => {
-      console.error('Real-time feed error:', error);
+      console.error('❌ Real-time feed error:', error);
     });
     
     set({ unsubscribe });
@@ -268,24 +344,32 @@ export const useFeedStore = create((set, get) => ({
   },
   
   // Load posts by user ID (for profile page)
+  // Note: Uses simple query to avoid index requirements
+  // Filters out deleted posts
   loadUserPosts: async (userId) => {
     set({ isLoading: true });
     
     try {
       const postsRef = collection(db, 'posts');
+      // Simple query without orderBy to avoid index requirement
       const q = query(
         postsRef,
         where('ownerId', '==', userId),
-        orderBy('createdAt', 'desc'),
-        limit(20)
+        limit(50)
       );
       
       const snapshot = await getDocs(q);
-      const posts = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-      }));
+      const posts = snapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate() || new Date(),
+        }))
+        // Filter out deleted posts
+        .filter(post => !post.deleted);
+      
+      // Sort in memory instead of in query (avoids index)
+      posts.sort((a, b) => b.createdAt - a.createdAt);
       
       return posts;
     } catch (error) {

@@ -489,6 +489,32 @@ export const demoProfiles = {
     badges: ['brave', 'chaos'],
     petType: 'dog',
   },
+  pet7: {
+    id: 'pet7',
+    name: 'NightOwl Kitty',
+    type: '🐱 Cat',
+    breed: 'Siamese',
+    behaviors: ['nocturnal', 'focused', 'genius'],
+    photoURL: catImages.profile2,
+    bio: "🌙 Night shift developer | Best bugs found at 3AM | Caffeine-powered coding machine ☕",
+    stats: { posts: 89, likes: 141420, followers: 32000, following: 189 },
+    viralScore: 8.7,
+    badges: ['nightowl', 'coder'],
+    petType: 'cat',
+  },
+  pet8: {
+    id: 'pet8',
+    name: 'Copy Paste Pup',
+    type: '🐶 Dog',
+    breed: 'Beagle',
+    behaviors: ['clever', 'efficient', 'genius'],
+    photoURL: dogImages.profile2,
+    bio: "📋 Stack Overflow Expert | Copy + Paste + Pray = Production | Senior Google Engineer 🔍",
+    stats: { posts: 234, likes: 999990, followers: 156000, following: 42 },
+    viralScore: 9.5,
+    badges: ['viral', 'stackoverflow'],
+    petType: 'dog',
+  },
 };
 
 // Challenge winners (balanced cats & dogs)

@@ -26,59 +26,53 @@ export default function Home() {
     setLoading, 
     activeTab,
     loadPosts,
-    subscribeToFeed
+    subscribeToFeed,
+    updatePost
   } = useFeedStore();
   const { user, pet } = useAuthStore();
   const [initialLoaded, setInitialLoaded] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   
-  // Load initial posts
+  // Subscribe to real-time feed updates
   useEffect(() => {
     if (!initialLoaded) {
-      loadInitialPosts();
+      console.log('🏠 Home: Setting up real-time feed...');
+      // Use real-time listener for live updates
+      subscribeToFeed(user?.uid);
       setInitialLoaded(true);
+      setIsDemo(false);
     }
     
     // Cleanup subscription on unmount
     return () => {
       const { unsubscribe } = useFeedStore.getState();
-      if (unsubscribe) unsubscribe();
+      if (unsubscribe) {
+        console.log('🏠 Home: Cleaning up feed listener');
+        unsubscribe();
+      }
     };
-  }, []);
+  }, [user?.uid]);
   
   // Reset when tab changes
   useEffect(() => {
     if (initialLoaded) {
-      loadInitialPosts();
+      subscribeToFeed(user?.uid);
     }
   }, [activeTab]);
   
-  const loadInitialPosts = async () => {
-    setLoading(true);
-    setIsDemo(false);
-    
-    try {
-      // Try to load from Firestore first
-      const firestorePosts = await loadPosts(true, user?.uid);
-      
-      // If no posts in Firestore, show demo data
-      if (!firestorePosts || firestorePosts.length === 0) {
-        console.log('📦 No Firestore posts, using demo data');
+  // Fallback to demo data if real-time listener has no posts after timeout
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (posts.length === 0 && !isLoading) {
+        console.log('📦 No posts after timeout, showing demo data');
         setIsDemo(true);
-        // Add slight delay for better UX
-        await new Promise(resolve => setTimeout(resolve, 300));
         setPosts(demoPosts);
       }
-    } catch (error) {
-      console.error('Error loading posts:', error);
-      // Fallback to demo data on error
-      setIsDemo(true);
-      setPosts(demoPosts);
-    } finally {
-      setLoading(false);
-    }
-  };
+    }, 3000);
+    
+    return () => clearTimeout(timeout);
+  }, [posts.length, isLoading]);
   
   const fetchMore = useCallback(async () => {
     if (isLoading || !hasMore) return;
@@ -97,16 +91,17 @@ export default function Home() {
       setPosts([...posts, ...morePosts]);
       setLoading(false);
     } else {
-      // Load more from Firestore
-      await loadPosts(false, user?.uid);
+      // With real-time listener, we already have all posts
+      // Could implement pagination here if needed
+      console.log('📜 Infinite scroll - all posts already loaded via real-time');
     }
-  }, [isLoading, hasMore, isDemo, posts, user?.uid]);
+  }, [isLoading, hasMore, isDemo, posts]);
   
-  // Pull to refresh
+  // Pull to refresh - re-subscribe to get fresh data
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadInitialPosts();
-    setRefreshing(false);
+    subscribeToFeed(user?.uid);
+    setTimeout(() => setRefreshing(false), 1000);
   };
   
   return (

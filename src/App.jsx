@@ -1,7 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from './config/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from './config/firebase';
 import { useAuthStore } from './store/authStore';
 import { useUIStore } from './store/uiStore';
 
@@ -38,21 +39,46 @@ function App() {
   
   // Listen to Firebase auth state
   useEffect(() => {
+    const { setPet } = useAuthStore.getState();
+    
     // Timeout to prevent infinite loading if Firebase isn't configured
     const timeout = setTimeout(() => {
       setLoading(false);
     }, 2000);
     
     try {
-      const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         clearTimeout(timeout);
         if (firebaseUser) {
+          // Set the user first
           setUser({
             uid: firebaseUser.uid,
             email: firebaseUser.email,
             displayName: firebaseUser.displayName,
             photoURL: firebaseUser.photoURL,
           });
+          
+          // Check if this user has a pet in Firestore (not just localStorage)
+          // This prevents demo data from carrying over to real accounts
+          try {
+            const petDoc = await getDoc(doc(db, 'pets', firebaseUser.uid));
+            if (petDoc.exists()) {
+              // Real user with real pet data - use Firestore data
+              const petData = petDoc.data();
+              setPet({ id: petDoc.id, ...petData });
+            } else {
+              // Real user but no pet in Firestore - clear any demo data
+              // This forces them to go through onboarding
+              const currentPet = useAuthStore.getState().pet;
+              if (currentPet?.id !== firebaseUser.uid) {
+                // The stored pet doesn't match this user - clear it
+                setPet(null);
+              }
+            }
+          } catch (error) {
+            console.log('Could not fetch pet from Firestore:', error.message);
+            // Keep existing behavior if Firestore fails
+          }
         } else {
           setUser(null);
         }

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 import {
   ArrowLeft, Heart, MessageCircle, Share2, Bookmark,
   Send, MoreHorizontal, Flag, Play, Pause, ChevronDown, ChevronUp,
@@ -34,57 +36,119 @@ export default function PostDetail() {
   const { pet } = useAuthStore();
   const { showToast } = useUIStore();
   
+  const { loadComments, addComment } = useFeedStore();
+  
   const [post, setPost] = useState(null);
-  const [comments, setComments] = useState(demoComments);
+  const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
+  const [loadingComments, setLoadingComments] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [expandedReplies, setExpandedReplies] = useState({});
   const [replyingTo, setReplyingTo] = useState(null);
   
   useEffect(() => {
-    // Find post from store first
-    let foundPost = posts.find(p => p.id === postId);
-    
-    // If not in store, find in demo posts
-    if (!foundPost) {
+    const loadPost = async () => {
+      console.log('📄 PostDetail: Loading post', postId);
+      
+      // 1. Try to find in feedStore first (already loaded)
+      let foundPost = posts.find(p => p.id === postId);
+      
+      if (foundPost) {
+        console.log('✅ Found post in feedStore');
+        setPost(foundPost);
+        return;
+      }
+      
+      // 2. Try to fetch from Firestore directly
+      try {
+        console.log('🔥 Fetching post from Firestore...');
+        const postDoc = await getDoc(doc(db, 'posts', postId));
+        
+        if (postDoc.exists()) {
+          const data = postDoc.data();
+          foundPost = {
+            id: postDoc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate() || new Date(),
+          };
+          console.log('✅ Found post in Firestore:', foundPost);
+          setPost(foundPost);
+          return;
+        }
+      } catch (error) {
+        console.error('Error fetching post from Firestore:', error);
+      }
+      
+      // 3. Try demo posts as fallback
       foundPost = demoPosts.find(p => p.id === postId);
-    }
+      if (foundPost) {
+        console.log('📦 Found post in demo data');
+        setPost(foundPost);
+        return;
+      }
+      
+      // 4. Ultimate fallback - first demo post
+      console.log('⚠️ Post not found, using fallback');
+      if (demoPosts.length > 0) {
+        setPost({ ...demoPosts[0], id: postId });
+      }
+    };
     
-    // Fallback to first demo post
-    if (!foundPost && demoPosts.length > 0) {
-      foundPost = { ...demoPosts[0], id: postId };
-    }
-    
-    if (foundPost) {
-      setPost(foundPost);
-    } else {
-      // Ultimate fallback
-      setPost({
-        id: postId,
-        type: 'image',
-        mediaUrl: reliableImages.post1,
-        caption: "When mom says 'treat' but she's just testing you 😤",
-        pet: { 
-          id: 'pet1',
-          name: 'Whiskers', 
-          breed: 'Orange Tabby', 
-          photoUrl: reliableImages.avatar1,
-        },
-        behaviors: ['dramatic', 'foodie'],
-        hashtags: ['catfails', 'dramaticpets'],
-        likeCount: 2847,
-        commentCount: 156,
-        shareCount: 89,
-        isLiked: false,
-        isBookmarked: false,
-      });
-    }
+    loadPost();
   }, [postId, posts]);
+  
+  // Load comments from Firestore
+  useEffect(() => {
+    const fetchComments = async () => {
+      if (!postId) return;
+      
+      setLoadingComments(true);
+      try {
+        const firestoreComments = await loadComments(postId);
+        if (firestoreComments && firestoreComments.length > 0) {
+          // Transform Firestore comments to match our format
+          const formattedComments = firestoreComments.map(c => ({
+            id: c.id,
+            user: {
+              name: c.petName || 'Anonymous',
+              avatar: c.petPhotoUrl || reliableImages.avatar1,
+            },
+            text: c.text,
+            likeCount: c.likeCount || 0,
+            timeAgo: getTimeAgo(c.createdAt),
+            replies: [],
+          }));
+          setComments(formattedComments);
+        } else {
+          // Fall back to demo comments if no real comments
+          setComments(demoComments);
+        }
+      } catch (error) {
+        console.error('Error loading comments:', error);
+        setComments(demoComments);
+      } finally {
+        setLoadingComments(false);
+      }
+    };
+    
+    fetchComments();
+  }, [postId, loadComments]);
+  
+  // Helper to format time ago
+  const getTimeAgo = (date) => {
+    if (!date) return 'just now';
+    const seconds = Math.floor((new Date() - date) / 1000);
+    if (seconds < 60) return 'just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
+    return `${Math.floor(seconds / 86400)}d`;
+  };
   
   const handleLike = () => {
     if (post) {
-      toggleLike(post.id);
+      const { user } = useAuthStore.getState();
+      toggleLike(post.id, user?.uid);
       setPost(prev => ({
         ...prev,
         isLiked: !prev.isLiked,
@@ -141,35 +205,52 @@ export default function PostDetail() {
     }
   };
   
-  const handleSubmitComment = () => {
-    if (!newComment.trim()) return;
+  const handleSubmitComment = async () => {
+    if (!newComment.trim() || !post) return;
     
-    const comment = {
+    const commentText = newComment.trim();
+    setNewComment(''); // Clear input immediately for better UX
+    
+    // Create optimistic comment for instant UI update
+    const optimisticComment = {
       id: Date.now().toString(),
       user: { 
         name: pet?.name || 'You', 
         avatar: pet?.photoURL || reliableImages.avatar1
       },
-      text: newComment.trim(),
+      text: commentText,
       likeCount: 0,
-      timeAgo: 'now',
+      timeAgo: 'just now',
       replies: [],
     };
     
     if (replyingTo) {
       setComments(prev => prev.map(c => {
         if (c.id === replyingTo) {
-          return { ...c, replies: [...c.replies, { ...comment, id: `${c.id}-${comment.id}` }] };
+          return { ...c, replies: [...c.replies, { ...optimisticComment, id: `${c.id}-${optimisticComment.id}` }] };
         }
         return c;
       }));
       setReplyingTo(null);
     } else {
-      setComments(prev => [comment, ...prev]);
+      setComments(prev => [optimisticComment, ...prev]);
     }
     
-    setNewComment('');
-    showToast('Comment posted!', 'success');
+    // Save to Firestore
+    try {
+      const { user } = useAuthStore.getState();
+      await addComment(
+        post.id,
+        user?.uid,
+        pet?.name || 'Anonymous',
+        pet?.photoURL || null,
+        commentText
+      );
+      showToast('Comment posted! 💬', 'success');
+    } catch (error) {
+      console.error('Error posting comment:', error);
+      showToast('Failed to post comment', 'error');
+    }
   };
   
   const toggleReplies = (commentId) => {
