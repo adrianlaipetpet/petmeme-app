@@ -826,7 +826,7 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
         <div className="card p-4">
           <label className="flex items-center gap-2 text-sm font-medium text-petmeme-text dark:text-petmeme-text-dark mb-3">
             <Type className="w-4 h-4" />
-            Text Overlay (optional)
+            Text Overlay <span className="text-petmeme-muted font-normal">(optional)</span>
           </label>
           <input
             type="text"
