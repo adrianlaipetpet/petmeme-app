@@ -121,6 +121,7 @@ export default function FeedCard({ post, isDemo = false }) {
   };
   
   // Handle repost with optimistic UI and animation
+  // Now properly toggles between repost and unrepost
   const handleRepost = async () => {
     if (isDemo) {
       showToast('Login to repost! 🔐', 'info');
@@ -135,22 +136,8 @@ export default function FeedCard({ post, isDemo = false }) {
     // Get the original post ID (if this is already a repost, get its originalPostId)
     const originalId = isRepost ? post.originalPostId : post.id;
     
-    // If already reposted, undo it
-    if (hasReposted) {
-      setIsReposting(true);
-      const result = await undoRepost(originalId, user.uid);
-      setIsReposting(false);
-      
-      if (result.success) {
-        showToast('Repost removed 🗑️', 'info');
-      } else {
-        showToast(result.error || 'Failed to remove repost', 'error');
-      }
-      return;
-    }
-    
     // Don't repost your own post
-    const originalOwnerId = isRepost ? post.originalPost?.pet?.id : post.pet?.id;
+    const originalOwnerId = isRepost ? (post.originalPost?.pet?.id || post.originalPost?.ownerId) : (post.pet?.id || post.ownerId);
     if (originalOwnerId === user.uid) {
       showToast("Can't repost your own meme! 😹", 'info');
       return;
@@ -158,6 +145,23 @@ export default function FeedCard({ post, isDemo = false }) {
     
     setIsReposting(true);
     
+    // If already reposted (based on local state OR post flag), undo it
+    if (hasReposted) {
+      const result = await undoRepost(originalId, user.uid);
+      setIsReposting(false);
+      
+      if (result.success) {
+        showToast('Repost removed 🗑️', 'info');
+      } else if (result.error === 'No repost found') {
+        // State was out of sync, just refresh
+        showToast('Repost already removed', 'info');
+      } else {
+        showToast(result.error || 'Failed to remove repost', 'error');
+      }
+      return;
+    }
+    
+    // Try to repost
     const result = await repostPost(originalId, {
       id: user.uid,
       name: pet.name || 'Anonymous',
@@ -171,6 +175,9 @@ export default function FeedCard({ post, isDemo = false }) {
       setShowRepostSuccess(true);
       setTimeout(() => setShowRepostSuccess(false), 1500);
       showToast('Reposted! 🚀 Your followers will see this!', 'success');
+    } else if (result.error === 'Already reposted') {
+      // State was out of sync but they already have it - that's fine!
+      showToast('You already reposted this! 🔄', 'info');
     } else {
       showToast(result.error || 'Repost failed', 'error');
     }
