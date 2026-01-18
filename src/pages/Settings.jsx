@@ -172,12 +172,17 @@ export default function Settings() {
   };
   
   const toggleBehavior = (behaviorId) => {
-    setEditData(prev => ({
-      ...prev,
-      behaviors: prev.behaviors.includes(behaviorId)
-        ? prev.behaviors.filter(b => b !== behaviorId)
-        : [...prev.behaviors, behaviorId],
-    }));
+    setEditData(prev => {
+      const currentBehaviors = Array.isArray(prev.behaviors) ? prev.behaviors : [];
+      const isSelected = currentBehaviors.includes(behaviorId);
+      
+      return {
+        ...prev,
+        behaviors: isSelected
+          ? currentBehaviors.filter(b => b !== behaviorId)
+          : [...currentBehaviors, behaviorId],
+      };
+    });
   };
   
   const languages = [
@@ -611,23 +616,30 @@ export default function Settings() {
                     Select up to 5 that best describe your pet
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {behaviorOptions.map((behavior) => (
-                      <button
-                        key={behavior.id}
-                        onClick={() => toggleBehavior(behavior.id)}
-                        disabled={!editData.behaviors.includes(behavior.id) && editData.behaviors.length >= 5}
-                        className={`badge-behavior transition-all ${
-                          editData.behaviors.includes(behavior.id)
-                            ? 'bg-primary-100 dark:bg-primary-900/40 border-primary-500 ring-2 ring-primary-500/30'
-                            : editData.behaviors.length >= 5
-                            ? 'opacity-50 cursor-not-allowed'
-                            : ''
-                        }`}
-                      >
-                        <span>{behavior.emoji}</span>
-                        <span>{behavior.label}</span>
-                      </button>
-                    ))}
+                    {behaviorOptions.map((behavior) => {
+                      const behaviors = Array.isArray(editData.behaviors) ? editData.behaviors : [];
+                      const isSelected = behaviors.includes(behavior.id);
+                      const isMaxed = behaviors.length >= 5;
+                      
+                      return (
+                        <button
+                          key={behavior.id}
+                          type="button"
+                          onClick={() => toggleBehavior(behavior.id)}
+                          disabled={!isSelected && isMaxed}
+                          className={`badge-behavior transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-primary-100 dark:bg-primary-900/40 border-primary-500 ring-2 ring-primary-500/30'
+                              : isMaxed
+                              ? 'opacity-50 cursor-not-allowed'
+                              : 'hover:border-primary-400'
+                          }`}
+                        >
+                          <span>{behavior.emoji}</span>
+                          <span>{behavior.label}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
