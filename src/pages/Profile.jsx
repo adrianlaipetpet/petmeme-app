@@ -471,6 +471,19 @@ export default function Profile() {
                   />
                 )}
                 
+                {/* Meme text overlay on grid thumbnails */}
+                {(post.memeText || post.textOverlay) && (
+                  <div className={`absolute left-0 right-0 text-center px-1 pointer-events-none ${
+                    post.memeText?.top ? 'top-1' :
+                    post.memeText?.center ? 'top-1/2 -translate-y-1/2' :
+                    'bottom-1'
+                  }`}>
+                    <p className="meme-text text-[10px] sm:text-xs font-black drop-shadow-lg line-clamp-2">
+                      {post.memeText?.top || post.memeText?.center || post.memeText?.bottom || post.textOverlay}
+                    </p>
+                  </div>
+                )}
+                
                 {/* Hover overlay */}
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
                   <div className="flex items-center gap-2 text-white font-semibold">

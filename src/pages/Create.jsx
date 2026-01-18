@@ -481,6 +481,13 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
         })
       );
       
+      // Build memeText object based on overlay position
+      const memeText = textOverlay.trim() ? {
+        top: overlayPosition === 'top' ? textOverlay.trim() : null,
+        bottom: overlayPosition === 'bottom' ? textOverlay.trim() : null,
+        center: overlayPosition === 'center' ? textOverlay.trim() : null,
+      } : null;
+      
       // Create post document
       const postData = {
         ownerId: user.uid,
@@ -494,7 +501,9 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
         mediaUrl: mediaUrls[0].url,
         mediaItems: mediaUrls,
         caption: caption.trim(),
-        textOverlay: textOverlay.trim() || null,
+        memeText: memeText, // Structured for FeedCard rendering
+        textOverlay: textOverlay.trim() || null, // Keep for backwards compat
+        overlayPosition: overlayPosition,
         behaviors: selectedBehaviors,
         likeCount: 0,
         commentCount: 0,

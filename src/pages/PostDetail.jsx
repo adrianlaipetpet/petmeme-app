@@ -361,6 +361,48 @@ export default function PostDetail() {
               }}
             />
           )}
+          
+          {/* MEME TEXT OVERLAY 😹 */}
+          {(post.memeText || post.textOverlay) && (
+            <>
+              {/* Top text */}
+              {post.memeText?.top && (
+                <div className="absolute top-4 left-0 right-0 text-center px-4">
+                  <p className="meme-text text-2xl md:text-3xl font-black drop-shadow-lg">
+                    {post.memeText.top}
+                  </p>
+                </div>
+              )}
+              {/* Center text */}
+              {post.memeText?.center && (
+                <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 text-center px-4">
+                  <p className="meme-text text-2xl md:text-3xl font-black drop-shadow-lg">
+                    {post.memeText.center}
+                  </p>
+                </div>
+              )}
+              {/* Bottom text */}
+              {post.memeText?.bottom && (
+                <div className="absolute bottom-4 left-0 right-0 text-center px-4">
+                  <p className="meme-text text-2xl md:text-3xl font-black drop-shadow-lg">
+                    {post.memeText.bottom}
+                  </p>
+                </div>
+              )}
+              {/* Fallback: textOverlay without memeText (legacy) */}
+              {!post.memeText && post.textOverlay && (
+                <div className={`absolute left-0 right-0 text-center px-4 ${
+                  post.overlayPosition === 'top' ? 'top-4' :
+                  post.overlayPosition === 'center' ? 'top-1/2 -translate-y-1/2' :
+                  'bottom-4'
+                }`}>
+                  <p className="meme-text text-2xl md:text-3xl font-black drop-shadow-lg">
+                    {post.textOverlay}
+                  </p>
+                </div>
+              )}
+            </>
+          )}
         </div>
         
         {/* Engagement */}
