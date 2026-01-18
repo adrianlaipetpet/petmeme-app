@@ -631,9 +631,14 @@ export const useFeedStore = create((set, get) => ({
         const currentCount = freshOriginal.data().repostCount || 0;
         newRepostCount = currentCount + 1;
         
-        // Prepare repost document
+        // Prepare repost document with clear markers for Firestore visibility
         const repostData = {
+          // ===== REPOST MARKERS (easy to spot in Firestore!) =====
           type: 'repost',
+          _label: '🔄 REPOST',  // Human-readable label for Firestore console
+          isRepost: true,       // Boolean for easy filtering
+          
+          // ===== ORIGINAL POST REFERENCE =====
           originalPostId: originalPostId,
           originalPost: {
             mediaUrl: originalPostData.mediaUrl,
@@ -645,12 +650,16 @@ export const useFeedStore = create((set, get) => ({
             behaviors: originalPostData.behaviors || [],
             hashtags: originalPostData.hashtags || [],
           },
+          
+          // ===== REPOSTER INFO =====
           ownerId: reposter.id,
           reposter: {
             id: reposter.id,
             name: reposter.name,
             photoUrl: reposter.photoUrl,
           },
+          
+          // ===== METADATA =====
           createdAt: serverTimestamp(),
           likeCount: 0,
           commentCount: 0,

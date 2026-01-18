@@ -490,13 +490,21 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
       
       // Create post document
       const postData = {
+        // ===== ORIGINAL POST MARKERS (easy to spot in Firestore!) =====
+        _label: '📸 ORIGINAL',  // Human-readable label for Firestore console
+        isRepost: false,        // Boolean for easy filtering
+        
+        // ===== OWNER INFO =====
         ownerId: user.uid,
         pet: {
           id: user.uid,
           name: pet?.name || 'Anonymous Pet',
           breed: pet?.breed || null,
           photoUrl: pet?.photoURL || null,
+          petType: pet?.type || null,
         },
+        
+        // ===== CONTENT =====
         type: mediaUrls[0].type,
         mediaUrl: mediaUrls[0].url,
         mediaItems: mediaUrls,
@@ -505,11 +513,18 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
         textOverlay: textOverlay.trim() || null, // Keep for backwards compat
         overlayPosition: overlayPosition,
         behaviors: selectedBehaviors,
+        
+        // ===== ENGAGEMENT METRICS =====
         likeCount: 0,
         commentCount: 0,
         shareCount: 0,
+        repostCount: 0,
+        likedBy: [],
+        
+        // ===== METADATA =====
         createdAt: serverTimestamp(),
         isBrandPost: false,
+        deleted: false,
       };
       
       await addDoc(collection(db, 'posts'), postData);
