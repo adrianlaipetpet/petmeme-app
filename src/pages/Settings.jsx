@@ -187,15 +187,24 @@ export default function Settings() {
   };
   
   const toggleBehavior = (behaviorId) => {
+    console.log('🔘 toggleBehavior called with:', behaviorId);
+    console.log('🔘 Current editData.behaviors:', editData.behaviors);
+    
     setEditData(prev => {
       const currentBehaviors = Array.isArray(prev.behaviors) ? prev.behaviors : [];
       const isSelected = currentBehaviors.includes(behaviorId);
       
+      console.log('🔘 isSelected:', isSelected);
+      
+      const newBehaviors = isSelected
+        ? currentBehaviors.filter(b => b !== behaviorId)
+        : [...currentBehaviors, behaviorId];
+      
+      console.log('🔘 New behaviors:', newBehaviors);
+      
       return {
         ...prev,
-        behaviors: isSelected
-          ? currentBehaviors.filter(b => b !== behaviorId)
-          : [...currentBehaviors, behaviorId],
+        behaviors: newBehaviors,
       };
     });
   };
@@ -618,7 +627,7 @@ export default function Settings() {
                     maxLength={150}
                   />
                   <p className="text-xs text-petmeme-muted mt-1 text-right">
-                    {editData.bio.length}/150
+                    {(editData.bio || '').length}/150
                   </p>
                 </div>
                 
@@ -628,7 +637,7 @@ export default function Settings() {
                     Personality Traits
                   </label>
                   <p className="text-xs text-petmeme-muted mb-3">
-                    Select up to 5 that best describe your pet
+                    Select up to 5 that best describe your pet (currently: {Array.isArray(editData.behaviors) ? editData.behaviors.join(', ') : 'none'})
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {behaviorOptions.map((behavior) => {
@@ -640,18 +649,24 @@ export default function Settings() {
                         <button
                           key={behavior.id}
                           type="button"
-                          onClick={() => toggleBehavior(behavior.id)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('🔘 Button clicked:', behavior.id);
+                            toggleBehavior(behavior.id);
+                          }}
                           disabled={!isSelected && isMaxed}
-                          className={`badge-behavior transition-all cursor-pointer ${
+                          className={`badge-behavior transition-all ${
                             isSelected
-                              ? 'bg-primary-100 dark:bg-primary-900/40 border-primary-500 ring-2 ring-primary-500/30'
+                              ? '!bg-primary-500 !text-white !border-primary-600 ring-2 ring-primary-500/50 shadow-lg'
                               : isMaxed
                               ? 'opacity-50 cursor-not-allowed'
-                              : 'hover:border-primary-400'
+                              : 'cursor-pointer hover:border-primary-400 hover:scale-105'
                           }`}
                         >
                           <span>{behavior.emoji}</span>
                           <span>{behavior.label}</span>
+                          {isSelected && <span className="ml-1">✓</span>}
                         </button>
                       );
                     })}
