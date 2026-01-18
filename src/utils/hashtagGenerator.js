@@ -57,6 +57,7 @@ const maybeAddEmoji = (tag, behavior) => {
 
 /**
  * Generate hashtag templates based on behavior
+ * PRIORITIZES direct behavior-related viral hashtags!
  */
 const generateHashtagTemplates = (behavior, petType = 'pet') => {
   const {
@@ -80,59 +81,47 @@ const generateHashtagTemplates = (behavior, petType = 'pet') => {
   
   const templates = [];
   
-  // Template 1: #BehaviorAdjective (e.g., #ZoomiesCrazy)
-  templates.push(() => {
-    const adj = pickRandom(adjectives);
-    return `${capitalizedBehavior}${adj}`;
-  });
-  
-  // Template 2: #AdjectiveBehavior (e.g., #CrazyZoomies)
-  templates.push(() => {
-    const adj = pickRandom(adjectives);
-    return `${adj}${capitalizedBehavior}`;
-  });
-  
-  // Template 3: #PetTypeBehavior (e.g., #DogZoomies, #CatNap)
-  templates.push(() => {
-    const pet = pickRandom(petTypes);
-    return `${pet}${capitalizedBehavior}`;
-  });
-  
-  // Template 4: #AdjectivePetTypeBehavior (e.g., #HilariousCatZoomies)
-  templates.push(() => {
-    const adj = pickRandom(adjectives);
-    const pet = pickRandom(petTypes);
-    return `${adj}${pet}${capitalizedBehavior}`;
-  });
-  
-  // Template 5: #SynonymEmoji (e.g., #Frenzy🌀)
-  templates.push(() => {
-    const syn = pickRandom(behaviorSynonyms);
-    const emoji = pickRandom(behaviorEmojis);
-    return `${capitalize(syn)}${emoji}`;
-  });
-  
-  // Template 6: #MemePhrase (e.g., #ZoomAttack)
+  // 🔥 PRIORITY 1: VIRAL MEME PHRASES (most relatable!)
+  // These come first because they're proven viral patterns
   if (behaviorPhrases.length > 0) {
-    templates.push(() => pickRandom(behaviorPhrases));
+    behaviorPhrases.forEach(phrase => {
+      templates.push(() => phrase);
+    });
   }
   
-  // Template 7: #BehaviorLife (e.g., #ZoomiesLife)
-  templates.push(() => `${capitalizedBehavior}Life`);
-  
-  // Template 8: #BehaviorMoment (e.g., #ZoomiesMoment)
-  templates.push(() => `${capitalizedBehavior}Moment`);
-  
-  // Template 9: #BehaviorVibes (e.g., #LazyVibes)
-  templates.push(() => `${capitalizedBehavior}Vibes`);
-  
-  // Template 10: Just the behavior with emoji
+  // 🔥 PRIORITY 2: Direct behavior hashtags with emoji
   templates.push(() => {
     const emoji = pickRandom(behaviorEmojis);
     return `${capitalizedBehavior}${emoji}`;
   });
   
-  // Add pet-type specific tags
+  // 🔥 PRIORITY 3: Synonym variations (relatable slang)
+  behaviorSynonyms.slice(0, 3).forEach(syn => {
+    templates.push(() => capitalize(syn));
+  });
+  
+  // Template: #PetTypeBehavior (e.g., #DogZoomies, #CatNap)
+  templates.push(() => {
+    const pet = petType === 'dog' ? 'Dog' : petType === 'cat' ? 'Cat' : pickRandom(['Dog', 'Cat', 'Pet']);
+    return `${pet}${capitalizedBehavior}`;
+  });
+  
+  // Template: #BehaviorMode (e.g., #ZoomiesMode, #SleepMode)
+  templates.push(() => `${capitalizedBehavior}Mode`);
+  
+  // Template: #BehaviorVibes (relatable!)
+  templates.push(() => `${capitalizedBehavior}Vibes`);
+  
+  // Template: #BehaviorLife 
+  templates.push(() => `${capitalizedBehavior}Life`);
+  
+  // Template: #AdjectiveBehavior (e.g., #CrazyZoomies)
+  templates.push(() => {
+    const adj = pickRandom(['Epic', 'Crazy', 'Pure', 'Maximum', 'Total', 'Certified']);
+    return `${adj}${capitalizedBehavior}`;
+  });
+  
+  // Add pet-type specific tags (lower priority)
   const petSpecificTags = petType === 'dog' ? dogTags : petType === 'cat' ? catTags : genericTags;
   templates.push(() => pickRandom(petSpecificTags));
   

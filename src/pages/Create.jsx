@@ -49,7 +49,7 @@ export default function Create() {
   const [selectedBehaviors, setSelectedBehaviors] = useState([]);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState([]);
-  const [showBehaviors, setShowBehaviors] = useState(false);
+  const [showBehaviors, setShowBehaviors] = useState(true); // Default OPEN!
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showOverlayEditor, setShowOverlayEditor] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState(null);
@@ -434,13 +434,40 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
         console.log('🧠 AI detected scene:', imageContext.scene);
         console.log('📊 Using viral template matching...');
         
-        // 🏷️ Generate fun hashtags based on detected behavior!
-        setDetectedBehavior(imageContext.scene);
-        const behaviors = [imageContext.scene, ...selectedBehaviors];
+        // 🎯 AUTO-SELECT the detected behavior in behavior tags!
+        const detectedScene = imageContext.scene.toLowerCase();
+        setDetectedBehavior(detectedScene);
+        
+        // Map scene to behavior tag (some scenes map to different tag names)
+        const sceneToBehavior = {
+          'sleeping': 'lazy',
+          'staring': 'dramatic',
+          'playing': 'zoomies',
+          'eating': 'foodie',
+          'sitting': 'lazy',
+          'derpy': 'derpy',
+          'guilty': 'destroyer',
+          'excited': 'zoomies',
+          'scared': 'scared',
+          'judging': 'dramatic',
+          'dramatic': 'dramatic',
+          'relaxed': 'cuddly',
+        };
+        
+        const mappedBehavior = sceneToBehavior[detectedScene] || detectedScene;
+        
+        // Auto-add detected behavior to selected behaviors (if not already there)
+        if (behaviorTags.includes(mappedBehavior) && !selectedBehaviors.includes(mappedBehavior)) {
+          setSelectedBehaviors(prev => [mappedBehavior, ...prev]);
+          showToast(`Auto-tagged: #${mappedBehavior} 🎯`, 'info');
+        }
+        
+        // 🏷️ Generate BEHAVIOR-FOCUSED hashtags!
+        const behaviors = [mappedBehavior, detectedScene, ...selectedBehaviors];
         const petType = petContext.petType?.toLowerCase().includes('dog') ? 'dog' : 'cat';
-        const hashtags = generateHashtagsFromBehaviors(behaviors, petType);
+        const hashtags = generateHashtagsFromBehaviors([...new Set(behaviors)], petType);
         setSuggestedHashtags(hashtags);
-        console.log('🏷️ Generated hashtags:', hashtags);
+        console.log('🏷️ Generated behavior-focused hashtags:', hashtags);
       }
       
       // 🔥 Use the NEW VIRAL GENERATOR! 🔥
