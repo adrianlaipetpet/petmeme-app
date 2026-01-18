@@ -4,8 +4,8 @@ import { persist } from 'zustand/middleware';
 export const useUIStore = create(
   persist(
     (set) => ({
-      // Theme
-      isDarkMode: false,
+      // Theme (default to dark mode)
+      isDarkMode: true,
       toggleDarkMode: () => set((state) => {
         const newMode = !state.isDarkMode;
         // Update HTML class for Tailwind dark mode
