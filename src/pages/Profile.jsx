@@ -9,7 +9,7 @@ import { useFeedStore } from '../store/feedStore';
 import { demoPosts, demoProfiles, reliableImages } from '../data/demoData';
 import {
   Settings, Grid, Heart, Users, Play,
-  Award, Share2, MoreHorizontal, Trash2, RotateCcw, AlertTriangle
+  Award, Share2, MoreHorizontal, Trash2
 } from 'lucide-react';
 
 // 🐱🐶 Coding-themed behavior emoji map (cats & dogs only!)
@@ -53,11 +53,8 @@ export default function Profile() {
   const [isDemo, setIsDemo] = useState(false);
   const [deletingPostId, setDeletingPostId] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
-  const [trashPosts, setTrashPosts] = useState([]);
-  const [loadingTrash, setLoadingTrash] = useState(false);
-  const [restoringPostId, setRestoringPostId] = useState(null);
   
-  const { loadUserPosts, deletePost, loadDeletedPosts, restorePost, permanentlyDeletePost } = useFeedStore();
+  const { loadUserPosts, deletePost } = useFeedStore();
   const isOwnProfile = !petId || petId === user?.uid;
   
   useEffect(() => {
@@ -229,14 +226,14 @@ export default function Profile() {
     e.stopPropagation();
     
     if (showDeleteConfirm === postId) {
-      // Second click - actually delete (soft delete)
+      // Second click - soft delete (keeps in Firebase for founder to view)
       setDeletingPostId(postId);
       const success = await deletePost(postId);
       
       if (success) {
         // Remove from local state
         setPosts(prev => prev.filter(p => p.id !== postId));
-        showToast('Post moved to trash! 🗑️', 'success');
+        showToast('Post deleted! 🗑️', 'success');
       } else {
         showToast('Failed to delete post', 'error');
       }
@@ -248,49 +245,6 @@ export default function Profile() {
       setShowDeleteConfirm(postId);
       // Auto-hide confirmation after 3 seconds
       setTimeout(() => setShowDeleteConfirm(null), 3000);
-    }
-  };
-  
-  // Load trash posts when trash tab is clicked
-  const loadTrash = async () => {
-    if (!user?.uid || isDemo) return;
-    
-    setLoadingTrash(true);
-    const deleted = await loadDeletedPosts(user.uid);
-    setTrashPosts(deleted);
-    setLoadingTrash(false);
-  };
-  
-  // Restore a post from trash
-  const handleRestorePost = async (postId) => {
-    setRestoringPostId(postId);
-    const success = await restorePost(postId);
-    
-    if (success) {
-      // Remove from trash, will appear in main posts on next load
-      setTrashPosts(prev => prev.filter(p => p.id !== postId));
-      showToast('Post restored! ♻️', 'success');
-      // Reload main posts
-      loadProfile();
-    } else {
-      showToast('Failed to restore post', 'error');
-    }
-    setRestoringPostId(null);
-  };
-  
-  // Permanently delete a post
-  const handlePermanentDelete = async (postId) => {
-    if (!confirm('This will permanently delete the post. This cannot be undone!')) {
-      return;
-    }
-    
-    const success = await permanentlyDeletePost(postId);
-    
-    if (success) {
-      setTrashPosts(prev => prev.filter(p => p.id !== postId));
-      showToast('Post permanently deleted 🔥', 'success');
-    } else {
-      showToast('Failed to delete post', 'error');
     }
   };
   
@@ -466,15 +420,10 @@ export default function Profile() {
             { id: 'memes', label: 'My Memes', icon: Grid },
             { id: 'favorites', label: 'Favorites', icon: Heart },
             { id: 'collabs', label: 'Collabs', icon: Users },
-            // Only show Trash tab on own profile and not in demo mode
-            ...(isOwnProfile && !isDemo ? [{ id: 'trash', label: 'Trash', icon: Trash2 }] : []),
           ].map(({ id, label, icon: Icon }) => (
             <button
               key={id}
-              onClick={() => {
-                setActiveTab(id);
-                if (id === 'trash') loadTrash();
-              }}
+              onClick={() => setActiveTab(id)}
               className={`flex-1 py-3 flex items-center justify-center gap-2 border-b-2 transition-colors ${
                 activeTab === id
                   ? 'border-primary-500 text-primary-500'
@@ -610,97 +559,6 @@ export default function Profile() {
             <Link to="/campaigns" className="btn-primary inline-block mt-4">
               Browse Campaigns
             </Link>
-          </div>
-        )}
-        
-        {/* Trash tab - shows deleted posts with restore/permanent delete */}
-        {activeTab === 'trash' && (
-          <div className="mt-4">
-            {/* Info banner */}
-            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-4 mb-4 flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-              <div>
-                <h4 className="font-semibold text-amber-800 dark:text-amber-200">Trash</h4>
-                <p className="text-sm text-amber-700 dark:text-amber-300">
-                  Deleted posts are kept here. You can restore them or permanently delete them.
-                </p>
-              </div>
-            </div>
-            
-            {loadingTrash ? (
-              <div className="text-center py-12">
-                <div className="animate-spin text-4xl">🐱</div>
-                <p className="text-petmeme-muted mt-2">Loading trash...</p>
-              </div>
-            ) : trashPosts.length > 0 ? (
-              <div className="grid grid-cols-3 gap-1">
-                {trashPosts.map((post) => (
-                  <div
-                    key={post.id}
-                    className="relative aspect-square bg-gray-100 dark:bg-gray-800 group"
-                  >
-                    <img
-                      src={post.mediaUrl}
-                      alt=""
-                      className="w-full h-full object-cover opacity-60"
-                      loading="lazy"
-                      onError={(e) => {
-                        e.target.src = petData?.petType === 'dog' 
-                          ? 'https://placedog.net/200/200?id=trash' 
-                          : 'https://cataas.com/cat?width=200&height=200&t=trash';
-                      }}
-                    />
-                    
-                    {/* Trash overlay - always visible */}
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-2">
-                      {/* Restore button */}
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => handleRestorePost(post.id)}
-                        disabled={restoringPostId === post.id}
-                        className="p-2 rounded-full bg-green-500 hover:bg-green-600 text-white transition-colors"
-                        title="Restore post"
-                      >
-                        {restoringPostId === post.id ? (
-                          <span className="animate-spin">⏳</span>
-                        ) : (
-                          <RotateCcw className="w-5 h-5" />
-                        )}
-                      </motion.button>
-                      
-                      {/* Permanent delete button */}
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => handlePermanentDelete(post.id)}
-                        className="p-2 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors"
-                        title="Permanently delete"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </motion.button>
-                    </div>
-                    
-                    {/* Deleted date */}
-                    <div className="absolute bottom-1 left-1 right-1 text-center">
-                      <span className="text-[10px] text-white bg-black/60 px-1 py-0.5 rounded">
-                        {post.deletedAt ? new Date(post.deletedAt).toLocaleDateString() : 'Deleted'}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="text-5xl mb-4">🗑️</div>
-                <h3 className="font-heading text-xl font-bold text-petmeme-text dark:text-petmeme-text-dark">
-                  Trash is empty
-                </h3>
-                <p className="text-petmeme-muted mt-2">
-                  Deleted posts will appear here so you can restore them.
-                </p>
-              </div>
-            )}
           </div>
         )}
       </div>
