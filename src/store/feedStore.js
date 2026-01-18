@@ -16,7 +16,8 @@ import {
   addDoc,
   serverTimestamp,
   getDoc,
-  deleteDoc
+  deleteDoc,
+  runTransaction  // For atomic repost operations
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
@@ -343,37 +344,46 @@ export const useFeedStore = create((set, get) => ({
     return unsubscribe;
   },
   
-  // Load posts by user ID (for profile page)
-  // Note: Uses simple query to avoid index requirements
-  // Filters out deleted posts
+  // Load ORIGINAL posts by user ID (for "My Memes" tab on profile)
+  // Excludes reposts - those go in "Reposts" tab
+  // Uses simple query + in-memory filter to avoid Firestore index requirements
   loadUserPosts: async (userId) => {
     set({ isLoading: true });
     
     try {
+      console.log('📷 Loading original posts for user:', userId);
+      
       const postsRef = collection(db, 'posts');
-      // Simple query without orderBy to avoid index requirement
+      // Simple query - filter by ownerId only
       const q = query(
         postsRef,
         where('ownerId', '==', userId),
-        limit(50)
+        limit(100)
       );
       
       const snapshot = await getDocs(q);
-      const posts = snapshot.docs
-        .map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate() || new Date(),
-        }))
-        // Filter out deleted posts
-        .filter(post => !post.deleted);
+      console.log('📷 Got', snapshot.docs.length, 'total docs for user');
       
-      // Sort in memory instead of in query (avoids index)
+      const posts = snapshot.docs
+        .map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate() || new Date(),
+          };
+        })
+        // IMPORTANT: Filter out reposts (type === 'repost') and deleted posts
+        // "My Memes" should only show ORIGINAL posts created by this user
+        .filter(post => post.type !== 'repost' && !post.deleted);
+      
+      // Sort in memory (newest first)
       posts.sort((a, b) => b.createdAt - a.createdAt);
       
+      console.log('📷 Returning', posts.length, 'original posts (reposts filtered out)');
       return posts;
     } catch (error) {
-      console.error('Error loading user posts:', error);
+      console.error('❌ Error loading user posts:', error);
       return [];
     } finally {
       set({ isLoading: false });
@@ -441,12 +451,13 @@ export const useFeedStore = create((set, get) => ({
   
   /**
    * Repost a post to the current user's profile/feed
-   * Creates a new "repost" document that references the original
-   * Increments repostCount on original post using transaction
+   * Uses Firestore TRANSACTION for atomic operations:
+   * 1. Creates new repost doc
+   * 2. Increments repostCount on original post
    * 
    * @param {string} originalPostId - ID of the post being reposted
    * @param {object} reposter - Current user's pet info { id, name, photoUrl }
-   * @returns {boolean} Success status
+   * @returns {object} { success: boolean, repostId?: string, error?: string }
    */
   repostPost: async (originalPostId, reposter) => {
     if (!reposter?.id) {
@@ -454,159 +465,243 @@ export const useFeedStore = create((set, get) => ({
       return { success: false, error: 'Login required' };
     }
     
+    console.log('🔄 Starting repost for post:', originalPostId, 'by:', reposter.id);
+    
+    // OPTIMISTIC UPDATE: Immediately show +1 and green state
+    const currentPosts = get().posts;
+    const originalPost = currentPosts.find(p => p.id === originalPostId);
+    const previousCount = originalPost?.repostCount || 0;
+    
+    set((state) => ({
+      posts: state.posts.map(p => 
+        p.id === originalPostId 
+          ? { ...p, repostCount: previousCount + 1, isReposted: true }
+          : p
+      ),
+    }));
+    
     try {
-      console.log('🔄 Creating repost for post:', originalPostId);
-      
-      // Get the original post data
+      // Get the original post data first (outside transaction)
       const originalPostRef = doc(db, 'posts', originalPostId);
       const originalPostSnap = await getDoc(originalPostRef);
       
       if (!originalPostSnap.exists()) {
-        console.error('❌ Original post not found');
+        // Rollback optimistic update
+        set((state) => ({
+          posts: state.posts.map(p => 
+            p.id === originalPostId 
+              ? { ...p, repostCount: previousCount, isReposted: false }
+              : p
+          ),
+        }));
         return { success: false, error: 'Post not found' };
       }
       
-      const originalPost = originalPostSnap.data();
+      const originalPostData = originalPostSnap.data();
       
       // Don't allow reposting your own post
-      if (originalPost.ownerId === reposter.id) {
+      if (originalPostData.ownerId === reposter.id) {
+        // Rollback
+        set((state) => ({
+          posts: state.posts.map(p => 
+            p.id === originalPostId 
+              ? { ...p, repostCount: previousCount, isReposted: false }
+              : p
+          ),
+        }));
         return { success: false, error: 'Cannot repost your own post' };
       }
       
-      // Check if user already reposted this
-      const existingRepostQuery = query(
+      // Check if user already reposted this (simple query + filter)
+      const userPostsQuery = query(
         collection(db, 'posts'),
-        where('type', '==', 'repost'),
-        where('originalPostId', '==', originalPostId),
         where('ownerId', '==', reposter.id),
-        limit(1)
+        limit(100)
       );
-      const existingRepost = await getDocs(existingRepostQuery);
+      const userPosts = await getDocs(userPostsQuery);
+      const alreadyReposted = userPosts.docs.some(doc => {
+        const data = doc.data();
+        return data.type === 'repost' && data.originalPostId === originalPostId;
+      });
       
-      if (!existingRepost.empty) {
+      if (alreadyReposted) {
+        // Rollback
+        set((state) => ({
+          posts: state.posts.map(p => 
+            p.id === originalPostId 
+              ? { ...p, repostCount: previousCount, isReposted: true } // Keep green since already reposted
+              : p
+          ),
+        }));
         return { success: false, error: 'Already reposted' };
       }
       
-      // Create the repost document
-      const repostData = {
-        type: 'repost',
-        originalPostId: originalPostId,
-        originalPost: {
-          // Copy essential display data from original
-          mediaUrl: originalPost.mediaUrl,
-          caption: originalPost.caption,
-          memeText: originalPost.memeText || null,
-          textOverlay: originalPost.textOverlay || null,
-          overlayPosition: originalPost.overlayPosition || null,
-          pet: originalPost.pet,
-          behaviors: originalPost.behaviors || [],
-          hashtags: originalPost.hashtags || [],
-        },
-        // Reposter info
-        ownerId: reposter.id,
-        reposter: {
-          id: reposter.id,
-          name: reposter.name,
-          photoUrl: reposter.photoUrl,
-        },
-        // Repost-specific fields
-        createdAt: serverTimestamp(),
-        likeCount: 0,
-        commentCount: 0,
-        repostCount: 0,
-        likedBy: [],
-        deleted: false,
-      };
+      // Use TRANSACTION for atomic create + increment
+      let repostId = null;
+      let newRepostCount = 0;
       
-      // Add the repost document
-      const repostRef = await addDoc(collection(db, 'posts'), repostData);
-      console.log('✅ Repost created:', repostRef.id);
-      
-      // Increment repost count on original post
-      await updateDoc(originalPostRef, {
-        repostCount: increment(1),
+      await runTransaction(db, async (transaction) => {
+        // Re-read original post inside transaction for consistency
+        const freshOriginal = await transaction.get(originalPostRef);
+        if (!freshOriginal.exists()) {
+          throw new Error('Post not found');
+        }
+        
+        const currentCount = freshOriginal.data().repostCount || 0;
+        newRepostCount = currentCount + 1;
+        
+        // Prepare repost document
+        const repostData = {
+          type: 'repost',
+          originalPostId: originalPostId,
+          originalPost: {
+            mediaUrl: originalPostData.mediaUrl,
+            caption: originalPostData.caption,
+            memeText: originalPostData.memeText || null,
+            textOverlay: originalPostData.textOverlay || null,
+            overlayPosition: originalPostData.overlayPosition || null,
+            pet: originalPostData.pet,
+            behaviors: originalPostData.behaviors || [],
+            hashtags: originalPostData.hashtags || [],
+          },
+          ownerId: reposter.id,
+          reposter: {
+            id: reposter.id,
+            name: reposter.name,
+            photoUrl: reposter.photoUrl,
+          },
+          createdAt: serverTimestamp(),
+          likeCount: 0,
+          commentCount: 0,
+          repostCount: 0,
+          likedBy: [],
+          deleted: false,
+        };
+        
+        // Create new repost doc (get ref first)
+        const newRepostRef = doc(collection(db, 'posts'));
+        repostId = newRepostRef.id;
+        
+        // Within transaction: set repost and update original count
+        transaction.set(newRepostRef, repostData);
+        transaction.update(originalPostRef, { repostCount: newRepostCount });
       });
-      console.log('✅ Original post repostCount incremented');
       
-      // Get the updated repost count from Firestore to ensure accuracy
-      const updatedOriginal = await getDoc(originalPostRef);
-      const actualRepostCount = updatedOriginal.data()?.repostCount || 1;
+      console.log('✅ Repost transaction complete. ID:', repostId, 'New count:', newRepostCount);
       
-      // Update local state in ONE call to avoid race conditions
-      // - Mark the original post as reposted with the ACTUAL count from Firestore
-      // - Don't add repost to feed here (real-time listener will do it)
+      // Update local state with the ACTUAL count from transaction
       set((state) => ({
         posts: state.posts.map(p => 
           p.id === originalPostId 
-            ? { ...p, repostCount: actualRepostCount, isReposted: true }
+            ? { ...p, repostCount: newRepostCount, isReposted: true }
             : p
         ),
       }));
       
-      return { success: true, repostId: repostRef.id };
+      return { success: true, repostId };
     } catch (error) {
-      console.error('❌ Error creating repost:', error);
+      console.error('❌ Repost transaction failed:', error);
+      
+      // Rollback optimistic update on error
+      set((state) => ({
+        posts: state.posts.map(p => 
+          p.id === originalPostId 
+            ? { ...p, repostCount: previousCount, isReposted: false }
+            : p
+        ),
+      }));
+      
       return { success: false, error: error.message };
     }
   },
   
   /**
    * Undo a repost (delete the repost document)
-   * Decrements repostCount on original post
+   * Uses TRANSACTION for atomic delete + decrement
    */
   undoRepost: async (originalPostId, userId) => {
+    console.log('🔄 Undoing repost for post:', originalPostId, 'user:', userId);
+    
+    // OPTIMISTIC UPDATE: Immediately show -1 and remove green state
+    const currentPosts = get().posts;
+    const originalPost = currentPosts.find(p => p.id === originalPostId);
+    const previousCount = originalPost?.repostCount || 0;
+    
+    set((state) => ({
+      posts: state.posts.map(p => 
+        p.id === originalPostId 
+          ? { ...p, repostCount: Math.max(0, previousCount - 1), isReposted: false }
+          : p
+      ),
+    }));
+    
     try {
-      console.log('🔄 Undoing repost for post:', originalPostId);
-      
-      // Find the repost document - use simple query to avoid index issues
+      // Find the repost document
       const postsRef = collection(db, 'posts');
-      const q = query(
-        postsRef,
-        where('ownerId', '==', userId),
-        limit(100)
-      );
-      
+      const q = query(postsRef, where('ownerId', '==', userId), limit(100));
       const snapshot = await getDocs(q);
-      const repostDoc = snapshot.docs.find(doc => {
-        const data = doc.data();
+      
+      const repostDocSnap = snapshot.docs.find(d => {
+        const data = d.data();
         return data.type === 'repost' && data.originalPostId === originalPostId;
       });
       
-      if (!repostDoc) {
-        console.log('❌ Repost not found for user:', userId, 'original:', originalPostId);
+      if (!repostDocSnap) {
+        console.log('❌ Repost not found');
+        // Rollback
+        set((state) => ({
+          posts: state.posts.map(p => 
+            p.id === originalPostId 
+              ? { ...p, repostCount: previousCount, isReposted: true }
+              : p
+          ),
+        }));
         return { success: false, error: 'Repost not found' };
       }
       
-      console.log('🔄 Found repost to delete:', repostDoc.id);
-      
-      // Delete the repost
-      await deleteDoc(doc(db, 'posts', repostDoc.id));
-      
-      // Decrement repost count on original
+      const repostDocId = repostDocSnap.id;
+      const repostDocRef = doc(db, 'posts', repostDocId);
       const originalPostRef = doc(db, 'posts', originalPostId);
-      await updateDoc(originalPostRef, {
-        repostCount: increment(-1),
+      
+      // Use TRANSACTION for atomic delete + decrement
+      let newRepostCount = 0;
+      
+      await runTransaction(db, async (transaction) => {
+        const freshOriginal = await transaction.get(originalPostRef);
+        if (freshOriginal.exists()) {
+          const currentCount = freshOriginal.data().repostCount || 0;
+          newRepostCount = Math.max(0, currentCount - 1);
+          transaction.update(originalPostRef, { repostCount: newRepostCount });
+        }
+        transaction.delete(repostDocRef);
       });
       
-      // Get the updated count from Firestore for accuracy
-      const updatedOriginal = await getDoc(originalPostRef);
-      const actualRepostCount = Math.max(0, updatedOriginal.data()?.repostCount || 0);
+      console.log('✅ Unrepost transaction complete. New count:', newRepostCount);
       
-      // Update local state
+      // Update with actual count and remove repost from feed
       set((state) => ({
         posts: state.posts
-          .filter(p => p.id !== repostDoc.id) // Remove repost from feed
+          .filter(p => p.id !== repostDocId)
           .map(p => 
             p.id === originalPostId 
-              ? { ...p, repostCount: actualRepostCount, isReposted: false }
+              ? { ...p, repostCount: newRepostCount, isReposted: false }
               : p
           ),
       }));
       
-      console.log('✅ Repost removed, new count:', actualRepostCount);
       return { success: true };
     } catch (error) {
-      console.error('❌ Error undoing repost:', error);
+      console.error('❌ Unrepost transaction failed:', error);
+      
+      // Rollback
+      set((state) => ({
+        posts: state.posts.map(p => 
+          p.id === originalPostId 
+            ? { ...p, repostCount: previousCount, isReposted: true }
+            : p
+        ),
+      }));
+      
       return { success: false, error: error.message };
     }
   },
@@ -683,42 +778,47 @@ export const useFeedStore = create((set, get) => ({
   },
   
   /**
-   * Delete a repost by its document ID
-   * Also decrements repostCount on the original post
+   * Delete a repost by its document ID (used from Profile Reposts tab)
+   * Uses TRANSACTION for atomic delete + decrement
    */
   deleteRepost: async (repostId, originalPostId) => {
+    console.log('🗑️ Deleting repost:', repostId, 'original:', originalPostId);
+    
     try {
-      console.log('🗑️ Deleting repost:', repostId);
+      const repostDocRef = doc(db, 'posts', repostId);
+      let newRepostCount = 0;
       
-      // Delete the repost document
-      await deleteDoc(doc(db, 'posts', repostId));
-      
-      let actualRepostCount = 0;
-      
-      // Decrement repost count on original post (if we have the ID)
       if (originalPostId) {
         const originalPostRef = doc(db, 'posts', originalPostId);
-        await updateDoc(originalPostRef, {
-          repostCount: increment(-1),
-        });
         
-        // Get the updated count from Firestore for accuracy
-        const updatedOriginal = await getDoc(originalPostRef);
-        actualRepostCount = Math.max(0, updatedOriginal.data()?.repostCount || 0);
+        // Use TRANSACTION for atomic delete + decrement
+        await runTransaction(db, async (transaction) => {
+          const freshOriginal = await transaction.get(originalPostRef);
+          if (freshOriginal.exists()) {
+            const currentCount = freshOriginal.data().repostCount || 0;
+            newRepostCount = Math.max(0, currentCount - 1);
+            transaction.update(originalPostRef, { repostCount: newRepostCount });
+          }
+          transaction.delete(repostDocRef);
+        });
+      } else {
+        // No original post ID, just delete the repost
+        await deleteDoc(repostDocRef);
       }
       
-      // Update local state - remove from posts array
+      console.log('✅ Repost deleted, new count:', newRepostCount);
+      
+      // Update local state
       set((state) => ({
         posts: state.posts
           .filter(p => p.id !== repostId)
           .map(p => 
             p.id === originalPostId 
-              ? { ...p, repostCount: actualRepostCount, isReposted: false }
+              ? { ...p, repostCount: newRepostCount, isReposted: false }
               : p
           ),
       }));
       
-      console.log('✅ Repost deleted, new count:', actualRepostCount);
       return { success: true };
     } catch (error) {
       console.error('❌ Error deleting repost:', error);
