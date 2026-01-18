@@ -855,7 +855,7 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
         <div className="card p-4">
           <label className="flex items-center gap-2 text-sm font-medium text-petmeme-text dark:text-petmeme-text-dark mb-3">
             <Smile className="w-4 h-4" />
-            Caption
+            Caption <span className="text-petmeme-muted font-normal">(optional)</span>
           </label>
           <textarea
             value={caption}
@@ -977,52 +977,6 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
                   <RefreshCw className="w-3 h-3" />
                   Tap refresh above for more viral options!
                 </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-        
-        {/* Behavior tags */}
-        <div className="card p-4">
-          <button
-            onClick={() => setShowBehaviors(!showBehaviors)}
-            className="w-full flex items-center justify-between"
-          >
-            <div className="flex items-center gap-2">
-              <Hash className="w-4 h-4 text-primary-500" />
-              <span className="font-semibold text-petmeme-text dark:text-petmeme-text-dark">
-                Tag Behaviors
-              </span>
-              {selectedBehaviors.length > 0 && (
-                <span className="badge text-xs">{selectedBehaviors.length}</span>
-              )}
-            </div>
-            <ChevronDown className={`w-5 h-5 text-petmeme-muted transition-transform ${showBehaviors ? 'rotate-180' : ''}`} />
-          </button>
-          
-          <AnimatePresence>
-            {showBehaviors && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="mt-4"
-              >
-                <div className="flex flex-wrap gap-2">
-                  {behaviorTags.map((behavior) => (
-                    <button
-                      key={behavior}
-                      onClick={() => toggleBehavior(behavior)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                        selectedBehaviors.includes(behavior)
-                          ? 'bg-primary-500 text-white'
-                          : 'bg-gray-100 dark:bg-gray-800 text-petmeme-text dark:text-petmeme-text-dark hover:bg-primary-100 dark:hover:bg-primary-900/30'
-                      }`}
-                    >
-                      #{behavior}
-                    </button>
-                  ))}
-                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -1161,6 +1115,52 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
               </p>
             </div>
           )}
+        </div>
+        
+        {/* Behavior tags */}
+        <div className="card p-4">
+          <button
+            onClick={() => setShowBehaviors(!showBehaviors)}
+            className="w-full flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2">
+              <Hash className="w-4 h-4 text-primary-500" />
+              <span className="font-semibold text-petmeme-text dark:text-petmeme-text-dark">
+                Tag Behaviors
+              </span>
+              {selectedBehaviors.length > 0 && (
+                <span className="badge text-xs">{selectedBehaviors.length}</span>
+              )}
+            </div>
+            <ChevronDown className={`w-5 h-5 text-petmeme-muted transition-transform ${showBehaviors ? 'rotate-180' : ''}`} />
+          </button>
+          
+          <AnimatePresence>
+            {showBehaviors && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-4"
+              >
+                <div className="flex flex-wrap gap-2">
+                  {behaviorTags.map((behavior) => (
+                    <button
+                      key={behavior}
+                      onClick={() => toggleBehavior(behavior)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                        selectedBehaviors.includes(behavior)
+                          ? 'bg-primary-500 text-white'
+                          : 'bg-gray-100 dark:bg-gray-800 text-petmeme-text dark:text-petmeme-text-dark hover:bg-primary-100 dark:hover:bg-primary-900/30'
+                      }`}
+                    >
+                      #{behavior}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
       
