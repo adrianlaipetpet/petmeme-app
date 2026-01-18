@@ -635,7 +635,8 @@ export const useFeedStore = create((set, get) => ({
   
   /**
    * Load all reposts by a user (for Profile "Reposts" tab)
-   * Returns posts where type === 'repost' and ownerId matches
+   * Uses simple query to avoid Firestore index requirements
+   * Filters for type === 'repost' in memory
    */
   loadUserReposts: async (userId) => {
     if (!userId) return [];
@@ -644,30 +645,77 @@ export const useFeedStore = create((set, get) => ({
       console.log('🔄 Loading reposts for user:', userId);
       
       const postsRef = collection(db, 'posts');
+      // Simple query - filter by ownerId only, filter type in memory
       const q = query(
         postsRef,
-        where('type', '==', 'repost'),
         where('ownerId', '==', userId),
-        limit(50)
+        limit(100)
       );
       
       const snapshot = await getDocs(q);
+      console.log('🔄 Got', snapshot.docs.length, 'total posts for user');
+      
       const reposts = snapshot.docs
-        .map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate() || new Date(),
-        }))
-        .filter(post => !post.deleted);
+        .map(doc => {
+          const data = doc.data();
+          console.log('📄 Post:', doc.id, 'type:', data.type);
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate() || new Date(),
+          };
+        })
+        // Filter for reposts only (in memory to avoid index)
+        .filter(post => post.type === 'repost' && !post.deleted);
       
       // Sort by createdAt (newest first)
       reposts.sort((a, b) => b.createdAt - a.createdAt);
       
-      console.log('🔄 Found', reposts.length, 'reposts');
+      console.log('🔄 Found', reposts.length, 'reposts after filtering');
       return reposts;
     } catch (error) {
-      console.error('Error loading user reposts:', error);
+      console.error('❌ Error loading user reposts:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
       return [];
+    }
+  },
+  
+  /**
+   * Delete a repost by its document ID
+   * Also decrements repostCount on the original post
+   */
+  deleteRepost: async (repostId, originalPostId) => {
+    try {
+      console.log('🗑️ Deleting repost:', repostId);
+      
+      // Delete the repost document
+      await deleteDoc(doc(db, 'posts', repostId));
+      
+      // Decrement repost count on original post (if we have the ID)
+      if (originalPostId) {
+        const originalPostRef = doc(db, 'posts', originalPostId);
+        await updateDoc(originalPostRef, {
+          repostCount: increment(-1),
+        });
+      }
+      
+      // Update local state - remove from posts array
+      set((state) => ({
+        posts: state.posts
+          .filter(p => p.id !== repostId)
+          .map(p => 
+            p.id === originalPostId 
+              ? { ...p, repostCount: Math.max(0, (p.repostCount || 1) - 1), isReposted: false }
+              : p
+          ),
+      }));
+      
+      console.log('✅ Repost deleted');
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error deleting repost:', error);
+      return { success: false, error: error.message };
     }
   },
 }));

@@ -56,7 +56,7 @@ export default function Profile() {
   const [reposts, setReposts] = useState([]);
   const [loadingReposts, setLoadingReposts] = useState(false);
   
-  const { loadUserPosts, deletePost, loadUserReposts } = useFeedStore();
+  const { loadUserPosts, deletePost, loadUserReposts, deleteRepost } = useFeedStore();
   const isOwnProfile = !petId || petId === user?.uid;
   
   useEffect(() => {
@@ -563,27 +563,51 @@ export default function Profile() {
                   const displayData = repost.originalPost || repost;
                   
                   return (
-                    <Link
+                    <div
                       key={repost.id}
-                      to={`/post/${repost.originalPostId || repost.id}`}
                       className="relative aspect-square bg-gray-100 dark:bg-gray-800 group"
                     >
-                      <img
-                        src={displayData.mediaUrl}
-                        alt=""
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                        onError={(e) => {
-                          e.target.src = petData?.petType === 'dog' 
-                            ? 'https://placedog.net/200/200?id=repost' 
-                            : 'https://cataas.com/cat?width=200&height=200&t=repost';
-                        }}
-                      />
+                      <Link to={`/post/${repost.originalPostId || repost.id}`}>
+                        <img
+                          src={displayData.mediaUrl}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.target.src = petData?.petType === 'dog' 
+                              ? 'https://placedog.net/200/200?id=repost' 
+                              : 'https://cataas.com/cat?width=200&height=200&t=repost';
+                          }}
+                        />
+                      </Link>
                       
                       {/* Repost indicator badge */}
                       <div className="absolute top-2 left-2 bg-green-500/90 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
                         <Repeat2 className="w-3 h-3" />
                       </div>
+                      
+                      {/* Unrepost button (only on own profile) */}
+                      {isOwnProfile && (
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const result = await deleteRepost(repost.id, repost.originalPostId);
+                            if (result.success) {
+                              // Remove from local reposts state
+                              setReposts(prev => prev.filter(r => r.id !== repost.id));
+                              showToast('Unreposted! 🗑️', 'success');
+                            } else {
+                              showToast('Failed to unrepost', 'error');
+                            }
+                          }}
+                          className="absolute top-2 right-2 bg-red-500/90 hover:bg-red-600 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Unrepost"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </motion.button>
+                      )}
                       
                       {/* Meme text overlay preview */}
                       {(displayData.memeText || displayData.textOverlay) && (
@@ -595,7 +619,7 @@ export default function Profile() {
                       )}
                       
                       {/* Hover overlay with original poster info */}
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-2">
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-2 pointer-events-none">
                         <span className="text-white text-xs font-medium">
                           Originally by
                         </span>
@@ -603,7 +627,7 @@ export default function Profile() {
                           {displayData.pet?.name || 'Unknown'}
                         </span>
                       </div>
-                    </Link>
+                    </div>
                   );
                 })}
               </div>
