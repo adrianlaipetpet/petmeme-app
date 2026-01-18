@@ -7,11 +7,12 @@ import { db, storage } from '../config/firebase';
 import { useAuthStore } from '../store/authStore';
 import { useUIStore } from '../store/uiStore';
 import viralTemplates from '../data/viralTemplates.json';
+import { generateHashtagsFromBehaviors, getBehaviorDisplay, getAvailableBehaviors } from '../utils/hashtagGenerator';
 import {
   Image, Video, Camera, Sparkles, X, Plus, Hash,
   Type, Smile, Wand2, Loader2, Send, ChevronDown,
   AlignLeft, AlignCenter, AlignRight, MoveUp, MoveDown,
-  Zap, RefreshCw
+  Zap, RefreshCw, Tag
 } from 'lucide-react';
 
 // Behavior options for tagging
@@ -53,6 +54,12 @@ export default function Create() {
   const [showOverlayEditor, setShowOverlayEditor] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState(null);
   const [showScenarioSelector, setShowScenarioSelector] = useState(false);
+  
+  // 🏷️ Hashtag state
+  const [suggestedHashtags, setSuggestedHashtags] = useState([]);
+  const [selectedHashtags, setSelectedHashtags] = useState([]);
+  const [manualHashtag, setManualHashtag] = useState('');
+  const [detectedBehavior, setDetectedBehavior] = useState(null);
   
   const fileInputRef = useRef(null);
   
@@ -426,6 +433,14 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
       if (imageContext?.scene) {
         console.log('🧠 AI detected scene:', imageContext.scene);
         console.log('📊 Using viral template matching...');
+        
+        // 🏷️ Generate fun hashtags based on detected behavior!
+        setDetectedBehavior(imageContext.scene);
+        const behaviors = [imageContext.scene, ...selectedBehaviors];
+        const petType = petContext.petType?.toLowerCase().includes('dog') ? 'dog' : 'cat';
+        const hashtags = generateHashtagsFromBehaviors(behaviors, petType);
+        setSuggestedHashtags(hashtags);
+        console.log('🏷️ Generated hashtags:', hashtags);
       }
       
       // 🔥 Use the NEW VIRAL GENERATOR! 🔥
@@ -437,7 +452,7 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
       if (suggestions.length > 0) {
         setTextOverlay(suggestions[0]);
         setCaption(suggestions[0]);
-        showToast(`🔥 ${suggestions.length} viral captions ready!`, 'success');
+        showToast(`🔥 ${suggestions.length} viral captions + hashtags ready!`, 'success');
       }
       
     } catch (error) {
@@ -453,6 +468,37 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
     if (selectedScenario || mediaPreviews.length > 0) {
       await generateAICaptions(selectedScenario);
     }
+  };
+  
+  // 🏷️ Hashtag management functions
+  const addHashtag = (tag) => {
+    const cleanTag = tag.replace(/^#/, '').trim();
+    if (cleanTag && !selectedHashtags.includes(cleanTag) && selectedHashtags.length < 10) {
+      setSelectedHashtags(prev => [...prev, cleanTag]);
+      // Remove from suggestions
+      setSuggestedHashtags(prev => prev.filter(t => t !== cleanTag));
+    }
+  };
+  
+  const removeHashtag = (tag) => {
+    setSelectedHashtags(prev => prev.filter(t => t !== tag));
+  };
+  
+  const handleManualHashtagAdd = () => {
+    if (manualHashtag.trim()) {
+      addHashtag(manualHashtag);
+      setManualHashtag('');
+    }
+  };
+  
+  const regenerateHashtags = () => {
+    const behaviors = detectedBehavior 
+      ? [detectedBehavior, ...selectedBehaviors] 
+      : selectedBehaviors;
+    const petType = pet?.type?.toLowerCase().includes('dog') ? 'dog' : 'cat';
+    const hashtags = generateHashtagsFromBehaviors(behaviors.length > 0 ? behaviors : ['playing'], petType);
+    setSuggestedHashtags(hashtags);
+    showToast('Fresh hashtags generated! 🏷️', 'success');
   };
   
   const handleSubmit = async () => {
@@ -513,6 +559,7 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
         textOverlay: textOverlay.trim() || null, // Keep for backwards compat
         overlayPosition: overlayPosition,
         behaviors: selectedBehaviors,
+        hashtags: selectedHashtags, // Fun viral hashtags!
         
         // ===== ENGAGEMENT METRICS =====
         likeCount: 0,
@@ -952,6 +999,141 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
+        
+        {/* 🏷️ FUN VIRAL HASHTAGS! */}
+        <div className="card p-4 border-2 border-accent-lavender dark:border-accent-lavender/50">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-lavender via-primary-400 to-accent-coral flex items-center justify-center">
+                <Tag className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="font-bold text-petmeme-text dark:text-petmeme-text-dark flex items-center gap-2">
+                  🏷️ Viral Hashtags
+                  <span className="text-xs bg-gradient-to-r from-accent-lavender to-primary-500 text-white px-2 py-0.5 rounded-full">
+                    Fun & Punny!
+                  </span>
+                </p>
+                <p className="text-xs text-petmeme-muted">
+                  Tap to add • Based on detected behavior
+                </p>
+              </div>
+            </div>
+            
+            {/* Regenerate button */}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={regenerateHashtags}
+              className="p-2 hover:bg-primary-100 dark:hover:bg-primary-900/30 rounded-full transition-colors"
+              title="Get fresh hashtags"
+            >
+              <RefreshCw className="w-5 h-5 text-primary-500" />
+            </motion.button>
+          </div>
+          
+          {/* Detected behavior indicator */}
+          {detectedBehavior && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 flex items-center gap-2"
+            >
+              <span className="text-xs text-petmeme-muted">AI detected:</span>
+              <span className="px-3 py-1 bg-gradient-to-r from-green-100 to-teal-100 dark:from-green-900/30 dark:to-teal-900/30 text-green-700 dark:text-green-300 rounded-full text-sm font-medium">
+                {getBehaviorDisplay(detectedBehavior)}
+              </span>
+            </motion.div>
+          )}
+          
+          {/* Suggested hashtags (tappable chips) */}
+          {suggestedHashtags.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs text-petmeme-muted mb-2 flex items-center gap-1">
+                <Sparkles className="w-3 h-3" />
+                Tap to add:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {suggestedHashtags.map((tag, index) => (
+                  <motion.button
+                    key={`${tag}-${index}`}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.05 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => addHashtag(tag)}
+                    className="px-3 py-1.5 bg-gradient-to-r from-primary-100 to-accent-lavender/50 dark:from-primary-900/40 dark:to-accent-lavender/20 text-primary-700 dark:text-primary-300 rounded-full text-sm font-medium hover:from-primary-200 hover:to-accent-lavender/70 transition-all flex items-center gap-1 border border-primary-200 dark:border-primary-700"
+                  >
+                    <Plus className="w-3 h-3" />
+                    #{tag}
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Selected hashtags */}
+          {selectedHashtags.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs text-petmeme-muted mb-2">
+                Your hashtags ({selectedHashtags.length}/10):
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {selectedHashtags.map((tag, index) => (
+                  <motion.div
+                    key={`selected-${tag}-${index}`}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="px-3 py-1.5 bg-primary-500 text-white rounded-full text-sm font-medium flex items-center gap-1 shadow-md"
+                  >
+                    #{tag}
+                    <button
+                      onClick={() => removeHashtag(tag)}
+                      className="ml-1 w-4 h-4 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Manual hashtag input */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-petmeme-muted">#</span>
+              <input
+                type="text"
+                value={manualHashtag}
+                onChange={(e) => setManualHashtag(e.target.value.replace(/[^a-zA-Z0-9]/g, ''))}
+                onKeyDown={(e) => e.key === 'Enter' && handleManualHashtagAdd()}
+                placeholder="Add custom hashtag..."
+                className="input-field pl-7"
+                maxLength={20}
+              />
+            </div>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={handleManualHashtagAdd}
+              disabled={!manualHashtag.trim()}
+              className="px-4 py-2 bg-primary-500 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Add
+            </motion.button>
+          </div>
+          
+          {/* Hashtag preview */}
+          {selectedHashtags.length > 0 && (
+            <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+              <p className="text-xs text-petmeme-muted mb-1">Preview:</p>
+              <p className="text-sm text-primary-600 dark:text-primary-400 font-medium break-words">
+                {selectedHashtags.map(t => `#${t}`).join(' ')}
+              </p>
+            </div>
+          )}
         </div>
       </div>
       
