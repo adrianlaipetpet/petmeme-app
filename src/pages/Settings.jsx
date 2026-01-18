@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { signOut } from 'firebase/auth';
@@ -78,6 +78,21 @@ export default function Settings() {
     bio: pet?.bio || '',
     behaviors: Array.isArray(pet?.behaviors) ? pet.behaviors : [],
   });
+  
+  // Sync editData when pet data changes (e.g., loaded from Firestore)
+  useEffect(() => {
+    if (pet) {
+      console.log('🐾 Pet data loaded:', pet);
+      console.log('🐾 Pet behaviors:', pet.behaviors);
+      setEditData({
+        name: pet.name || 'Your Pet',
+        type: normalizePetType(pet.type || pet.petType),
+        breed: pet.breed || '',
+        bio: pet.bio || '',
+        behaviors: Array.isArray(pet.behaviors) ? pet.behaviors : [],
+      });
+    }
+  }, [pet]);
   
   const [previewPhoto, setPreviewPhoto] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
