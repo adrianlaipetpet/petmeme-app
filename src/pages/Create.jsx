@@ -12,13 +12,36 @@ import {
   Image, Video, Camera, Sparkles, X, Plus, Hash,
   Type, Smile, Wand2, Loader2, Send, ChevronDown,
   AlignLeft, AlignCenter, AlignRight, MoveUp, MoveDown,
-  Zap, RefreshCw, Tag
+  Zap, RefreshCw, Tag, PawPrint, Check, ChevronRight
 } from 'lucide-react';
 
 // Behavior options for tagging
 const behaviorTags = [
   'zoomies', 'lazy', 'dramatic', 'foodie', 'destroyer', 'derpy',
   'vocal', 'cuddly', 'scared', 'jealous', 'clingy', 'genius'
+];
+
+// 🐕 Common pet breeds for selection
+const dogBreeds = [
+  'Golden Retriever', 'Labrador', 'German Shepherd', 'Bulldog', 'Poodle',
+  'Beagle', 'Rottweiler', 'Husky', 'Corgi', 'Dachshund', 'Pomeranian',
+  'Chihuahua', 'Shiba Inu', 'Border Collie', 'Australian Shepherd',
+  'French Bulldog', 'Pit Bull', 'Boxer', 'Great Dane', 'Doberman',
+  'Maltese', 'Shih Tzu', 'Yorkshire Terrier', 'Cavalier King Charles',
+  'Bernese Mountain Dog', 'Samoyed', 'Akita', 'Mixed Breed Dog'
+];
+
+const catBreeds = [
+  'Persian', 'Maine Coon', 'Siamese', 'Ragdoll', 'British Shorthair',
+  'Bengal', 'Abyssinian', 'Scottish Fold', 'Sphynx', 'Russian Blue',
+  'Birman', 'American Shorthair', 'Oriental', 'Norwegian Forest Cat',
+  'Devon Rex', 'Exotic Shorthair', 'Himalayan', 'Tonkinese', 'Burmese',
+  'Munchkin', 'Tabby', 'Calico', 'Tuxedo Cat', 'Orange Tabby', 'Mixed Breed Cat'
+];
+
+const otherPets = [
+  'Rabbit', 'Hamster', 'Guinea Pig', 'Parrot', 'Cockatiel', 'Turtle',
+  'Hedgehog', 'Ferret', 'Chinchilla', 'Fish', 'Gecko', 'Iguana'
 ];
 
 // Quick emoji overlays
@@ -61,6 +84,11 @@ export default function Create() {
   const [manualHashtag, setManualHashtag] = useState('');
   const [detectedBehavior, setDetectedBehavior] = useState(null);
   
+  // 🐕 Breed detection state
+  const [detectedBreed, setDetectedBreed] = useState(null);
+  const [detectedPetType, setDetectedPetType] = useState(null);
+  const [showBreedSelector, setShowBreedSelector] = useState(false);
+  
   const fileInputRef = useRef(null);
   
   // 🐱🐶 Coding-themed scenario options for manual selection!
@@ -90,7 +118,11 @@ export default function Create() {
       setAiSuggestions([]);
       setTextOverlay('');
       setCaption('');
-      // Start AI generation
+      setDetectedBreed(null);
+      setDetectedPetType(null);
+      setDetectedBehavior(null);
+      setSuggestedHashtags([]);
+      // Start AI generation (which now includes breed detection!)
       generateAICaptions();
     }
   }, [mediaPreviews.length]);
@@ -119,6 +151,14 @@ export default function Create() {
   const removeMedia = (index) => {
     setMediaFiles(prev => prev.filter((_, i) => i !== index));
     setMediaPreviews(prev => prev.filter((_, i) => i !== index));
+    // Reset breed detection when primary media is removed
+    if (index === 0) {
+      setDetectedBreed(null);
+      setDetectedPetType(null);
+      setDetectedBehavior(null);
+      setAiSuggestions([]);
+      setSuggestedHashtags([]);
+    }
   };
   
   const toggleBehavior = (behavior) => {
@@ -129,7 +169,7 @@ export default function Create() {
     );
   };
   
-  // Analyze uploaded image using AI Vision
+  // Analyze uploaded image using AI Vision - now detects BREED + BEHAVIOR!
   const analyzeImage = async () => {
     if (mediaPreviews.length === 0) return null;
     
@@ -146,15 +186,15 @@ export default function Create() {
           return null;
         }
         
-        console.log('🤖 Calling Gemini Vision API...');
+        console.log('🤖 Calling Gemini Vision API for behavior + breed detection...');
         
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://petmemehub.app',
-            'X-Title': 'PetMeme Hub',
+            'HTTP-Referer': 'https://lmeow.app',
+            'X-Title': 'Lmeow Meme Generator',
           },
           body: JSON.stringify({
             model: 'google/gemini-3-flash-preview',
@@ -167,11 +207,16 @@ export default function Create() {
                 },
                 {
                   type: 'text', 
-                  text: 'Look at this pet photo. What is the pet doing? Reply with ONLY one word from this list: sleeping, staring, playing, eating, sitting, derpy, guilty, excited, scared, judging, dramatic, relaxed. Just the one word, nothing else.'
+                  text: `Analyze this pet photo. Reply in EXACTLY this format (3 lines, nothing else):
+BEHAVIOR: [one word from: sleeping, staring, playing, eating, sitting, derpy, guilty, excited, scared, judging, dramatic, relaxed]
+PET_TYPE: [one word: dog, cat, rabbit, bird, other]
+BREED: [specific breed name like "Golden Retriever", "Persian Cat", "Shiba Inu", "Mixed Breed", etc.]
+
+Be specific about the breed. If you're not sure, make your best guess based on appearance.`
                 }
               ]
             }],
-            max_tokens: 50,
+            max_tokens: 100,
           }),
         });
         
@@ -182,21 +227,49 @@ export default function Create() {
         }
         
         const data = await response.json();
-        const content = data.choices?.[0]?.message?.content?.toLowerCase().trim();
+        const content = data.choices?.[0]?.message?.content?.trim();
         
         if (content) {
-          console.log('✅ AI detected:', content);
+          console.log('✅ AI response:', content);
           
-          // Map the response to our scene format
-          const validScenes = ['sleeping', 'staring', 'playing', 'eating', 'sitting', 'derpy', 'guilty', 'excited', 'scared', 'judging', 'dramatic', 'relaxed'];
-          const scene = validScenes.find(s => content.includes(s)) || 'sitting';
+          // Parse the structured response
+          const lines = content.split('\n');
+          let behavior = 'sitting';
+          let petType = 'dog';
+          let breed = null;
           
-          showToast(`AI detected: ${scene} 🧠`, 'success');
+          lines.forEach(line => {
+            const upperLine = line.toUpperCase();
+            if (upperLine.startsWith('BEHAVIOR:')) {
+              const val = line.split(':')[1]?.trim().toLowerCase();
+              const validScenes = ['sleeping', 'staring', 'playing', 'eating', 'sitting', 'derpy', 'guilty', 'excited', 'scared', 'judging', 'dramatic', 'relaxed'];
+              behavior = validScenes.find(s => val?.includes(s)) || 'sitting';
+            } else if (upperLine.startsWith('PET_TYPE:')) {
+              petType = line.split(':')[1]?.trim().toLowerCase() || 'dog';
+            } else if (upperLine.startsWith('BREED:')) {
+              breed = line.split(':')[1]?.trim() || null;
+              // Clean up breed name
+              if (breed) {
+                breed = breed.replace(/^["']|["']$/g, '').trim();
+              }
+            }
+          });
+          
+          // Update breed state
+          if (breed) {
+            setDetectedBreed(breed);
+            setDetectedPetType(petType);
+            console.log('🐕 Detected breed:', breed, 'Type:', petType);
+          }
+          
+          showToast(`AI detected: ${breed || 'pet'} ${behavior === 'sleeping' ? '💤' : '🐾'}`, 'success');
           
           return {
-            scene: scene,
-            mood: scene === 'sleeping' ? 'peaceful' : scene === 'excited' ? 'happy' : 'neutral',
-            action: content,
+            scene: behavior,
+            mood: behavior === 'sleeping' ? 'peaceful' : behavior === 'excited' ? 'happy' : 'neutral',
+            action: behavior,
+            breed: breed,
+            petType: petType,
           };
         }
       } catch (error) {
@@ -588,6 +661,10 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
         behaviors: selectedBehaviors,
         hashtags: selectedHashtags, // Fun viral hashtags!
         
+        // ===== 🐕 AI-DETECTED BREED (for categorization!) =====
+        detectedBreed: detectedBreed || null,  // e.g. "Golden Retriever", "Persian Cat"
+        detectedPetType: detectedPetType || null, // "dog", "cat", "rabbit", etc.
+        
         // ===== ENGAGEMENT METRICS =====
         likeCount: 0,
         commentCount: 0,
@@ -782,6 +859,173 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
             className="hidden"
           />
         </div>
+        
+        {/* 🐕 Detected Breed Chip */}
+        <AnimatePresence>
+          {detectedBreed && mediaPreviews.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="card p-4 border-2 border-green-200 dark:border-green-800 bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-teal-500 flex items-center justify-center">
+                    <PawPrint className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-petmeme-muted flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" />
+                      AI Detected Breed
+                    </p>
+                    <p className="font-bold text-petmeme-text dark:text-petmeme-text-dark">
+                      {detectedBreed}
+                    </p>
+                  </div>
+                </div>
+                
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowBreedSelector(true)}
+                  className="px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-sm font-medium text-petmeme-text dark:text-petmeme-text-dark border border-gray-200 dark:border-gray-700 flex items-center gap-1 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Change
+                  <ChevronRight className="w-4 h-4" />
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
+        {/* 🐕 Breed Selector Modal */}
+        <AnimatePresence>
+          {showBreedSelector && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center"
+              onClick={() => setShowBreedSelector(false)}
+            >
+              <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="w-full max-w-lg bg-petmeme-card dark:bg-petmeme-card-dark rounded-t-3xl p-6 max-h-[80vh] overflow-hidden flex flex-col"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-heading text-xl font-bold text-petmeme-text dark:text-petmeme-text-dark">
+                    Select Breed
+                  </h3>
+                  <button
+                    onClick={() => setShowBreedSelector(false)}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                <div className="overflow-y-auto flex-1 space-y-4">
+                  {/* Dogs */}
+                  <div>
+                    <p className="text-sm font-semibold text-petmeme-muted mb-2 flex items-center gap-2">
+                      🐕 Dogs
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {dogBreeds.map((breed) => (
+                        <button
+                          key={breed}
+                          onClick={() => {
+                            setDetectedBreed(breed);
+                            setDetectedPetType('dog');
+                            setShowBreedSelector(false);
+                            showToast(`Breed set to ${breed} 🐕`, 'success');
+                          }}
+                          className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                            detectedBreed === breed
+                              ? 'bg-primary-500 text-white'
+                              : 'bg-gray-100 dark:bg-gray-800 text-petmeme-text dark:text-petmeme-text-dark hover:bg-primary-100 dark:hover:bg-primary-900/30'
+                          }`}
+                        >
+                          {breed}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Cats */}
+                  <div>
+                    <p className="text-sm font-semibold text-petmeme-muted mb-2 flex items-center gap-2">
+                      🐱 Cats
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {catBreeds.map((breed) => (
+                        <button
+                          key={breed}
+                          onClick={() => {
+                            setDetectedBreed(breed);
+                            setDetectedPetType('cat');
+                            setShowBreedSelector(false);
+                            showToast(`Breed set to ${breed} 🐱`, 'success');
+                          }}
+                          className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                            detectedBreed === breed
+                              ? 'bg-primary-500 text-white'
+                              : 'bg-gray-100 dark:bg-gray-800 text-petmeme-text dark:text-petmeme-text-dark hover:bg-primary-100 dark:hover:bg-primary-900/30'
+                          }`}
+                        >
+                          {breed}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Other Pets */}
+                  <div>
+                    <p className="text-sm font-semibold text-petmeme-muted mb-2 flex items-center gap-2">
+                      🐰 Other Pets
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {otherPets.map((pet) => (
+                        <button
+                          key={pet}
+                          onClick={() => {
+                            setDetectedBreed(pet);
+                            setDetectedPetType('other');
+                            setShowBreedSelector(false);
+                            showToast(`Pet type set to ${pet} 🐾`, 'success');
+                          }}
+                          className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                            detectedBreed === pet
+                              ? 'bg-primary-500 text-white'
+                              : 'bg-gray-100 dark:bg-gray-800 text-petmeme-text dark:text-petmeme-text-dark hover:bg-primary-100 dark:hover:bg-primary-900/30'
+                          }`}
+                        >
+                          {pet}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Clear option */}
+                <button
+                  onClick={() => {
+                    setDetectedBreed(null);
+                    setDetectedPetType(null);
+                    setShowBreedSelector(false);
+                  }}
+                  className="mt-4 w-full py-3 text-red-500 font-medium text-center"
+                >
+                  Clear Breed Detection
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         
         {/* Scenario Selector (shown when no API key) */}
         <AnimatePresence>
