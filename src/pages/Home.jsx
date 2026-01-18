@@ -5,7 +5,7 @@ import { useFeedStore } from '../store/feedStore';
 import { useAuthStore } from '../store/authStore';
 import FeedCard from '../components/feed/FeedCard';
 import FeedTabs from '../components/feed/FeedTabs';
-import { Loader2, Sparkles, Cat } from 'lucide-react';
+import { Loader2, Sparkles, Cat, RefreshCw } from 'lucide-react';
 import { demoPosts } from '../data/demoData';
 
 // Fun loading messages
@@ -18,81 +18,96 @@ const loadingMessages = [
 ];
 
 export default function Home() {
-  const { posts, setPosts, addPosts, hasMore, isLoading, setLoading, activeTab, lastDoc } = useFeedStore();
-  const { pet } = useAuthStore();
+  const { 
+    posts, 
+    setPosts, 
+    hasMore, 
+    isLoading, 
+    setLoading, 
+    activeTab,
+    loadPosts,
+    subscribeToFeed
+  } = useFeedStore();
+  const { user, pet } = useAuthStore();
   const [initialLoaded, setInitialLoaded] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   
   // Load initial posts
   useEffect(() => {
     if (!initialLoaded) {
-      loadPosts(true);
+      loadInitialPosts();
       setInitialLoaded(true);
     }
-  }, [initialLoaded]);
+    
+    // Cleanup subscription on unmount
+    return () => {
+      const { unsubscribe } = useFeedStore.getState();
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
   
   // Reset when tab changes
   useEffect(() => {
     if (initialLoaded) {
-      loadPosts(true);
+      loadInitialPosts();
     }
   }, [activeTab]);
   
-  const loadPosts = async (isInitial = false) => {
+  const loadInitialPosts = async () => {
     setLoading(true);
+    setIsDemo(false);
     
     try {
-      // For demo: use demo posts from shared data
-      if (isInitial) {
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 500));
+      // Try to load from Firestore first
+      const firestorePosts = await loadPosts(true, user?.uid);
+      
+      // If no posts in Firestore, show demo data
+      if (!firestorePosts || firestorePosts.length === 0) {
+        console.log('📦 No Firestore posts, using demo data');
+        setIsDemo(true);
+        // Add slight delay for better UX
+        await new Promise(resolve => setTimeout(resolve, 300));
         setPosts(demoPosts);
-      } else {
-        // Load more posts (simulate)
-        await new Promise(resolve => setTimeout(resolve, 500));
-        const morePosts = demoPosts.map(p => ({
-          ...p,
-          id: `${p.id}-${Date.now()}-${Math.random()}`,
-          likeCount: Math.floor(Math.random() * 10000),
-        }));
-        addPosts(morePosts, null);
       }
-      
-      /* Firebase implementation (uncomment when ready):
-      const postsRef = collection(db, 'posts');
-      let q = query(
-        postsRef,
-        orderBy('createdAt', 'desc'),
-        limit(10)
-      );
-      
-      if (!isInitial && lastDoc) {
-        q = query(q, startAfter(lastDoc));
-      }
-      
-      const snapshot = await getDocs(q);
-      const newPosts = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      
-      if (isInitial) {
-        setPosts(newPosts);
-      } else {
-        addPosts(newPosts, snapshot.docs[snapshot.docs.length - 1]);
-      }
-      */
     } catch (error) {
       console.error('Error loading posts:', error);
+      // Fallback to demo data on error
+      setIsDemo(true);
+      setPosts(demoPosts);
     } finally {
       setLoading(false);
     }
   };
   
-  const fetchMore = useCallback(() => {
-    if (!isLoading && hasMore) {
-      loadPosts(false);
+  const fetchMore = useCallback(async () => {
+    if (isLoading || !hasMore) return;
+    
+    if (isDemo) {
+      // For demo mode, simulate infinite scroll with random variations
+      setLoading(true);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const morePosts = demoPosts.map(p => ({
+        ...p,
+        id: `${p.id}-${Date.now()}-${Math.random()}`,
+        likeCount: Math.floor(Math.random() * 10000),
+      }));
+      
+      setPosts([...posts, ...morePosts]);
+      setLoading(false);
+    } else {
+      // Load more from Firestore
+      await loadPosts(false, user?.uid);
     }
-  }, [isLoading, hasMore]);
+  }, [isLoading, hasMore, isDemo, posts, user?.uid]);
+  
+  // Pull to refresh
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadInitialPosts();
+    setRefreshing(false);
+  };
   
   return (
     <div className="min-h-screen">
@@ -110,19 +125,31 @@ export default function Home() {
             whileTap={{ scale: 0.95 }}
           />
           
-          {/* User greeting */}
-          {pet && (
-            <motion.div 
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-100 to-secondary-100 dark:from-primary-900/30 dark:to-secondary-900/30 rounded-full border-2 border-primary-200 dark:border-primary-800"
-            >
-              <span className="text-lg">🐾</span>
-              <span className="text-sm font-semibold text-primary-700 dark:text-primary-300">
-                Hey, {pet.name}!
-              </span>
-            </motion.div>
-          )}
+          {/* Demo mode indicator + User greeting */}
+          <div className="flex items-center gap-2">
+            {isDemo && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 text-xs font-medium rounded-full"
+              >
+                Demo Mode 📦
+              </motion.div>
+            )}
+            
+            {pet && (
+              <motion.div 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-100 to-secondary-100 dark:from-primary-900/30 dark:to-secondary-900/30 rounded-full border-2 border-primary-200 dark:border-primary-800"
+              >
+                <span className="text-lg">🐾</span>
+                <span className="text-sm font-semibold text-primary-700 dark:text-primary-300">
+                  Hey, {pet.name}!
+                </span>
+              </motion.div>
+            )}
+          </div>
         </div>
         
         {/* Feed tabs */}
@@ -131,6 +158,20 @@ export default function Home() {
       
       {/* Feed content */}
       <div className="pb-24">
+        {/* Refresh button (visible on desktop) */}
+        <div className="hidden md:flex justify-center pt-4">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleRefresh}
+            disabled={refreshing || isLoading}
+            className="flex items-center gap-2 px-4 py-2 bg-primary-100 dark:bg-primary-900/30 rounded-full text-primary-600 dark:text-primary-400 text-sm font-medium disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            {refreshing ? 'Refreshing...' : 'Refresh Feed'}
+          </motion.button>
+        </div>
+        
         {posts.length === 0 && isLoading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <motion.div
@@ -197,9 +238,9 @@ export default function Home() {
                 key={post.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
+                transition={{ delay: Math.min(index * 0.05, 0.5) }}
               >
-                <FeedCard post={post} />
+                <FeedCard post={post} isDemo={isDemo} />
               </motion.div>
             ))}
           </InfiniteScroll>

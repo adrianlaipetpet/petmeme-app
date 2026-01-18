@@ -73,7 +73,7 @@ function App() {
   if (isLoading) {
     return <Splash />;
   }
-  
+
   return (
     <Router>
       <div className="min-h-screen bg-petmeme-bg dark:bg-petmeme-bg-dark">

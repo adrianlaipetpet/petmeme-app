@@ -679,7 +679,7 @@ h1, h2, h3, h4, h5, h6 {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
-}
+  }
 
 .no-scrollbar::-webkit-scrollbar {
   display: none;
@@ -711,7 +711,7 @@ h1, h2, h3, h4, h5, h6 {
 /* Float animation */
 .float {
   animation: float 3s ease-in-out infinite;
-}
+  }
 
 /* Wiggle animation */
 .wiggle {

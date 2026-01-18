@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 import { useAuthStore } from '../store/authStore';
 import { useUIStore } from '../store/uiStore';
+import { useFeedStore } from '../store/feedStore';
 import { demoPosts, demoProfiles, reliableImages } from '../data/demoData';
 import {
   Settings, Grid, Heart, Users, Play,
@@ -47,7 +50,9 @@ export default function Profile() {
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
   
+  const { loadUserPosts } = useFeedStore();
   const isOwnProfile = !petId || petId === user?.uid;
   
   useEffect(() => {
@@ -56,10 +61,45 @@ export default function Profile() {
   
   const loadProfile = async () => {
     setIsLoading(true);
+    setIsDemo(false);
     
     try {
-      if (isOwnProfile && currentUserPet) {
-        // Use current user's pet data
+      const targetUserId = isOwnProfile ? user?.uid : petId;
+      
+      // Try to load real pet data from Firestore
+      let realPetData = null;
+      let realPosts = [];
+      
+      if (targetUserId) {
+        try {
+          // Fetch pet data from Firestore
+          const petDoc = await getDoc(doc(db, 'pets', targetUserId));
+          if (petDoc.exists()) {
+            realPetData = { id: petDoc.id, ...petDoc.data() };
+          }
+          
+          // Fetch user's posts from Firestore
+          realPosts = await loadUserPosts(targetUserId);
+        } catch (e) {
+          console.log('Firestore not configured, using demo data');
+        }
+      }
+      
+      if (realPetData) {
+        // Use real Firestore data
+        setPetData({
+          ...realPetData,
+          stats: realPetData.stats || {
+            posts: realPosts.length,
+            likes: 0,
+            followers: 0,
+            following: 0,
+          },
+        });
+        setPosts(realPosts);
+      } else if (isOwnProfile && currentUserPet) {
+        // Use current user's local pet data (from onboarding)
+        setIsDemo(true);
         setPetData({
           ...currentUserPet,
           stats: currentUserPet.stats || {
@@ -69,10 +109,11 @@ export default function Profile() {
             following: 342,
           },
         });
-        // Get posts for own profile
+        // Show demo posts for own profile in demo mode
         setPosts(demoPosts);
       } else if (petId && demoProfiles[petId]) {
         // Use demo profile data
+        setIsDemo(true);
         const profile = demoProfiles[petId];
         setPetData(profile);
         // Get posts that belong to this pet
@@ -80,6 +121,7 @@ export default function Profile() {
         setPosts(petPosts.length > 0 ? petPosts : demoPosts.slice(0, 3));
       } else {
         // Fallback demo profile
+        setIsDemo(true);
         const firstProfile = Object.values(demoProfiles)[0];
         setPetData(firstProfile || {
           name: 'Whiskers',
@@ -99,6 +141,23 @@ export default function Profile() {
       }
     } catch (error) {
       console.error('Error loading profile:', error);
+      // Fallback to demo on error
+      setIsDemo(true);
+      setPetData({
+        name: 'Whiskers',
+        type: '🐈 Cat',
+        breed: 'Orange Tabby',
+        behaviors: ['dramatic', 'foodie', 'lazy'],
+        photoURL: reliableImages.profile1,
+        stats: {
+          posts: 47,
+          likes: 51112,
+          followers: 12500,
+          following: 342,
+        },
+        bio: 'Professional napper & treat enthusiast 🍗',
+      });
+      setPosts(demoPosts);
     } finally {
       setIsLoading(false);
     }

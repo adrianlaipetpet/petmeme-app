@@ -6,6 +6,7 @@ import {
   ShoppingBag, MoreHorizontal, Flag, Volume2, VolumeX, Repeat2
 } from 'lucide-react';
 import { useFeedStore } from '../../store/feedStore';
+import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 
 // Animated Paw icon for likes 🐾
@@ -24,7 +25,7 @@ const PawIcon = ({ filled, animate }) => (
   </motion.svg>
 );
 
-export default function FeedCard({ post }) {
+export default function FeedCard({ post, isDemo = false }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [showMore, setShowMore] = useState(false);
@@ -34,6 +35,7 @@ export default function FeedCard({ post }) {
   const videoRef = useRef(null);
   
   const { toggleLike, toggleBookmark } = useFeedStore();
+  const { user } = useAuthStore();
   const { showToast } = useUIStore();
   
   // Auto-play videos when they come into view
@@ -61,7 +63,10 @@ export default function FeedCard({ post }) {
   }, [post.type]);
   
   const handleLike = () => {
-    toggleLike(post.id);
+    // In demo mode, just toggle locally without Firestore sync
+    // In real mode, pass userId for Firestore sync
+    toggleLike(post.id, isDemo ? null : user?.uid);
+    
     if (!post.isLiked) {
       setShowPawAnimation(true);
       setIsLikeAnimating(true);
