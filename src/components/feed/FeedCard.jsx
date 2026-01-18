@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MessageCircle, Share2, Bookmark, Play, Pause,
-  ShoppingBag, MoreHorizontal, Flag, Volume2, VolumeX, Repeat2
+  ShoppingBag, MoreHorizontal, Flag, Volume2, VolumeX, Repeat2, Check
 } from 'lucide-react';
 import { useFeedStore } from '../../store/feedStore';
 import { useAuthStore } from '../../store/authStore';
@@ -32,11 +32,20 @@ export default function FeedCard({ post, isDemo = false }) {
   const [showPawAnimation, setShowPawAnimation] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isLikeAnimating, setIsLikeAnimating] = useState(false);
+  const [isReposting, setIsReposting] = useState(false);
+  const [showRepostSuccess, setShowRepostSuccess] = useState(false);
   const videoRef = useRef(null);
   
-  const { toggleLike, toggleBookmark } = useFeedStore();
-  const { user } = useAuthStore();
+  const { toggleLike, toggleBookmark, repostPost, undoRepost } = useFeedStore();
+  const { user, pet } = useAuthStore();
   const { showToast } = useUIStore();
+  
+  // Check if this is a repost
+  const isRepost = post.type === 'repost';
+  // Get the display data (from original if repost, or directly if original)
+  const displayData = isRepost ? post.originalPost : post;
+  // Check if current user has reposted this post
+  const hasReposted = post.isReposted || false;
   
   // Auto-play videos when they come into view
   useEffect(() => {
@@ -81,8 +90,8 @@ export default function FeedCard({ post, isDemo = false }) {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${post.pet.name}'s meme on Lmeow 😹`,
-          text: post.caption,
+          title: `${displayData.pet.name}'s meme on Lmeow 😹`,
+          text: displayData.caption,
           url: `${window.location.origin}/post/${post.id}`,
         });
       } catch (err) {
@@ -93,6 +102,62 @@ export default function FeedCard({ post, isDemo = false }) {
     } else {
       navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
       showToast('Link copied! Share the chaos! 🔗', 'success');
+    }
+  };
+  
+  // Handle repost with optimistic UI and animation
+  const handleRepost = async () => {
+    if (isDemo) {
+      showToast('Login to repost! 🔐', 'info');
+      return;
+    }
+    
+    if (!user?.uid || !pet) {
+      showToast('Login to repost! 🔐', 'info');
+      return;
+    }
+    
+    // Get the original post ID (if this is already a repost, get its originalPostId)
+    const originalId = isRepost ? post.originalPostId : post.id;
+    
+    // If already reposted, undo it
+    if (hasReposted) {
+      setIsReposting(true);
+      const result = await undoRepost(originalId, user.uid);
+      setIsReposting(false);
+      
+      if (result.success) {
+        showToast('Repost removed 🗑️', 'info');
+      } else {
+        showToast(result.error || 'Failed to remove repost', 'error');
+      }
+      return;
+    }
+    
+    // Don't repost your own post
+    const originalOwnerId = isRepost ? post.originalPost?.pet?.id : post.pet?.id;
+    if (originalOwnerId === user.uid) {
+      showToast("Can't repost your own meme! 😹", 'info');
+      return;
+    }
+    
+    setIsReposting(true);
+    
+    const result = await repostPost(originalId, {
+      id: user.uid,
+      name: pet.name || 'Anonymous',
+      photoUrl: pet.photoURL || null,
+    });
+    
+    setIsReposting(false);
+    
+    if (result.success) {
+      // Show success animation
+      setShowRepostSuccess(true);
+      setTimeout(() => setShowRepostSuccess(false), 1500);
+      showToast('Reposted! 🚀 Your followers will see this!', 'success');
+    } else {
+      showToast(result.error || 'Repost failed', 'error');
     }
   };
   
@@ -137,6 +202,24 @@ export default function FeedCard({ post, isDemo = false }) {
   
   return (
     <article className="feed-card relative overflow-hidden">
+      {/* Repost attribution banner 🔄 */}
+      {isRepost && post.reposter && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 border-b border-green-100 dark:border-green-800"
+        >
+          <Repeat2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+          <Link 
+            to={`/profile/${post.reposter.id}`}
+            className="text-sm text-green-700 dark:text-green-300 hover:underline font-medium"
+          >
+            Reposted by {post.reposter.name}
+          </Link>
+          <span className="text-green-500">🔄</span>
+        </motion.div>
+      )}
+      
       {/* Brand badge */}
       {post.isBrandPost && (
         <motion.div 
@@ -149,18 +232,18 @@ export default function FeedCard({ post, isDemo = false }) {
         </motion.div>
       )}
       
-      {/* Pet info header */}
+      {/* Pet info header - show original poster for reposts */}
       <div className="flex items-center gap-3 p-4">
-        <Link to={`/profile/${post.pet.id || post.id}`}>
+        <Link to={`/profile/${displayData.pet?.id || post.id}`}>
           <motion.img
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            src={post.pet.photoUrl}
-            alt={post.pet.name}
+            src={displayData.pet?.photoUrl}
+            alt={displayData.pet?.name}
             className="w-12 h-12 rounded-full object-cover border-3 border-primary-300 shadow-md"
             onError={(e) => {
               // Pet-only avatar fallback! 🐱🐶
-              e.target.src = post.pet?.petType === 'dog' 
+              e.target.src = displayData.pet?.petType === 'dog' 
                 ? 'https://placedog.net/50/50?id=avatar' 
                 : 'https://cataas.com/cat?width=50&height=50&t=avatar';
             }}
@@ -168,14 +251,14 @@ export default function FeedCard({ post, isDemo = false }) {
         </Link>
         <div className="flex-1">
           <Link 
-            to={`/profile/${post.pet.id || post.id}`}
+            to={`/profile/${displayData.pet?.id || post.id}`}
             className="font-bold text-lmeow-text dark:text-lmeow-text-dark hover:text-primary-500 flex items-center gap-1"
           >
-            {post.pet.name}
-            <span className="text-sm">{post.pet.petType === 'dog' ? '🐶' : '🐱'}</span>
+            {displayData.pet?.name || 'Unknown Pet'}
+            <span className="text-sm">{displayData.pet?.petType === 'dog' ? '🐶' : '🐱'}</span>
           </Link>
-          {post.pet.breed && (
-            <p className="text-xs text-lmeow-muted">{post.pet.breed}</p>
+          {displayData.pet?.breed && (
+            <p className="text-xs text-lmeow-muted">{displayData.pet.breed}</p>
           )}
         </div>
         <button 
@@ -191,12 +274,12 @@ export default function FeedCard({ post, isDemo = false }) {
         className="relative aspect-square bg-gray-100 dark:bg-gray-800 cursor-pointer overflow-hidden"
         onDoubleClick={handleLike}
       >
-        {post.type === 'video' ? (
+        {(displayData.type || post.type) === 'video' ? (
           <>
             <video
               ref={videoRef}
-              src={post.mediaUrl}
-              poster={post.thumbnailUrl}
+              src={displayData.mediaUrl}
+              poster={displayData.thumbnailUrl}
               className="w-full h-full object-cover"
               loop
               muted={isMuted}
@@ -237,8 +320,8 @@ export default function FeedCard({ post, isDemo = false }) {
           </>
         ) : (
           <img
-            src={post.mediaUrl}
-            alt={post.caption}
+            src={displayData.mediaUrl}
+            alt={displayData.caption}
             className="w-full h-full object-cover"
             loading="lazy"
             onError={handleImageError}
@@ -246,46 +329,67 @@ export default function FeedCard({ post, isDemo = false }) {
         )}
         
         {/* MEME TEXT OVERLAY 😹 */}
-        {(post.memeText || post.textOverlay) && (
+        {(displayData.memeText || displayData.textOverlay) && (
           <>
             {/* Top text */}
-            {post.memeText?.top && (
+            {displayData.memeText?.top && (
               <div className="absolute top-4 left-0 right-0 text-center px-4">
                 <p className="meme-text text-2xl md:text-3xl font-black drop-shadow-lg">
-                  {post.memeText.top}
+                  {displayData.memeText.top}
                 </p>
               </div>
             )}
             {/* Center text */}
-            {post.memeText?.center && (
+            {displayData.memeText?.center && (
               <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 text-center px-4">
                 <p className="meme-text text-2xl md:text-3xl font-black drop-shadow-lg">
-                  {post.memeText.center}
+                  {displayData.memeText.center}
                 </p>
               </div>
             )}
             {/* Bottom text */}
-            {post.memeText?.bottom && (
+            {displayData.memeText?.bottom && (
               <div className="absolute bottom-4 left-0 right-0 text-center px-4">
                 <p className="meme-text text-2xl md:text-3xl font-black drop-shadow-lg">
-                  {post.memeText.bottom}
+                  {displayData.memeText.bottom}
                 </p>
               </div>
             )}
             {/* Fallback: textOverlay without memeText (legacy posts) */}
-            {!post.memeText && post.textOverlay && (
+            {!displayData.memeText && displayData.textOverlay && (
               <div className={`absolute left-0 right-0 text-center px-4 ${
-                post.overlayPosition === 'top' ? 'top-4' :
-                post.overlayPosition === 'center' ? 'top-1/2 -translate-y-1/2' :
+                displayData.overlayPosition === 'top' ? 'top-4' :
+                displayData.overlayPosition === 'center' ? 'top-1/2 -translate-y-1/2' :
                 'bottom-4'
               }`}>
                 <p className="meme-text text-2xl md:text-3xl font-black drop-shadow-lg">
-                  {post.textOverlay}
+                  {displayData.textOverlay}
                 </p>
               </div>
             )}
           </>
         )}
+        
+        {/* Repost success animation 🚀 */}
+        <AnimatePresence>
+          {showRepostSuccess && (
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1.2, opacity: 1 }}
+              exit={{ scale: 1.5, opacity: 0 }}
+              className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20"
+            >
+              <motion.div 
+                initial={{ rotate: 0 }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 0.5 }}
+                className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center shadow-2xl"
+              >
+                <Check className="w-10 h-10 text-white" />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         
         {/* Double-tap like animation 🐾 */}
         <AnimatePresence>
@@ -340,13 +444,28 @@ export default function FeedCard({ post, isDemo = false }) {
               <Share2 className="w-6 h-6" />
             </motion.button>
             
-            {/* Repost */}
+            {/* Repost 🔄 - Boost virality! */}
             <motion.button
               whileTap={{ scale: 0.85 }}
-              onClick={() => showToast('Repost coming soon! 🔄', 'info')}
-              className="flex items-center gap-2 px-3 py-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              onClick={handleRepost}
+              disabled={isReposting}
+              className={`flex items-center gap-2 px-3 py-2 rounded-full transition-colors ${
+                hasReposted 
+                  ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' 
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+              } ${isReposting ? 'opacity-50' : ''}`}
             >
-              <Repeat2 className="w-6 h-6" />
+              <motion.div
+                animate={isReposting ? { rotate: 360 } : { rotate: 0 }}
+                transition={{ duration: 0.5, repeat: isReposting ? Infinity : 0 }}
+              >
+                <Repeat2 className={`w-6 h-6 ${hasReposted ? 'text-green-600 dark:text-green-400' : ''}`} />
+              </motion.div>
+              {(post.repostCount || 0) > 0 && (
+                <span className={`text-sm font-bold ${hasReposted ? 'text-green-600 dark:text-green-400' : ''}`}>
+                  {formatCount(post.repostCount)}
+                </span>
+              )}
             </motion.button>
           </div>
           
@@ -373,18 +492,18 @@ export default function FeedCard({ post, isDemo = false }) {
         <div className="space-y-2">
           <p className="text-lmeow-text dark:text-lmeow-text-dark">
             <Link 
-              to={`/profile/${post.pet.id || post.id}`}
+              to={`/profile/${displayData.pet?.id || post.id}`}
               className="font-bold hover:text-primary-500"
             >
-              {post.pet.name}
+              {displayData.pet?.name || 'Unknown'}
             </Link>{' '}
-            {post.caption}
+            {displayData.caption}
           </p>
           
           {/* Hashtags */}
-          {post.hashtags && post.hashtags.length > 0 && (
+          {displayData.hashtags && displayData.hashtags.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {post.hashtags.map((tag) => (
+              {displayData.hashtags.map((tag) => (
                 <Link 
                   key={tag} 
                   to={`/browse/hashtag/${encodeURIComponent(tag)}`}
@@ -397,9 +516,9 @@ export default function FeedCard({ post, isDemo = false }) {
           )}
           
           {/* Behavior tags */}
-          {post.behaviors && post.behaviors.length > 0 && (
+          {displayData.behaviors && displayData.behaviors.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {post.behaviors.map((behavior) => (
+              {displayData.behaviors.map((behavior) => (
                 <Link 
                   key={behavior} 
                   to={`/browse/behavior/${encodeURIComponent(behavior)}`}

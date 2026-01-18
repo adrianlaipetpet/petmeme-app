@@ -433,4 +433,203 @@ export const useFeedStore = create((set, get) => ({
       return [];
     }
   },
+  
+  // ========================================
+  // REPOST FEATURE 🔄
+  // Boosts virality by letting users share memes to their followers
+  // ========================================
+  
+  /**
+   * Repost a post to the current user's profile/feed
+   * Creates a new "repost" document that references the original
+   * Increments repostCount on original post using transaction
+   * 
+   * @param {string} originalPostId - ID of the post being reposted
+   * @param {object} reposter - Current user's pet info { id, name, photoUrl }
+   * @returns {boolean} Success status
+   */
+  repostPost: async (originalPostId, reposter) => {
+    if (!reposter?.id) {
+      console.error('❌ Repost failed: No reposter info');
+      return { success: false, error: 'Login required' };
+    }
+    
+    try {
+      console.log('🔄 Creating repost for post:', originalPostId);
+      
+      // Get the original post data
+      const originalPostRef = doc(db, 'posts', originalPostId);
+      const originalPostSnap = await getDoc(originalPostRef);
+      
+      if (!originalPostSnap.exists()) {
+        console.error('❌ Original post not found');
+        return { success: false, error: 'Post not found' };
+      }
+      
+      const originalPost = originalPostSnap.data();
+      
+      // Don't allow reposting your own post
+      if (originalPost.ownerId === reposter.id) {
+        return { success: false, error: 'Cannot repost your own post' };
+      }
+      
+      // Check if user already reposted this
+      const existingRepostQuery = query(
+        collection(db, 'posts'),
+        where('type', '==', 'repost'),
+        where('originalPostId', '==', originalPostId),
+        where('ownerId', '==', reposter.id),
+        limit(1)
+      );
+      const existingRepost = await getDocs(existingRepostQuery);
+      
+      if (!existingRepost.empty) {
+        return { success: false, error: 'Already reposted' };
+      }
+      
+      // Create the repost document
+      const repostData = {
+        type: 'repost',
+        originalPostId: originalPostId,
+        originalPost: {
+          // Copy essential display data from original
+          mediaUrl: originalPost.mediaUrl,
+          caption: originalPost.caption,
+          memeText: originalPost.memeText || null,
+          textOverlay: originalPost.textOverlay || null,
+          overlayPosition: originalPost.overlayPosition || null,
+          pet: originalPost.pet,
+          behaviors: originalPost.behaviors || [],
+          hashtags: originalPost.hashtags || [],
+        },
+        // Reposter info
+        ownerId: reposter.id,
+        reposter: {
+          id: reposter.id,
+          name: reposter.name,
+          photoUrl: reposter.photoUrl,
+        },
+        // Repost-specific fields
+        createdAt: serverTimestamp(),
+        likeCount: 0,
+        commentCount: 0,
+        repostCount: 0,
+        likedBy: [],
+        deleted: false,
+      };
+      
+      // Add the repost document
+      const repostRef = await addDoc(collection(db, 'posts'), repostData);
+      console.log('✅ Repost created:', repostRef.id);
+      
+      // Increment repost count on original post
+      await updateDoc(originalPostRef, {
+        repostCount: increment(1),
+      });
+      console.log('✅ Original post repostCount incremented');
+      
+      // Optimistic update: Add repost to local feed immediately
+      const newRepost = {
+        id: repostRef.id,
+        ...repostData,
+        createdAt: new Date(),
+        isLiked: false,
+        isReposted: true, // Mark as user's own repost
+      };
+      
+      set((state) => ({
+        posts: [newRepost, ...state.posts],
+      }));
+      
+      // Also update the original post's repostCount in local state
+      set((state) => ({
+        posts: state.posts.map(p => 
+          p.id === originalPostId 
+            ? { ...p, repostCount: (p.repostCount || 0) + 1, isReposted: true }
+            : p
+        ),
+      }));
+      
+      return { success: true, repostId: repostRef.id };
+    } catch (error) {
+      console.error('❌ Error creating repost:', error);
+      return { success: false, error: error.message };
+    }
+  },
+  
+  /**
+   * Undo a repost (delete the repost document)
+   * Decrements repostCount on original post
+   */
+  undoRepost: async (originalPostId, userId) => {
+    try {
+      console.log('🔄 Undoing repost for post:', originalPostId);
+      
+      // Find the repost document
+      const repostQuery = query(
+        collection(db, 'posts'),
+        where('type', '==', 'repost'),
+        where('originalPostId', '==', originalPostId),
+        where('ownerId', '==', userId),
+        limit(1)
+      );
+      
+      const repostSnap = await getDocs(repostQuery);
+      
+      if (repostSnap.empty) {
+        return { success: false, error: 'Repost not found' };
+      }
+      
+      const repostDoc = repostSnap.docs[0];
+      
+      // Delete the repost
+      await deleteDoc(doc(db, 'posts', repostDoc.id));
+      
+      // Decrement repost count on original
+      const originalPostRef = doc(db, 'posts', originalPostId);
+      await updateDoc(originalPostRef, {
+        repostCount: increment(-1),
+      });
+      
+      // Update local state
+      set((state) => ({
+        posts: state.posts
+          .filter(p => p.id !== repostDoc.id) // Remove repost from feed
+          .map(p => 
+            p.id === originalPostId 
+              ? { ...p, repostCount: Math.max(0, (p.repostCount || 1) - 1), isReposted: false }
+              : p
+          ),
+      }));
+      
+      console.log('✅ Repost removed');
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error undoing repost:', error);
+      return { success: false, error: error.message };
+    }
+  },
+  
+  /**
+   * Check if user has reposted a specific post
+   */
+  checkIfReposted: async (originalPostId, userId) => {
+    if (!userId) return false;
+    
+    try {
+      const repostQuery = query(
+        collection(db, 'posts'),
+        where('type', '==', 'repost'),
+        where('originalPostId', '==', originalPostId),
+        where('ownerId', '==', userId),
+        limit(1)
+      );
+      
+      const repostSnap = await getDocs(repostQuery);
+      return !repostSnap.empty;
+    } catch (error) {
+      console.error('Error checking repost status:', error);
+      return false;
+    }
+  },
 }));
