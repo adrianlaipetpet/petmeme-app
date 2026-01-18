@@ -528,24 +528,17 @@ export const useFeedStore = create((set, get) => ({
       });
       console.log('✅ Original post repostCount incremented');
       
-      // Optimistic update: Add repost to local feed immediately
-      const newRepost = {
-        id: repostRef.id,
-        ...repostData,
-        createdAt: new Date(),
-        isLiked: false,
-        isReposted: true, // Mark as user's own repost
-      };
+      // Get the updated repost count from Firestore to ensure accuracy
+      const updatedOriginal = await getDoc(originalPostRef);
+      const actualRepostCount = updatedOriginal.data()?.repostCount || 1;
       
-      set((state) => ({
-        posts: [newRepost, ...state.posts],
-      }));
-      
-      // Also update the original post's repostCount in local state
+      // Update local state in ONE call to avoid race conditions
+      // - Mark the original post as reposted with the ACTUAL count from Firestore
+      // - Don't add repost to feed here (real-time listener will do it)
       set((state) => ({
         posts: state.posts.map(p => 
           p.id === originalPostId 
-            ? { ...p, repostCount: (p.repostCount || 0) + 1, isReposted: true }
+            ? { ...p, repostCount: actualRepostCount, isReposted: true }
             : p
         ),
       }));
@@ -565,22 +558,26 @@ export const useFeedStore = create((set, get) => ({
     try {
       console.log('🔄 Undoing repost for post:', originalPostId);
       
-      // Find the repost document
-      const repostQuery = query(
-        collection(db, 'posts'),
-        where('type', '==', 'repost'),
-        where('originalPostId', '==', originalPostId),
+      // Find the repost document - use simple query to avoid index issues
+      const postsRef = collection(db, 'posts');
+      const q = query(
+        postsRef,
         where('ownerId', '==', userId),
-        limit(1)
+        limit(100)
       );
       
-      const repostSnap = await getDocs(repostQuery);
+      const snapshot = await getDocs(q);
+      const repostDoc = snapshot.docs.find(doc => {
+        const data = doc.data();
+        return data.type === 'repost' && data.originalPostId === originalPostId;
+      });
       
-      if (repostSnap.empty) {
+      if (!repostDoc) {
+        console.log('❌ Repost not found for user:', userId, 'original:', originalPostId);
         return { success: false, error: 'Repost not found' };
       }
       
-      const repostDoc = repostSnap.docs[0];
+      console.log('🔄 Found repost to delete:', repostDoc.id);
       
       // Delete the repost
       await deleteDoc(doc(db, 'posts', repostDoc.id));
@@ -591,18 +588,22 @@ export const useFeedStore = create((set, get) => ({
         repostCount: increment(-1),
       });
       
+      // Get the updated count from Firestore for accuracy
+      const updatedOriginal = await getDoc(originalPostRef);
+      const actualRepostCount = Math.max(0, updatedOriginal.data()?.repostCount || 0);
+      
       // Update local state
       set((state) => ({
         posts: state.posts
           .filter(p => p.id !== repostDoc.id) // Remove repost from feed
           .map(p => 
             p.id === originalPostId 
-              ? { ...p, repostCount: Math.max(0, (p.repostCount || 1) - 1), isReposted: false }
+              ? { ...p, repostCount: actualRepostCount, isReposted: false }
               : p
           ),
       }));
       
-      console.log('✅ Repost removed');
+      console.log('✅ Repost removed, new count:', actualRepostCount);
       return { success: true };
     } catch (error) {
       console.error('❌ Error undoing repost:', error);
@@ -692,12 +693,18 @@ export const useFeedStore = create((set, get) => ({
       // Delete the repost document
       await deleteDoc(doc(db, 'posts', repostId));
       
+      let actualRepostCount = 0;
+      
       // Decrement repost count on original post (if we have the ID)
       if (originalPostId) {
         const originalPostRef = doc(db, 'posts', originalPostId);
         await updateDoc(originalPostRef, {
           repostCount: increment(-1),
         });
+        
+        // Get the updated count from Firestore for accuracy
+        const updatedOriginal = await getDoc(originalPostRef);
+        actualRepostCount = Math.max(0, updatedOriginal.data()?.repostCount || 0);
       }
       
       // Update local state - remove from posts array
@@ -706,12 +713,12 @@ export const useFeedStore = create((set, get) => ({
           .filter(p => p.id !== repostId)
           .map(p => 
             p.id === originalPostId 
-              ? { ...p, repostCount: Math.max(0, (p.repostCount || 1) - 1), isReposted: false }
+              ? { ...p, repostCount: actualRepostCount, isReposted: false }
               : p
           ),
       }));
       
-      console.log('✅ Repost deleted');
+      console.log('✅ Repost deleted, new count:', actualRepostCount);
       return { success: true };
     } catch (error) {
       console.error('❌ Error deleting repost:', error);
