@@ -9,7 +9,7 @@ import { useFeedStore } from '../store/feedStore';
 import { demoPosts, demoProfiles, reliableImages } from '../data/demoData';
 import {
   Settings, Grid, Heart, Users, Play,
-  Award, Share2, MoreHorizontal, Trash2
+  Award, Share2, MoreHorizontal, Trash2, Repeat2
 } from 'lucide-react';
 
 // 🐱🐶 Coding-themed behavior emoji map (cats & dogs only!)
@@ -53,8 +53,10 @@ export default function Profile() {
   const [isDemo, setIsDemo] = useState(false);
   const [deletingPostId, setDeletingPostId] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [reposts, setReposts] = useState([]);
+  const [loadingReposts, setLoadingReposts] = useState(false);
   
-  const { loadUserPosts, deletePost } = useFeedStore();
+  const { loadUserPosts, deletePost, loadUserReposts } = useFeedStore();
   const isOwnProfile = !petId || petId === user?.uid;
   
   useEffect(() => {
@@ -248,6 +250,17 @@ export default function Profile() {
     }
   };
   
+  // Load reposts when the Reposts tab is clicked
+  const handleLoadReposts = async () => {
+    const targetUserId = isOwnProfile ? user?.uid : petId;
+    if (!targetUserId || loadingReposts) return;
+    
+    setLoadingReposts(true);
+    const userReposts = await loadUserReposts(targetUserId);
+    setReposts(userReposts);
+    setLoadingReposts(false);
+  };
+  
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -418,12 +431,17 @@ export default function Profile() {
         <div className="flex border-b border-gray-200 dark:border-gray-700 mt-8">
           {[
             { id: 'memes', label: 'My Memes', icon: Grid },
+            { id: 'reposts', label: 'Reposts', icon: Repeat2 },
             { id: 'favorites', label: 'Favorites', icon: Heart },
             { id: 'collabs', label: 'Collabs', icon: Users },
           ].map(({ id, label, icon: Icon }) => (
             <button
               key={id}
-              onClick={() => setActiveTab(id)}
+              onClick={() => {
+                setActiveTab(id);
+                // Load reposts when tab is clicked
+                if (id === 'reposts') handleLoadReposts();
+              }}
               className={`flex-1 py-3 flex items-center justify-center gap-2 border-b-2 transition-colors ${
                 activeTab === id
                   ? 'border-primary-500 text-primary-500'
@@ -521,6 +539,88 @@ export default function Profile() {
                 )}
               </Link>
             ))}
+          </div>
+        )}
+        
+        {/* Reposts tab 🔄 */}
+        {activeTab === 'reposts' && (
+          <div className="mt-4">
+            {loadingReposts ? (
+              <div className="text-center py-12">
+                <motion.div 
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  className="text-4xl inline-block"
+                >
+                  🔄
+                </motion.div>
+                <p className="text-petmeme-muted mt-2">Loading reposts...</p>
+              </div>
+            ) : reposts.length > 0 ? (
+              <div className="grid grid-cols-3 gap-1">
+                {reposts.map((repost) => {
+                  // Get the original post data for display
+                  const displayData = repost.originalPost || repost;
+                  
+                  return (
+                    <Link
+                      key={repost.id}
+                      to={`/post/${repost.originalPostId || repost.id}`}
+                      className="relative aspect-square bg-gray-100 dark:bg-gray-800 group"
+                    >
+                      <img
+                        src={displayData.mediaUrl}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        onError={(e) => {
+                          e.target.src = petData?.petType === 'dog' 
+                            ? 'https://placedog.net/200/200?id=repost' 
+                            : 'https://cataas.com/cat?width=200&height=200&t=repost';
+                        }}
+                      />
+                      
+                      {/* Repost indicator badge */}
+                      <div className="absolute top-2 left-2 bg-green-500/90 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                        <Repeat2 className="w-3 h-3" />
+                      </div>
+                      
+                      {/* Meme text overlay preview */}
+                      {(displayData.memeText || displayData.textOverlay) && (
+                        <div className="absolute bottom-1 left-0 right-0 text-center px-1 pointer-events-none">
+                          <p className="meme-text text-[10px] sm:text-xs font-black drop-shadow-lg line-clamp-2">
+                            {displayData.memeText?.top || displayData.memeText?.center || displayData.memeText?.bottom || displayData.textOverlay}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {/* Hover overlay with original poster info */}
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-2">
+                        <span className="text-white text-xs font-medium">
+                          Originally by
+                        </span>
+                        <span className="text-white text-sm font-bold">
+                          {displayData.pet?.name || 'Unknown'}
+                        </span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="text-5xl mb-4">🔄</div>
+                <h3 className="font-heading text-xl font-bold text-petmeme-text dark:text-petmeme-text-dark">
+                  No reposts yet
+                </h3>
+                <p className="text-petmeme-muted mt-2">
+                  Repost memes you love to share them with your followers!
+                </p>
+                <Link to="/" className="btn-primary inline-block mt-4">
+                  Browse Feed
+                </Link>
+              </div>
+            )}
           </div>
         )}
         

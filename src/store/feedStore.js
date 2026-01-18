@@ -632,4 +632,42 @@ export const useFeedStore = create((set, get) => ({
       return false;
     }
   },
+  
+  /**
+   * Load all reposts by a user (for Profile "Reposts" tab)
+   * Returns posts where type === 'repost' and ownerId matches
+   */
+  loadUserReposts: async (userId) => {
+    if (!userId) return [];
+    
+    try {
+      console.log('🔄 Loading reposts for user:', userId);
+      
+      const postsRef = collection(db, 'posts');
+      const q = query(
+        postsRef,
+        where('type', '==', 'repost'),
+        where('ownerId', '==', userId),
+        limit(50)
+      );
+      
+      const snapshot = await getDocs(q);
+      const reposts = snapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate() || new Date(),
+        }))
+        .filter(post => !post.deleted);
+      
+      // Sort by createdAt (newest first)
+      reposts.sort((a, b) => b.createdAt - a.createdAt);
+      
+      console.log('🔄 Found', reposts.length, 'reposts');
+      return reposts;
+    } catch (error) {
+      console.error('Error loading user reposts:', error);
+      return [];
+    }
+  },
 }));
