@@ -47,6 +47,16 @@ export default function FeedCard({ post, isDemo = false }) {
   // Check if current user has reposted this post
   const hasReposted = post.isReposted || false;
   
+  // For reposts: Get the ORIGINAL post's metrics to display
+  // This makes reposts work like X retweets - engagement goes to original
+  // If we have originalMetrics (fetched from Firestore), use those; otherwise fall back to post's own metrics
+  const metrics = {
+    likeCount: isRepost ? (post.originalMetrics?.likeCount ?? post.likeCount ?? 0) : (post.likeCount || 0),
+    commentCount: isRepost ? (post.originalMetrics?.commentCount ?? post.commentCount ?? 0) : (post.commentCount || 0),
+    repostCount: isRepost ? (post.originalMetrics?.repostCount ?? post.repostCount ?? 0) : (post.repostCount || 0),
+    isLiked: post.isLiked || false,
+  };
+  
   // Auto-play videos when they come into view
   useEffect(() => {
     if (post.type !== 'video' || !videoRef.current) return;
@@ -72,11 +82,16 @@ export default function FeedCard({ post, isDemo = false }) {
   }, [post.type]);
   
   const handleLike = () => {
+    // For reposts: Route like to the ORIGINAL post (like X retweets)
+    // This amplifies the original creator's content
+    const targetPostId = isRepost ? post.originalPostId : post.id;
+    
     // In demo mode, just toggle locally without Firestore sync
     // In real mode, pass userId for Firestore sync
-    toggleLike(post.id, isDemo ? null : user?.uid);
+    toggleLike(targetPostId, isDemo ? null : user?.uid);
     
-    if (!post.isLiked) {
+    // Show animation if not already liked
+    if (!metrics.isLiked) {
       setShowPawAnimation(true);
       setIsLikeAnimating(true);
       setTimeout(() => {
@@ -415,14 +430,14 @@ export default function FeedCard({ post, isDemo = false }) {
               whileTap={{ scale: 0.85 }}
               onClick={handleLike}
               className={`flex items-center gap-2 px-3 py-2 rounded-full transition-colors ${
-                post.isLiked 
+                metrics.isLiked 
                   ? 'bg-primary-100 dark:bg-primary-900/30' 
                   : 'hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
             >
-              <PawIcon filled={post.isLiked} animate={isLikeAnimating} />
-              <span className={`text-sm font-bold ${post.isLiked ? 'text-primary-500' : ''}`}>
-                {formatCount(post.likeCount)}
+              <PawIcon filled={metrics.isLiked} animate={isLikeAnimating} />
+              <span className={`text-sm font-bold ${metrics.isLiked ? 'text-primary-500' : ''}`}>
+                {formatCount(metrics.likeCount)}
               </span>
             </motion.button>
             
@@ -432,7 +447,7 @@ export default function FeedCard({ post, isDemo = false }) {
               className="flex items-center gap-2 px-3 py-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             >
               <MessageCircle className="w-6 h-6" />
-              <span className="text-sm font-bold">{formatCount(post.commentCount)}</span>
+              <span className="text-sm font-bold">{formatCount(metrics.commentCount)}</span>
             </Link>
             
             {/* Share */}
@@ -461,9 +476,9 @@ export default function FeedCard({ post, isDemo = false }) {
               >
                 <Repeat2 className={`w-6 h-6 ${hasReposted ? 'text-green-600 dark:text-green-400' : ''}`} />
               </motion.div>
-              {(post.repostCount || 0) > 0 && (
+              {metrics.repostCount > 0 && (
                 <span className={`text-sm font-bold ${hasReposted ? 'text-green-600 dark:text-green-400' : ''}`}>
-                  {formatCount(post.repostCount)}
+                  {formatCount(metrics.repostCount)}
                 </span>
               )}
             </motion.button>
@@ -546,13 +561,13 @@ export default function FeedCard({ post, isDemo = false }) {
           )}
         </div>
         
-        {/* View comments link */}
-        {post.commentCount > 0 && (
+        {/* View comments link - route to original post for reposts */}
+        {metrics.commentCount > 0 && (
           <Link
-            to={`/post/${post.id}`}
+            to={`/post/${isRepost ? post.originalPostId : post.id}`}
             className="block mt-3 text-sm text-lmeow-muted hover:text-primary-500 font-medium"
           >
-            View all {formatCount(post.commentCount)} comments 💬
+            View all {formatCount(metrics.commentCount)} comments 💬
           </Link>
         )}
       </div>
