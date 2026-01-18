@@ -2,14 +2,16 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { signOut } from 'firebase/auth';
-import { auth } from '../config/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { auth, db, storage } from '../config/firebase';
 import { useAuthStore } from '../store/authStore';
 import { useUIStore } from '../store/uiStore';
 import { reliableImages } from '../data/demoData';
 import {
   User, Moon, Sun, Globe, Bell, Shield, HelpCircle,
   LogOut, ChevronRight, Camera, Languages, X, Check,
-  Edit3, Trash2
+  Edit3, Trash2, Loader2
 } from 'lucide-react';
 
 // Behavior options
@@ -28,15 +30,35 @@ const behaviorOptions = [
   { id: 'jealous', emoji: '😤', label: 'Jealous' },
 ];
 
-// Pet type options
+// Pet type options (matches Onboarding format)
 const petTypes = [
-  { id: 'dog', emoji: '🐕', label: 'Dog' },
-  { id: 'cat', emoji: '🐱', label: 'Cat' },
-  { id: 'bird', emoji: '🐦', label: 'Bird' },
-  { id: 'hamster', emoji: '🐹', label: 'Hamster' },
-  { id: 'rabbit', emoji: '🐰', label: 'Rabbit' },
-  { id: 'other', emoji: '🐾', label: 'Other' },
+  { id: 'dog', emoji: '🐕', label: 'Dog', legacyFormat: '🐕 Dog' },
+  { id: 'cat', emoji: '🐱', label: 'Cat', legacyFormat: '🐈 Cat' },
+  { id: 'bird', emoji: '🐦', label: 'Bird', legacyFormat: '🦜 Bird' },
+  { id: 'hamster', emoji: '🐹', label: 'Hamster', legacyFormat: '🐹 Hamster' },
+  { id: 'rabbit', emoji: '🐰', label: 'Rabbit', legacyFormat: '🐰 Rabbit' },
+  { id: 'fish', emoji: '🐠', label: 'Fish', legacyFormat: '🐠 Fish' },
+  { id: 'turtle', emoji: '🐢', label: 'Turtle', legacyFormat: '🐢 Turtle' },
+  { id: 'reptile', emoji: '🦎', label: 'Reptile', legacyFormat: '🦎 Reptile' },
+  { id: 'other', emoji: '🐾', label: 'Other', legacyFormat: '🐾 Other' },
 ];
+
+// Helper to normalize pet type from various formats
+const normalizePetType = (type) => {
+  if (!type) return 'dog';
+  // If it's already a simple id
+  const foundById = petTypes.find(pt => pt.id === type);
+  if (foundById) return foundById.id;
+  // If it's legacy format like "🐕 Dog"
+  const foundByLegacy = petTypes.find(pt => pt.legacyFormat === type);
+  if (foundByLegacy) return foundByLegacy.id;
+  // If it contains the label (case insensitive)
+  const foundByLabel = petTypes.find(pt => 
+    type.toLowerCase().includes(pt.label.toLowerCase())
+  );
+  if (foundByLabel) return foundByLabel.id;
+  return 'other';
+};
 
 export default function Settings() {
   const { user, pet, setPet, logout } = useAuthStore();
@@ -46,17 +68,19 @@ export default function Settings() {
   const [showLanguages, setShowLanguages] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
-  // Edit profile state
+  // Edit profile state - properly normalize pet type from Firestore data
   const [editData, setEditData] = useState({
     name: pet?.name || 'Your Pet',
-    type: pet?.type || 'dog',
+    type: normalizePetType(pet?.type || pet?.petType),
     breed: pet?.breed || '',
     bio: pet?.bio || '',
-    behaviors: pet?.behaviors || [],
+    behaviors: Array.isArray(pet?.behaviors) ? pet.behaviors : [],
   });
   
   const [previewPhoto, setPreviewPhoto] = useState(null);
+  const [photoFile, setPhotoFile] = useState(null);
   const fileInputRef = useRef(null);
   
   const handleLogout = async () => {
@@ -77,6 +101,7 @@ export default function Settings() {
   const handlePhotoChange = (e) => {
     const file = e.target.files?.[0];
     if (file) {
+      setPhotoFile(file); // Store file for upload
       const reader = new FileReader();
       reader.onload = (e) => {
         setPreviewPhoto(e.target.result);
@@ -94,20 +119,56 @@ export default function Settings() {
     showToast('Photo removed', 'info');
   };
   
-  const handleSaveProfile = () => {
-    // Update pet data
-    setPet({
-      ...pet,
-      name: editData.name,
-      type: editData.type,
-      breed: editData.breed,
-      bio: editData.bio,
-      behaviors: editData.behaviors,
-      photoURL: previewPhoto || pet?.photoURL,
-    });
+  const handleSaveProfile = async () => {
+    if (!user?.uid) {
+      showToast('Please log in to save changes', 'error');
+      return;
+    }
     
-    setShowEditProfile(false);
-    showToast('Profile updated successfully! 🎉', 'success');
+    setIsSaving(true);
+    try {
+      let photoURL = pet?.photoURL;
+      
+      // Upload new photo if changed
+      if (photoFile) {
+        const photoRef = ref(storage, `pets/${user.uid}/${Date.now()}_${photoFile.name}`);
+        await uploadBytes(photoRef, photoFile);
+        photoURL = await getDownloadURL(photoRef);
+      }
+      
+      // Get the full pet type format for storage
+      const selectedPetType = petTypes.find(pt => pt.id === editData.type);
+      const petTypeForStorage = selectedPetType?.legacyFormat || editData.type;
+      
+      // Build update data
+      const updateData = {
+        name: editData.name.trim(),
+        type: petTypeForStorage,
+        breed: editData.breed.trim() || null,
+        bio: editData.bio.trim() || null,
+        behaviors: editData.behaviors,
+        photoURL: photoURL,
+      };
+      
+      // Update Firestore
+      const petRef = doc(db, 'pets', user.uid);
+      await updateDoc(petRef, updateData);
+      
+      // Update local state
+      setPet({
+        ...pet,
+        ...updateData,
+      });
+      
+      setPhotoFile(null);
+      setShowEditProfile(false);
+      showToast('Profile updated successfully! 🎉', 'success');
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      showToast('Failed to save profile. Please try again.', 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
   
   const toggleBehavior = (behaviorId) => {
@@ -138,11 +199,13 @@ export default function Settings() {
           action: () => {
             setEditData({
               name: pet?.name || 'Your Pet',
-              type: pet?.type || 'dog',
+              type: normalizePetType(pet?.type || pet?.petType),
               breed: pet?.breed || '',
               bio: pet?.bio || '',
-              behaviors: pet?.behaviors || [],
+              behaviors: Array.isArray(pet?.behaviors) ? pet.behaviors : [],
             });
+            setPreviewPhoto(null);
+            setPhotoFile(null);
             setShowEditProfile(true);
           },
         },
@@ -248,11 +311,13 @@ export default function Settings() {
             onClick={() => {
               setEditData({
                 name: pet?.name || 'Your Pet',
-                type: pet?.type || 'dog',
+                type: normalizePetType(pet?.type || pet?.petType),
                 breed: pet?.breed || '',
                 bio: pet?.bio || '',
-                behaviors: pet?.behaviors || [],
+                behaviors: Array.isArray(pet?.behaviors) ? pet.behaviors : [],
               });
+              setPreviewPhoto(null);
+              setPhotoFile(null);
               setShowEditProfile(true);
             }}
             className="p-2 text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
@@ -363,7 +428,7 @@ export default function Settings() {
                   className="w-32 h-32 rounded-full object-cover border-4 border-primary-200"
                   onError={(e) => {
                     // Pet-only fallback! 🐱🐶
-                    e.target.src = editForm.type?.includes('Dog') 
+                    e.target.src = editData.type === 'dog' 
                       ? 'https://placedog.net/200/200?id=edit' 
                       : 'https://cataas.com/cat?width=200&height=200&t=edit';
                   }}
@@ -435,9 +500,10 @@ export default function Settings() {
                 </h2>
                 <button
                   onClick={handleSaveProfile}
-                  className="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white hover:bg-primary-600"
+                  disabled={isSaving}
+                  className="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white hover:bg-primary-600 disabled:opacity-50"
                 >
-                  <Check className="w-5 h-5" />
+                  {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
                 </button>
               </div>
               
@@ -457,7 +523,7 @@ export default function Settings() {
                       className="w-24 h-24 rounded-full object-cover border-4 border-primary-200 group-hover:opacity-80 transition-opacity"
                       onError={(e) => {
                         // Pet-only fallback! 🐱🐶
-                        e.target.src = editForm.type?.includes('Dog') 
+                        e.target.src = editData.type === 'dog' 
                           ? 'https://placedog.net/200/200?id=photo' 
                           : 'https://cataas.com/cat?width=200&height=200&t=photo';
                       }}
@@ -570,9 +636,17 @@ export default function Settings() {
               <div className="sticky bottom-0 bg-white dark:bg-petmeme-card-dark border-t border-gray-100 dark:border-gray-800 p-4">
                 <button
                   onClick={handleSaveProfile}
-                  className="btn-primary w-full"
+                  disabled={isSaving}
+                  className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  Save Changes
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
                 </button>
               </div>
             </motion.div>
