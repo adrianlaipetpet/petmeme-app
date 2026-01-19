@@ -29,7 +29,7 @@ export default function Home() {
     subscribeToFeed,
     updatePost
   } = useFeedStore();
-  const { user, pet } = useAuthStore();
+  const { user, pet, following } = useAuthStore();
   const [initialLoaded, setInitialLoaded] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -39,7 +39,7 @@ export default function Home() {
     if (!initialLoaded) {
       console.log('🏠 Home: Setting up real-time feed...');
       // Use real-time listener for live updates
-      subscribeToFeed(user?.uid);
+      subscribeToFeed(user?.uid, following);
       setInitialLoaded(true);
       setIsDemo(false);
     }
@@ -54,17 +54,25 @@ export default function Home() {
     };
   }, [user?.uid]);
   
-  // Reset when tab changes
+  // Reset when tab changes or following list changes
   useEffect(() => {
     if (initialLoaded) {
-      subscribeToFeed(user?.uid);
+      console.log('🏠 Home: Tab or following changed, resubscribing...');
+      subscribeToFeed(user?.uid, following);
     }
-  }, [activeTab]);
+  }, [activeTab, following]);
   
   // Fallback to demo data if real-time listener has no posts after timeout
+  // Only for "For You" tab - empty "Following" feed is a valid state (user follows no one)
   useEffect(() => {
+    // Don't trigger demo mode on Following tab - empty is a valid state there
+    if (activeTab === 'following') {
+      setIsDemo(false);
+      return;
+    }
+    
     const timeout = setTimeout(() => {
-      if (posts.length === 0 && !isLoading) {
+      if (posts.length === 0 && !isLoading && activeTab === 'foryou') {
         console.log('📦 No posts after timeout, showing demo data');
         setIsDemo(true);
         setPosts(demoPosts);
@@ -72,7 +80,7 @@ export default function Home() {
     }, 3000);
     
     return () => clearTimeout(timeout);
-  }, [posts.length, isLoading]);
+  }, [posts.length, isLoading, activeTab]);
   
   const fetchMore = useCallback(async () => {
     if (isLoading || !hasMore) return;
@@ -100,7 +108,7 @@ export default function Home() {
   // Pull to refresh - re-subscribe to get fresh data
   const handleRefresh = async () => {
     setRefreshing(true);
-    subscribeToFeed(user?.uid);
+    subscribeToFeed(user?.uid, following);
     setTimeout(() => setRefreshing(false), 1000);
   };
   
@@ -109,14 +117,15 @@ export default function Home() {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white/90 dark:bg-lmeow-card-dark/90 backdrop-blur-xl border-b-2 border-primary-100 dark:border-primary-900">
         <div className="px-4 py-3 flex items-center justify-between">
-          {/* 🎨 LOGO - Bigger for visibility! */}
+          {/* 🎨 LOGO - Large for visibility with subtle glow */}
           <motion.img 
             src="/lmeow-logo.png"
             alt="Lmeow"
-            className="h-14 md:h-16 w-auto object-contain drop-shadow-lg"
-            animate={{ rotate: [0, 3, -3, 0] }}
-            transition={{ duration: 3, repeat: Infinity, repeatDelay: 4 }}
-            whileHover={{ scale: 1.05 }}
+            className="h-16 w-16 md:h-18 md:w-18 object-contain drop-shadow-xl"
+            style={{ filter: 'drop-shadow(0 0 12px rgba(236, 72, 153, 0.4))' }}
+            animate={{ rotate: [0, 2, -2, 0] }}
+            transition={{ duration: 4, repeat: Infinity, repeatDelay: 5, ease: "easeInOut" }}
+            whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.95 }}
           />
           
@@ -219,11 +228,16 @@ export default function Home() {
             }
             endMessage={
               <div className="text-center py-8">
-                <img src="/lmeow-logo.png" alt="Lmeow" className="w-12 h-12 mx-auto mb-2 object-contain" />
-                <p className="text-lmeow-muted font-medium">
-                  You've seen all the memes! 
+                <img 
+                  src="/lmeow-logo.png" 
+                  alt="Lmeow" 
+                  className="w-14 h-14 mx-auto mb-3 object-contain drop-shadow-lg" 
+                  style={{ filter: 'drop-shadow(0 0 8px rgba(236, 72, 153, 0.3))' }}
+                />
+                <p className="text-lmeow-muted-dark font-medium">
+                  You've seen all the memes! 🎉
                 </p>
-                <p className="text-sm text-primary-400">Come back for more chaos later! 🐾</p>
+                <p className="text-sm text-primary-400 mt-1">Come back for more chaos later! 🐾</p>
               </div>
             }
             className="space-y-4 px-4 pt-4"

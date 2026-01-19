@@ -50,11 +50,16 @@ export default function FeedCard({ post, isDemo = false }) {
   // For reposts: Get the ORIGINAL post's metrics to display
   // This makes reposts work like X retweets - engagement goes to original
   // If we have originalMetrics (fetched from Firestore), use those; otherwise fall back to post's own metrics
+  // Check isLiked from both the flag and likedBy array for robustness
+  const isLikedByMe = user?.uid 
+    ? (post.likedBy?.includes(user.uid) || post.isLiked) 
+    : post.isLiked;
+  
   const metrics = {
     likeCount: isRepost ? (post.originalMetrics?.likeCount ?? post.likeCount ?? 0) : (post.likeCount || 0),
     commentCount: isRepost ? (post.originalMetrics?.commentCount ?? post.commentCount ?? 0) : (post.commentCount || 0),
     repostCount: isRepost ? (post.originalMetrics?.repostCount ?? post.repostCount ?? 0) : (post.repostCount || 0),
-    isLiked: post.isLiked || false,
+    isLiked: isLikedByMe || false,
   };
   
   // Auto-play videos when they come into view
@@ -81,14 +86,13 @@ export default function FeedCard({ post, isDemo = false }) {
     return () => observer.disconnect();
   }, [post.type]);
   
-  const handleLike = () => {
+  const handleLike = async () => {
     // For reposts: Route like to the ORIGINAL post (like X retweets)
     // This amplifies the original creator's content
     const targetPostId = isRepost ? post.originalPostId : post.id;
+    const userId = isDemo ? null : user?.uid;
     
-    // In demo mode, just toggle locally without Firestore sync
-    // In real mode, pass userId for Firestore sync
-    toggleLike(targetPostId, isDemo ? null : user?.uid);
+    console.log('🐾 Like action:', { targetPostId, userId, isDemo, isLiked: metrics.isLiked });
     
     // Show animation if not already liked
     if (!metrics.isLiked) {
@@ -98,6 +102,14 @@ export default function FeedCard({ post, isDemo = false }) {
         setShowPawAnimation(false);
         setIsLikeAnimating(false);
       }, 600);
+    }
+    
+    // Toggle like - In demo mode, just toggle locally without Firestore sync
+    const result = await toggleLike(targetPostId, userId);
+    
+    if (!result?.success && result?.error) {
+      console.error('❌ Like failed:', result.error);
+      showToast?.(`Could not ${metrics.isLiked ? 'unlike' : 'like'} post`, 'error');
     }
   };
   
@@ -520,9 +532,11 @@ export default function FeedCard({ post, isDemo = false }) {
           {/* Bookmark */}
           <motion.button
             whileTap={{ scale: 0.85 }}
-            onClick={() => {
-              toggleBookmark(post.id);
-              showToast(post.isBookmarked ? 'Removed from saved' : 'Saved! 📌', 'success');
+            onClick={async () => {
+              const result = await toggleBookmark(post.id, user?.uid);
+              if (result?.success) {
+                showToast(post.isBookmarked ? 'Removed from favorites' : 'Added to favorites! ❤️', 'success');
+              }
             }}
             className={`p-2 rounded-full transition-colors ${
               post.isBookmarked 

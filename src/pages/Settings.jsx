@@ -62,7 +62,7 @@ const normalizePetType = (type) => {
 
 export default function Settings() {
   const { user, pet, setPet, logout } = useAuthStore();
-  const { isDarkMode, toggleDarkMode, language, setLanguage, showToast } = useUIStore();
+  const { language, setLanguage, showToast } = useUIStore();
   const navigate = useNavigate();
   
   const [showLanguages, setShowLanguages] = useState(false);
@@ -249,14 +249,6 @@ export default function Settings() {
     {
       title: 'Preferences',
       items: [
-        {
-          icon: isDarkMode ? Moon : Sun,
-          label: 'Dark Mode',
-          description: isDarkMode ? 'Switch to light mode' : 'Switch to dark mode',
-          action: toggleDarkMode,
-          isToggle: true,
-          toggleValue: isDarkMode,
-        },
         {
           icon: Globe,
           label: 'Language',

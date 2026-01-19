@@ -16,6 +16,7 @@ import {
   addDoc,
   serverTimestamp,
   getDoc,
+  setDoc,
   deleteDoc,
   runTransaction  // For atomic repost operations
 } from 'firebase/firestore';
@@ -28,7 +29,7 @@ export const useFeedStore = create((set, get) => ({
   isLoading: false,
   hasMore: true,
   lastDoc: null,
-  activeTab: 'foryou', // 'foryou' | 'following' | 'trending'
+  activeTab: 'foryou', // 'foryou' | 'following'
   unsubscribe: null, // For real-time listener cleanup
   
   // Set posts
@@ -191,14 +192,14 @@ export const useFeedStore = create((set, get) => ({
     }
   },
   
-  // Toggle like on a post (with optional Firestore sync)
+  // Toggle like on a post using transaction-based service
   // If userId is null, it's demo mode - just update locally
   toggleLike: async (postId, userId = null) => {
     const state = get();
     const post = state.posts.find(p => p.id === postId);
-    if (!post) return;
+    if (!post) return { success: false };
     
-    const isLiked = userId 
+    const isCurrentlyLiked = userId 
       ? (post.likedBy?.includes(userId) || post.isLiked)
       : post.isLiked;
     
@@ -208,10 +209,10 @@ export const useFeedStore = create((set, get) => ({
         if (p.id === postId) {
           return {
             ...p,
-            isLiked: !isLiked,
-            likeCount: isLiked ? Math.max(0, p.likeCount - 1) : p.likeCount + 1,
+            isLiked: !isCurrentlyLiked,
+            likeCount: isCurrentlyLiked ? Math.max(0, p.likeCount - 1) : p.likeCount + 1,
             likedBy: userId 
-              ? (isLiked 
+              ? (isCurrentlyLiked 
                   ? (p.likedBy || []).filter(id => id !== userId)
                   : [...(p.likedBy || []), userId])
               : p.likedBy
@@ -222,26 +223,46 @@ export const useFeedStore = create((set, get) => ({
     }));
     
     // Skip Firestore sync in demo mode (no userId)
-    if (!userId) return;
+    if (!userId) return { success: true, liked: !isCurrentlyLiked };
     
-    // Sync with Firestore
+    // Use transaction-based service for atomic updates
     try {
-      const postRef = doc(db, 'posts', postId);
-      await updateDoc(postRef, {
-        likeCount: increment(isLiked ? -1 : 1),
-        likedBy: isLiked ? arrayRemove(userId) : arrayUnion(userId)
-      });
+      // Dynamic import to avoid circular dependency
+      const { toggleLikePost } = await import('../services/socialService');
+      const result = await toggleLikePost(postId, userId);
+      
+      if (!result.success) {
+        // Revert optimistic update on error
+        set((state) => ({
+          posts: state.posts.map(p => {
+            if (p.id === postId) {
+              return {
+                ...p,
+                isLiked: isCurrentlyLiked,
+                likeCount: isCurrentlyLiked ? p.likeCount + 1 : Math.max(0, p.likeCount - 1),
+                likedBy: isCurrentlyLiked 
+                  ? [...(p.likedBy || []), userId]
+                  : (p.likedBy || []).filter(id => id !== userId)
+              };
+            }
+            return p;
+          })
+        }));
+        return result;
+      }
+      
+      return result;
     } catch (error) {
-      console.error('Error updating like:', error);
+      console.error('Error toggling like:', error);
       // Revert on error
       set((state) => ({
         posts: state.posts.map(p => {
           if (p.id === postId) {
             return {
               ...p,
-              isLiked: isLiked,
-              likeCount: isLiked ? p.likeCount + 1 : Math.max(0, p.likeCount - 1),
-              likedBy: isLiked 
+              isLiked: isCurrentlyLiked,
+              likeCount: isCurrentlyLiked ? p.likeCount + 1 : Math.max(0, p.likeCount - 1),
+              likedBy: isCurrentlyLiked 
                 ? [...(p.likedBy || []), userId]
                 : (p.likedBy || []).filter(id => id !== userId)
             };
@@ -249,18 +270,110 @@ export const useFeedStore = create((set, get) => ({
           return p;
         })
       }));
+      return { success: false, error: error.message };
     }
   },
   
-  // Toggle bookmark (local only for now, can add Firestore later)
-  toggleBookmark: (postId) => set((state) => ({
-    posts: state.posts.map(post => {
-      if (post.id === postId) {
-        return { ...post, isBookmarked: !post.isBookmarked };
+  // Toggle bookmark - saves to Firestore user document
+  toggleBookmark: async (postId, userId) => {
+    if (!postId) return { success: false };
+    
+    const state = get();
+    const post = state.posts.find(p => p.id === postId);
+    const isCurrentlyBookmarked = post?.isBookmarked || false;
+    
+    // Optimistic update
+    set((state) => ({
+      posts: state.posts.map(p => {
+        if (p.id === postId) {
+          return { ...p, isBookmarked: !isCurrentlyBookmarked };
+        }
+        return p;
+      })
+    }));
+    
+    // Skip Firestore sync if no userId
+    if (!userId) return { success: true, bookmarked: !isCurrentlyBookmarked };
+    
+    try {
+      const userRef = doc(db, 'users', userId);
+      
+      if (isCurrentlyBookmarked) {
+        // Remove from bookmarks
+        await updateDoc(userRef, {
+          bookmarks: arrayRemove(postId)
+        });
+      } else {
+        // Add to bookmarks
+        await setDoc(userRef, {
+          bookmarks: arrayUnion(postId)
+        }, { merge: true });
       }
-      return post;
-    })
-  })),
+      
+      console.log(`✅ ${isCurrentlyBookmarked ? 'Unbookmarked' : 'Bookmarked'} post ${postId}`);
+      return { success: true, bookmarked: !isCurrentlyBookmarked };
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+      // Revert on error
+      set((state) => ({
+        posts: state.posts.map(p => {
+          if (p.id === postId) {
+            return { ...p, isBookmarked: isCurrentlyBookmarked };
+          }
+          return p;
+        })
+      }));
+      return { success: false, error: error.message };
+    }
+  },
+  
+  // Load user's bookmarked posts
+  loadBookmarkedPosts: async (userId) => {
+    if (!userId) return [];
+    
+    try {
+      // First get the user's bookmarks list
+      const userRef = doc(db, 'users', userId);
+      const userDoc = await getDoc(userRef);
+      
+      if (!userDoc.exists()) return [];
+      
+      const bookmarkIds = userDoc.data()?.bookmarks || [];
+      
+      if (bookmarkIds.length === 0) return [];
+      
+      // Fetch all bookmarked posts (in batches if needed)
+      const posts = [];
+      
+      // Firestore 'in' queries are limited to 10 items, so batch them
+      const batchSize = 10;
+      for (let i = 0; i < bookmarkIds.length; i += batchSize) {
+        const batch = bookmarkIds.slice(i, i + batchSize);
+        const postsRef = collection(db, 'posts');
+        const q = query(postsRef, where('__name__', 'in', batch));
+        const snapshot = await getDocs(q);
+        
+        snapshot.docs.forEach(doc => {
+          const data = doc.data();
+          posts.push({
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate() || new Date(),
+            isBookmarked: true,
+          });
+        });
+      }
+      
+      // Sort by most recently bookmarked (reverse order of bookmarkIds)
+      posts.sort((a, b) => bookmarkIds.indexOf(b.id) - bookmarkIds.indexOf(a.id));
+      
+      console.log('📚 Loaded', posts.length, 'bookmarked posts');
+      return posts;
+    } catch (error) {
+      console.error('Error loading bookmarks:', error);
+      return [];
+    }
+  },
   
   // Set loading state
   setLoading: (isLoading) => set({ isLoading }),
@@ -358,11 +471,15 @@ export const useFeedStore = create((set, get) => ({
   // Subscribe to real-time updates (live feed - updates automatically!)
   // Filters out deleted posts, consolidates reposts by same original
   // Shows "Reposted by X, Y, and Z" when multiple users repost the same thing
-  subscribeToFeed: (userId = null) => {
-    const { unsubscribe: existingUnsub } = get();
+  // When activeTab is 'following', only shows posts from followed users
+  subscribeToFeed: (userId = null, followingList = []) => {
+    const { unsubscribe: existingUnsub, activeTab } = get();
     if (existingUnsub) existingUnsub();
     
-    console.log('🔴 Setting up real-time feed listener for user:', userId);
+    // Set loading true at start to prevent demo mode fallback from triggering
+    set({ isLoading: true });
+    
+    console.log('🔴 Setting up real-time feed listener for user:', userId, 'tab:', activeTab, 'following:', followingList?.length || 0);
     
     const postsRef = collection(db, 'posts');
     const q = query(postsRef, limit(100)); // Fetch more to consolidate reposts
@@ -382,6 +499,16 @@ export const useFeedStore = create((set, get) => ({
           };
         })
         .filter(post => !post.deleted);
+      
+      // Filter by followed users if on "following" tab
+      if (activeTab === 'following' && followingList && followingList.length > 0) {
+        allPosts = allPosts.filter(post => followingList.includes(post.ownerId));
+        console.log('🔴 Filtered to following only:', allPosts.length, 'posts from', followingList.length, 'followed users');
+      } else if (activeTab === 'following') {
+        // Following tab but no one followed yet - show empty
+        console.log('🔴 Following tab but no followed users');
+        allPosts = [];
+      }
       
       // Separate originals and reposts
       const originalPosts = allPosts.filter(p => p.type !== 'repost');
@@ -607,6 +734,51 @@ export const useFeedStore = create((set, get) => ({
     } catch (error) {
       console.error('Error loading comments:', error);
       return [];
+    }
+  },
+  
+  // Delete a comment from a post
+  deleteComment: async (postId, commentId, userId) => {
+    try {
+      // Get the comment to verify ownership
+      const commentRef = doc(db, 'posts', postId, 'comments', commentId);
+      const commentDoc = await getDoc(commentRef);
+      
+      if (!commentDoc.exists()) {
+        console.error('Comment not found');
+        return { success: false, error: 'Comment not found' };
+      }
+      
+      // Verify the user owns this comment
+      const commentData = commentDoc.data();
+      if (commentData.userId !== userId) {
+        console.error('User does not own this comment');
+        return { success: false, error: 'Not authorized to delete this comment' };
+      }
+      
+      // Delete the comment
+      await deleteDoc(commentRef);
+      
+      // Decrement comment count on post
+      const postRef = doc(db, 'posts', postId);
+      await updateDoc(postRef, {
+        commentCount: increment(-1)
+      });
+      
+      // Update local state
+      set((state) => ({
+        posts: state.posts.map(p => 
+          p.id === postId 
+            ? { ...p, commentCount: Math.max(0, (p.commentCount || 0) - 1) } 
+            : p
+        )
+      }));
+      
+      console.log('✅ Comment deleted successfully');
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      return { success: false, error: error.message };
     }
   },
   
@@ -1040,19 +1212,26 @@ export const useFeedStore = create((set, get) => ({
     if (!hashtag) return [];
     
     try {
-      console.log('🏷️ Loading posts with hashtag:', hashtag);
+      // Clean the hashtag - remove # if present
+      const cleanTag = hashtag.replace(/^#/, '').toLowerCase().trim();
+      console.log('🏷️ Loading posts with hashtag:', cleanTag);
       
       const postsRef = collection(db, 'posts');
       const allPosts = new Map(); // Use Map to dedupe by ID
       
-      // Try multiple case variations
+      // Try multiple variations (with/without #, different cases)
       const variations = [
-        hashtag.toLowerCase(),
-        hashtag,
-        hashtag.charAt(0).toUpperCase() + hashtag.slice(1).toLowerCase(),
+        cleanTag,
+        `#${cleanTag}`,
+        cleanTag.charAt(0).toUpperCase() + cleanTag.slice(1).toLowerCase(),
+        `#${cleanTag.charAt(0).toUpperCase() + cleanTag.slice(1).toLowerCase()}`,
+        hashtag, // Original input
       ];
       
-      for (const variant of variations) {
+      // Remove duplicates
+      const uniqueVariations = [...new Set(variations)];
+      
+      for (const variant of uniqueVariations) {
         try {
           const q = query(
             postsRef,
@@ -1065,7 +1244,8 @@ export const useFeedStore = create((set, get) => ({
           snapshot.docs.forEach(doc => {
             if (!allPosts.has(doc.id)) {
               const data = doc.data();
-              if (!data.deleted) {
+              // Same validity check: not deleted, not repost, has media
+              if (data.deleted !== true && data.type !== 'repost' && data.mediaUrl) {
                 allPosts.set(doc.id, {
                   id: doc.id,
                   ...data,
@@ -1084,7 +1264,7 @@ export const useFeedStore = create((set, get) => ({
       // Sort by trending score
       posts = get()._sortByTrending(posts);
       
-      console.log('🏷️ Found', posts.length, 'posts with hashtag:', hashtag);
+      console.log('🏷️ Found', posts.length, 'posts with hashtag:', cleanTag, '(tried variations:', uniqueVariations.join(', '), ')');
       return posts.slice(0, limitCount);
     } catch (error) {
       console.error('❌ Error loading posts by hashtag:', error);
@@ -1099,54 +1279,87 @@ export const useFeedStore = create((set, get) => ({
   loadPostsByBreed: async (breed, limitCount = 30) => {
     if (!breed) return [];
     
+    // Helper to check if post is valid (same criteria as getPopularBreeds)
+    const isValidPost = (data) => {
+      if (data.deleted === true) return false;
+      if (data.type === 'repost') return false;
+      if (!data.mediaUrl) return false;
+      return true;
+    };
+    
     try {
       console.log('🐕 Loading posts with breed:', breed);
       
       const postsRef = collection(db, 'posts');
-      
-      // First try exact match
-      let q = query(
-        postsRef,
-        where('detectedBreed', '==', breed),
-        limit(50)
-      );
-      
-      let snapshot = await getDocs(q);
+      const breedLower = breed.toLowerCase().trim();
       let posts = [];
       
-      if (snapshot.empty) {
-        // If no exact match, fetch all and filter client-side (case-insensitive)
-        console.log('🐕 No exact match, trying case-insensitive search...');
-        q = query(postsRef, limit(200));
-        snapshot = await getDocs(q);
-        
-        const breedLower = breed.toLowerCase();
-        posts = snapshot.docs
-          .map(doc => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              ...data,
-              createdAt: data.createdAt?.toDate() || new Date(),
-            };
-          })
-          .filter(post => {
-            if (post.deleted) return false;
-            const postBreed = (post.detectedBreed || '').toLowerCase();
-            return postBreed.includes(breedLower) || breedLower.includes(postBreed);
+      // Try multiple query strategies
+      const queryStrategies = [
+        // 1. Exact match
+        breed,
+        // 2. Lowercase
+        breedLower,
+        // 3. Title case
+        breed.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '),
+      ];
+      
+      const allPosts = new Map();
+      
+      for (const breedQuery of queryStrategies) {
+        try {
+          const q = query(
+            postsRef,
+            where('detectedBreed', '==', breedQuery),
+            limit(50)
+          );
+          
+          const snapshot = await getDocs(q);
+          
+          snapshot.docs.forEach(doc => {
+            if (!allPosts.has(doc.id)) {
+              const data = doc.data();
+              if (isValidPost(data)) {
+                allPosts.set(doc.id, {
+                  id: doc.id,
+                  ...data,
+                  createdAt: data.createdAt?.toDate() || new Date(),
+                });
+              }
+            }
           });
-      } else {
-        posts = snapshot.docs
-          .map(doc => {
-            const data = doc.data();
-            return {
+        } catch (e) {
+          console.log('Breed query failed for:', breedQuery);
+        }
+      }
+      
+      // If no results, try client-side partial matching
+      if (allPosts.size === 0) {
+        console.log('🐕 No exact match, trying partial match...');
+        const q = query(
+          postsRef,
+          limit(500)
+        );
+        const snapshot = await getDocs(q);
+        
+        snapshot.docs.forEach(doc => {
+          const data = doc.data();
+          if (!isValidPost(data)) return;
+          
+          const postBreed = (data.detectedBreed || '').toLowerCase().trim();
+          
+          // Partial match: "persian" matches "Persian Cat", "golden" matches "Golden Retriever"
+          if (postBreed && (postBreed.includes(breedLower) || breedLower.includes(postBreed))) {
+            allPosts.set(doc.id, {
               id: doc.id,
               ...data,
               createdAt: data.createdAt?.toDate() || new Date(),
-            };
-          })
-          .filter(post => !post.deleted);
+            });
+          }
+        });
       }
+      
+      posts = Array.from(allPosts.values());
       
       // Sort by trending score
       posts = get()._sortByTrending(posts);
@@ -1166,19 +1379,29 @@ export const useFeedStore = create((set, get) => ({
   loadPostsByBehavior: async (behavior, limitCount = 30) => {
     if (!behavior) return [];
     
+    // Helper to check if post is valid
+    const isValidPost = (data) => {
+      if (data.deleted === true) return false;
+      if (data.type === 'repost') return false;
+      if (!data.mediaUrl) return false;
+      return true;
+    };
+    
     try {
-      console.log('🎭 Loading posts with behavior:', behavior);
+      console.log('🎭 Loading posts with behavior/mood:', behavior);
       
       const postsRef = collection(db, 'posts');
       const allPosts = new Map();
+      const behaviorLower = behavior.toLowerCase();
       
-      // Try multiple case variations
+      // Try multiple case variations for behaviors field
       const variations = [
-        behavior.toLowerCase(),
+        behaviorLower,
         behavior,
         behavior.charAt(0).toUpperCase() + behavior.slice(1).toLowerCase(),
       ];
       
+      // 1. Search by behaviors field (user-selected tag behaviors)
       for (const variant of variations) {
         try {
           const q = query(
@@ -1192,7 +1415,7 @@ export const useFeedStore = create((set, get) => ({
           snapshot.docs.forEach(doc => {
             if (!allPosts.has(doc.id)) {
               const data = doc.data();
-              if (!data.deleted) {
+              if (isValidPost(data)) {
                 allPosts.set(doc.id, {
                   id: doc.id,
                   ...data,
@@ -1206,12 +1429,46 @@ export const useFeedStore = create((set, get) => ({
         }
       }
       
+      // 2. Also search by hashtags (e.g., #foodie, #lazy, #zoomies)
+      // This catches posts that have the hashtag but might not have behaviors field set
+      try {
+        const hashtagVariations = [
+          behaviorLower,
+          `#${behaviorLower}`,
+        ];
+        
+        for (const tag of hashtagVariations) {
+          const q = query(
+            postsRef,
+            where('hashtags', 'array-contains', tag),
+            limit(50)
+          );
+          
+          const snapshot = await getDocs(q);
+          
+          snapshot.docs.forEach(doc => {
+            if (!allPosts.has(doc.id)) {
+              const data = doc.data();
+              if (isValidPost(data)) {
+                allPosts.set(doc.id, {
+                  id: doc.id,
+                  ...data,
+                  createdAt: data.createdAt?.toDate() || new Date(),
+                });
+              }
+            }
+          });
+        }
+      } catch (e) {
+        console.log('Hashtag search failed for behavior:', behavior);
+      }
+      
       let posts = Array.from(allPosts.values());
       
       // Sort by trending score
       posts = get()._sortByTrending(posts);
       
-      console.log('🎭 Found', posts.length, 'posts with behavior:', behavior);
+      console.log('🎭 Found', posts.length, 'posts with behavior/hashtag:', behavior);
       return posts.slice(0, limitCount);
     } catch (error) {
       console.error('❌ Error loading posts by behavior:', error);
@@ -1316,40 +1573,65 @@ export const useFeedStore = create((set, get) => ({
   },
   
   /**
-   * Get trending hashtags from posts (aggregates hashtag counts)
+   * Get trending hashtags from posts (aggregates hashtag counts with recency weighting)
+   * Uses simple query to avoid Firestore index requirements
    */
   getTrendingHashtags: async (limitCount = 10) => {
     try {
       console.log('📊 Calculating trending hashtags...');
       
       const postsRef = collection(db, 'posts');
-      const q = query(postsRef, limit(200)); // Sample recent posts
+      // Simple query without orderBy to avoid index requirement
+      const q = query(postsRef, limit(500));
       
       const snapshot = await getDocs(q);
+      console.log('📊 Fetched', snapshot.docs.length, 'posts to analyze hashtags');
+      const now = Date.now();
       
-      // Count hashtag occurrences
+      // Count hashtag occurrences with recency weighting
       const hashtagCounts = new Map();
       
       snapshot.docs.forEach(doc => {
         const data = doc.data();
-        if (data.deleted || data.type === 'repost') return;
+        // Skip deleted, reposts, or posts without valid media
+        if (data.deleted === true) return;
+        if (data.type === 'repost') return;
+        if (!data.mediaUrl) return;
+        
+        // Calculate recency weight (posts from last 24h get 3x weight, last week 2x)
+        // Use createdAt or timestamp field
+        const postTime = data.createdAt?.toMillis?.() || data.timestamp?.toMillis?.() || data.createdAt || data.timestamp || now;
+        const ageHours = (now - postTime) / (1000 * 60 * 60);
+        let recencyWeight = 1;
+        if (ageHours < 24) recencyWeight = 3;
+        else if (ageHours < 168) recencyWeight = 2; // 7 days
         
         (data.hashtags || []).forEach(tag => {
-          const tagLower = tag.toLowerCase();
-          const current = hashtagCounts.get(tagLower) || { tag: tag, count: 0, engagement: 0 };
+          const cleanTag = tag.replace(/^#/, '').toLowerCase().trim();
+          if (!cleanTag || cleanTag.length < 2) return;
+          
+          const current = hashtagCounts.get(cleanTag) || { tag: cleanTag, count: 0, engagement: 0, recentCount: 0 };
           current.count += 1;
-          current.engagement += (data.likeCount || 0) + (data.repostCount || 0) * 2;
-          hashtagCounts.set(tagLower, current);
+          current.recentCount += recencyWeight;
+          current.engagement += ((data.likeCount || 0) + (data.repostCount || 0) * 2) * recencyWeight;
+          hashtagCounts.set(cleanTag, current);
         });
       });
       
-      // Sort by count * engagement
+      // Sort by post count (most posts first), then by engagement as tiebreaker
       const sorted = Array.from(hashtagCounts.values())
-        .map(h => ({ ...h, score: h.count * Math.sqrt(h.engagement + 1) }))
-        .sort((a, b) => b.score - a.score)
+        .filter(h => h.count >= 1) // At least 1 post with this tag
+        .sort((a, b) => {
+          // Primary sort: by post count (descending)
+          if (b.count !== a.count) {
+            return b.count - a.count;
+          }
+          // Tiebreaker: by engagement
+          return b.engagement - a.engagement;
+        })
         .slice(0, limitCount);
       
-      console.log('📊 Top hashtags:', sorted.slice(0, 5).map(h => h.tag));
+      console.log('📊 Top trending hashtags:', sorted.slice(0, 5).map(h => `#${h.tag} (${h.count} posts)`));
       
       return sorted;
     } catch (error) {
@@ -1359,34 +1641,53 @@ export const useFeedStore = create((set, get) => ({
   },
   
   /**
-   * Get popular breeds from posts (aggregates breed counts)
+   * Get popular breeds from posts (aggregates breed counts with stable image URLs)
    */
   getPopularBreeds: async (limitCount = 10) => {
     try {
       console.log('🐾 Calculating popular breeds...');
       
       const postsRef = collection(db, 'posts');
-      const q = query(postsRef, limit(200));
+      // Simple query without orderBy to avoid index requirements
+      const q = query(postsRef, limit(500));
       
       const snapshot = await getDocs(q);
+      console.log('🐾 Fetched', snapshot.docs.length, 'posts to analyze breeds');
       
       const breedCounts = new Map();
       
       snapshot.docs.forEach(doc => {
         const data = doc.data();
-        if (data.deleted || data.type === 'repost' || !data.detectedBreed) return;
         
-        const breed = data.detectedBreed;
-        const current = breedCounts.get(breed) || { breed, count: 0, petType: data.detectedPetType };
+        // Skip deleted, reposts, or posts without valid media
+        if (data.deleted === true) return;
+        if (data.type === 'repost') return;
+        if (!data.mediaUrl) return; // Must have media
+        
+        // Check for detectedBreed field
+        const breed = data.detectedBreed?.trim();
+        if (!breed || breed.toLowerCase() === 'unknown' || breed.toLowerCase() === 'mixed breed') return;
+        
+        // Normalize breed name (capitalize first letter of each word)
+        const normalizedBreed = breed.split(' ')
+          .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+          .join(' ');
+        
+        const current = breedCounts.get(normalizedBreed) || { 
+          breed: normalizedBreed, 
+          count: 0, 
+          petType: data.detectedPetType || 'dog'
+        };
         current.count += 1;
-        breedCounts.set(breed, current);
+        breedCounts.set(normalizedBreed, current);
       });
       
       const sorted = Array.from(breedCounts.values())
+        .filter(b => b.count >= 1)
         .sort((a, b) => b.count - a.count)
         .slice(0, limitCount);
       
-      console.log('🐾 Top breeds:', sorted.slice(0, 5).map(b => b.breed));
+      console.log('🐾 Top breeds found:', sorted.map(b => `${b.breed} (${b.count})`));
       
       return sorted;
     } catch (error) {

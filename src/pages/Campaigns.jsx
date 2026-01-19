@@ -19,12 +19,12 @@ export default function Campaigns() {
   
   return (
     <div className="min-h-screen pb-8">
-      {/* Header - Meow Madness Challenges 🐱🐶💻 */}
+      {/* Header - Pet Challenges 🐱🐶💻 */}
       <header className="sticky top-0 z-40 bg-gradient-to-r from-primary-500 via-secondary-500 to-accent-coral text-white">
         <div className="px-4 py-5">
           <h1 className="font-heading text-2xl font-bold flex items-center gap-2">
             <Trophy className="w-7 h-7 text-accent-gold animate-bounce" />
-            Meow Madness Challenges
+            Pet Challenges
             <span className="text-xl">🐱🐶</span>
           </h1>
           <p className="text-sm text-white/80 mt-1">

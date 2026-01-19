@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuthStore } from '../store/authStore';
 import { useUIStore } from '../store/uiStore';
 import { useFeedStore } from '../store/feedStore';
+import { getUserStats, checkIfFollowing } from '../services/socialService';
 import { demoPosts, demoProfiles, reliableImages } from '../data/demoData';
 import {
   Settings, Grid, Heart, Users, Play,
@@ -42,26 +43,63 @@ const behaviorEmojis = {
 
 export default function Profile() {
   const { petId } = useParams();
-  const { user, pet: currentUserPet } = useAuthStore();
+  const { user, pet: currentUserPet, following, followUser, unfollowUser } = useAuthStore();
   const { showToast } = useUIStore();
   
   const [activeTab, setActiveTab] = useState('memes');
   const [petData, setPetData] = useState(null);
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isFollowing, setIsFollowing] = useState(false);
+  // Check if current user is following this profile
+  const isFollowing = petId && following?.includes(petId);
   const [isDemo, setIsDemo] = useState(false);
   const [deletingPostId, setDeletingPostId] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [reposts, setReposts] = useState([]);
   const [loadingReposts, setLoadingReposts] = useState(false);
+  const [bookmarks, setBookmarks] = useState([]);
+  const [loadingBookmarks, setLoadingBookmarks] = useState(false);
   
-  const { loadUserPosts, deletePost, loadUserReposts, deleteRepost } = useFeedStore();
+  const { loadUserPosts, deletePost, loadUserReposts, deleteRepost, loadBookmarkedPosts } = useFeedStore();
   const isOwnProfile = !petId || petId === user?.uid;
   
   useEffect(() => {
     loadProfile();
   }, [petId, user]);
+  
+  // Real-time listener for stats (Fans and Paws count)
+  useEffect(() => {
+    const targetUserId = isOwnProfile ? user?.uid : petId;
+    if (!targetUserId) return;
+    
+    const userRef = doc(db, 'users', targetUserId);
+    const unsubscribe = onSnapshot(userRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const stats = snapshot.data()?.stats || {};
+        setPetData(prev => {
+          if (!prev) return prev;
+          
+          // For likes: use stored value only if it's > 0, otherwise keep calculated
+          // This prevents real-time updates from overwriting accurate calculated values
+          const newLikes = stats.likes > 0 ? stats.likes : (prev.stats?.likes ?? 0);
+          
+          return {
+            ...prev,
+            stats: {
+              ...prev.stats,
+              followers: stats.followers ?? prev.stats?.followers ?? 0,
+              likes: newLikes,
+              following: stats.following ?? prev.stats?.following ?? 0,
+            }
+          };
+        });
+      }
+    }, (error) => {
+      console.log('Stats listener error:', error);
+    });
+    
+    return () => unsubscribe();
+  }, [petId, user?.uid, isOwnProfile]);
   
   const loadProfile = async () => {
     setIsLoading(true);
@@ -82,24 +120,44 @@ export default function Profile() {
             realPetData = { id: petDoc.id, ...petDoc.data() };
           }
           
+          // Fetch user stats using social service (followers, likes, following)
+          const userStats = await getUserStats(targetUserId);
+          
           // Fetch user's posts from Firestore
           realPosts = await loadUserPosts(targetUserId);
+          
+          // Calculate total likes from posts - this is the accurate count
+          const totalLikesFromPosts = realPosts.reduce((sum, post) => sum + (post.likeCount || 0), 0);
+          
+          // Use calculated likes as primary source, stored stats as secondary
+          // This ensures accuracy even if stored stats get out of sync
+          const actualLikes = totalLikesFromPosts > 0 ? totalLikesFromPosts : (userStats.likes || 0);
+          
+          // Merge stats
+          realPetData = realPetData || {};
+          realPetData.stats = {
+            posts: realPosts.length,
+            likes: actualLikes,
+            followers: userStats.followers || 0,
+            following: userStats.following || 0,
+          };
+          
+          // Sync the stored stats if they're different from calculated
+          if (userStats.likes !== totalLikesFromPosts && totalLikesFromPosts > 0) {
+            console.log('📊 Syncing likes count:', { stored: userStats.likes, calculated: totalLikesFromPosts });
+            // Fire-and-forget sync
+            import('../services/socialService').then(({ syncUserLikesCount }) => {
+              syncUserLikesCount?.(targetUserId, totalLikesFromPosts);
+            }).catch(() => {});
+          }
         } catch (e) {
-          console.log('Firestore not configured, using demo data');
+          console.log('Firestore not configured, using demo data', e);
         }
       }
       
       if (realPetData) {
         // Use real Firestore data
-        setPetData({
-          ...realPetData,
-          stats: realPetData.stats || {
-            posts: realPosts.length,
-            likes: 0,
-            followers: 0,
-            following: 0,
-          },
-        });
+        setPetData(realPetData);
         setPosts(realPosts);
       } else if (isOwnProfile && currentUserPet) {
         // Use current user's local pet data (from onboarding)
@@ -261,6 +319,17 @@ export default function Profile() {
     setLoadingReposts(false);
   };
   
+  // Load bookmarks when the Favorites tab is clicked
+  const handleLoadBookmarks = async () => {
+    // Only load bookmarks for own profile
+    if (!isOwnProfile || !user?.uid || loadingBookmarks) return;
+    
+    setLoadingBookmarks(true);
+    const userBookmarks = await loadBookmarkedPosts(user.uid);
+    setBookmarks(userBookmarks);
+    setLoadingBookmarks(false);
+  };
+  
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -415,7 +484,49 @@ export default function Profile() {
             <>
               <motion.button
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setIsFollowing(!isFollowing)}
+                onClick={async () => {
+                  if (isFollowing) {
+                    // Optimistic UI update for Fans count
+                    setPetData(prev => ({
+                      ...prev,
+                      stats: {
+                        ...prev?.stats,
+                        followers: Math.max(0, (prev?.stats?.followers || 0) - 1)
+                      }
+                    }));
+                    const result = await unfollowUser(petId);
+                    if (!result?.success) {
+                      // Revert on error
+                      setPetData(prev => ({
+                        ...prev,
+                        stats: {
+                          ...prev?.stats,
+                          followers: (prev?.stats?.followers || 0) + 1
+                        }
+                      }));
+                    }
+                  } else {
+                    // Optimistic UI update for Fans count
+                    setPetData(prev => ({
+                      ...prev,
+                      stats: {
+                        ...prev?.stats,
+                        followers: (prev?.stats?.followers || 0) + 1
+                      }
+                    }));
+                    const result = await followUser(petId);
+                    if (!result?.success) {
+                      // Revert on error
+                      setPetData(prev => ({
+                        ...prev,
+                        stats: {
+                          ...prev?.stats,
+                          followers: Math.max(0, (prev?.stats?.followers || 0) - 1)
+                        }
+                      }));
+                    }
+                  }
+                }}
                 className={`flex-1 ${isFollowing ? 'btn-secondary' : 'btn-primary'}`}
               >
                 {isFollowing ? 'Following' : 'Follow'}
@@ -441,6 +552,8 @@ export default function Profile() {
                 setActiveTab(id);
                 // Load reposts when tab is clicked
                 if (id === 'reposts') handleLoadReposts();
+                // Load bookmarks when favorites tab is clicked
+                if (id === 'favorites') handleLoadBookmarks();
               }}
               className={`flex-1 py-3 flex items-center justify-center gap-2 border-b-2 transition-colors ${
                 activeTab === id
@@ -648,36 +761,69 @@ export default function Profile() {
           </div>
         )}
         
-        {/* Favorites tab */}
+        {/* Favorites tab - Shows bookmarked posts */}
         {activeTab === 'favorites' && (
-          <div className="grid grid-cols-3 gap-1 mt-4">
-            {demoPosts.filter(p => p.isBookmarked).length > 0 ? (
-              demoPosts.filter(p => p.isBookmarked).map((post) => (
-                <Link
-                  key={post.id}
-                  to={`/post/${post.id}`}
-                  className="relative aspect-square bg-gray-100 dark:bg-gray-800 group"
+          <div className="mt-4">
+            {!isOwnProfile ? (
+              <div className="text-center py-12">
+                <div className="text-5xl mb-4">🔒</div>
+                <h3 className="font-heading text-xl font-bold text-petmeme-text dark:text-petmeme-text-dark">
+                  Private
+                </h3>
+                <p className="text-petmeme-muted mt-2">
+                  Favorites are only visible to the profile owner
+                </p>
+              </div>
+            ) : loadingBookmarks ? (
+              <div className="text-center py-12">
+                <motion.div 
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  className="text-4xl inline-block"
                 >
-                  <img
-                    src={post.mediaUrl}
-                    alt=""
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                    onError={(e) => {
-                      e.target.src = petData?.petType === 'dog' ? 'https://placedog.net/200/200?id=grid' : 'https://cataas.com/cat?width=200&height=200&t=grid';
-                    }}
-                  />
-                </Link>
-              ))
+                  ❤️
+                </motion.div>
+                <p className="text-petmeme-muted mt-2">Loading favorites...</p>
+              </div>
+            ) : bookmarks.length > 0 ? (
+              <div className="grid grid-cols-3 gap-1">
+                {bookmarks.map((post) => (
+                  <Link
+                    key={post.id}
+                    to={`/post/${post.id}`}
+                    className="aspect-square relative group bg-gray-100 dark:bg-gray-800"
+                  >
+                    <img
+                      src={post.mediaUrl || post.thumbnailUrl}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.target.src = 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=300&h=300&fit=crop';
+                      }}
+                    />
+                    {/* Hover overlay */}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                      <div className="flex items-center gap-2 text-white font-semibold">
+                        <Heart className="w-5 h-5" fill="white" />
+                        {formatCount(post.likeCount || 0)}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             ) : (
-              <div className="col-span-3 text-center py-12">
+              <div className="text-center py-12">
                 <div className="text-5xl mb-4">❤️</div>
                 <h3 className="font-heading text-xl font-bold text-petmeme-text dark:text-petmeme-text-dark">
                   No favorites yet
                 </h3>
                 <p className="text-petmeme-muted mt-2">
-                  Save your favorite memes to view them here!
+                  Tap the bookmark icon on posts to save them here!
                 </p>
+                <Link to="/" className="btn-primary inline-block mt-4">
+                  Browse Feed
+                </Link>
               </div>
             )}
           </div>

@@ -6,7 +6,7 @@ import { db } from '../config/firebase';
 import {
   ArrowLeft, Heart, MessageCircle, Share2, Bookmark,
   Send, MoreHorizontal, Flag, Play, Pause, ChevronDown, ChevronUp,
-  Volume2, VolumeX
+  Volume2, VolumeX, Trash2, Repeat2
 } from 'lucide-react';
 import { useFeedStore } from '../store/feedStore';
 import { useAuthStore } from '../store/authStore';
@@ -32,11 +32,9 @@ export default function PostDetail() {
   const navigate = useNavigate();
   const videoRef = useRef(null);
   
-  const { posts, toggleLike, toggleBookmark } = useFeedStore();
-  const { pet } = useAuthStore();
+  const { posts, toggleLike, toggleBookmark, loadComments, addComment, deleteComment, repostPost, undoRepost } = useFeedStore();
+  const { user, pet } = useAuthStore();
   const { showToast } = useUIStore();
-  
-  const { loadComments, addComment } = useFeedStore();
   
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
@@ -46,6 +44,8 @@ export default function PostDetail() {
   const [isMuted, setIsMuted] = useState(true);
   const [expandedReplies, setExpandedReplies] = useState({});
   const [replyingTo, setReplyingTo] = useState(null);
+  const [deletingCommentId, setDeletingCommentId] = useState(null);
+  const [isReposting, setIsReposting] = useState(false);
   
   useEffect(() => {
     const loadPost = async () => {
@@ -110,6 +110,7 @@ export default function PostDetail() {
           // Transform Firestore comments to match our format
           const formattedComments = firestoreComments.map(c => ({
             id: c.id,
+            userId: c.userId, // Preserve userId for delete authorization
             user: {
               name: c.petName || 'Anonymous',
               avatar: c.petPhotoUrl || reliableImages.avatar1,
@@ -145,23 +146,116 @@ export default function PostDetail() {
     return `${Math.floor(seconds / 86400)}d`;
   };
   
-  const handleLike = () => {
+  const handleLike = async () => {
     if (post) {
       const { user } = useAuthStore.getState();
-      toggleLike(post.id, user?.uid);
+      const userId = user?.uid;
+      const wasLiked = post.isLiked || (userId && post.likedBy?.includes(userId));
+      
+      console.log('🐾 PostDetail Like:', { postId: post.id, userId, wasLiked });
+      
+      // Optimistic update
       setPost(prev => ({
         ...prev,
-        isLiked: !prev.isLiked,
-        likeCount: prev.isLiked ? prev.likeCount - 1 : prev.likeCount + 1,
+        isLiked: !wasLiked,
+        likeCount: wasLiked ? Math.max(0, prev.likeCount - 1) : prev.likeCount + 1,
+        likedBy: userId 
+          ? (wasLiked 
+              ? (prev.likedBy || []).filter(id => id !== userId)
+              : [...(prev.likedBy || []), userId])
+          : prev.likedBy
       }));
+      
+      const result = await toggleLike(post.id, userId);
+      
+      if (!result?.success) {
+        // Revert on error
+        setPost(prev => ({
+          ...prev,
+          isLiked: wasLiked,
+          likeCount: wasLiked ? prev.likeCount + 1 : Math.max(0, prev.likeCount - 1),
+          likedBy: userId 
+            ? (wasLiked 
+                ? [...(prev.likedBy || []), userId]
+                : (prev.likedBy || []).filter(id => id !== userId))
+            : prev.likedBy
+        }));
+        showToast?.(`Could not ${wasLiked ? 'unlike' : 'like'} post`, 'error');
+      }
     }
   };
   
-  const handleBookmark = () => {
+  const handleBookmark = async () => {
     if (post) {
-      toggleBookmark(post.id);
+      const wasBookmarked = post.isBookmarked;
       setPost(prev => ({ ...prev, isBookmarked: !prev.isBookmarked }));
-      showToast(post.isBookmarked ? 'Removed from saved' : 'Saved to collection', 'success');
+      const result = await toggleBookmark(post.id, user?.uid);
+      if (result?.success) {
+        showToast(wasBookmarked ? 'Removed from favorites' : 'Added to favorites! ❤️', 'success');
+      }
+    }
+  };
+  
+  const handleRepost = async () => {
+    if (!post) return;
+    
+    if (!user?.uid || !pet) {
+      showToast('Login to repost! 🔐', 'info');
+      return;
+    }
+    
+    // Check if this is a repost and get original ID
+    const isRepost = post.type === 'repost';
+    const originalId = isRepost ? post.originalPostId : post.id;
+    
+    // Don't repost your own post
+    const originalOwnerId = isRepost ? (post.originalPost?.pet?.id || post.originalPost?.ownerId) : (post.pet?.id || post.ownerId);
+    if (originalOwnerId === user.uid) {
+      showToast("Can't repost your own meme! 😹", 'info');
+      return;
+    }
+    
+    const hasReposted = post.isReposted || false;
+    setIsReposting(true);
+    
+    if (hasReposted) {
+      // Undo repost
+      const result = await undoRepost(originalId, user.uid);
+      setIsReposting(false);
+      
+      if (result.success) {
+        setPost(prev => ({ 
+          ...prev, 
+          isReposted: false,
+          repostCount: Math.max(0, (prev.repostCount || 0) - 1)
+        }));
+        showToast('Repost removed 🗑️', 'info');
+      } else {
+        showToast(result.error || 'Failed to remove repost', 'error');
+      }
+    } else {
+      // Create repost
+      const result = await repostPost(originalId, {
+        id: user.uid,
+        name: pet.name || 'Anonymous',
+        photoUrl: pet.photoURL || null,
+      });
+      
+      setIsReposting(false);
+      
+      if (result.success) {
+        setPost(prev => ({ 
+          ...prev, 
+          isReposted: true,
+          repostCount: (prev.repostCount || 0) + 1
+        }));
+        showToast('Reposted! 🚀 Your followers will see this!', 'success');
+      } else if (result.error === 'Already reposted') {
+        setPost(prev => ({ ...prev, isReposted: true }));
+        showToast('You already reposted this! 🔄', 'info');
+      } else {
+        showToast(result.error || 'Repost failed', 'error');
+      }
     }
   };
   
@@ -255,6 +349,48 @@ export default function PostDetail() {
   
   const toggleReplies = (commentId) => {
     setExpandedReplies(prev => ({ ...prev, [commentId]: !prev[commentId] }));
+  };
+  
+  const handleDeleteComment = async (commentId) => {
+    if (!post || !user?.uid) return;
+    
+    setDeletingCommentId(commentId);
+    
+    // Optimistic update - remove from UI immediately
+    const originalComments = [...comments];
+    setComments(prev => prev.filter(c => c.id !== commentId));
+    
+    // Update post comment count locally
+    setPost(prev => ({
+      ...prev,
+      commentCount: Math.max(0, (prev?.commentCount || 0) - 1)
+    }));
+    
+    try {
+      const result = await deleteComment(post.id, commentId, user.uid);
+      
+      if (result.success) {
+        showToast('Comment deleted', 'success');
+      } else {
+        // Revert on error
+        setComments(originalComments);
+        setPost(prev => ({
+          ...prev,
+          commentCount: (prev?.commentCount || 0) + 1
+        }));
+        showToast(result.error || 'Failed to delete comment', 'error');
+      }
+    } catch (error) {
+      // Revert on error
+      setComments(originalComments);
+      setPost(prev => ({
+        ...prev,
+        commentCount: (prev?.commentCount || 0) + 1
+      }));
+      showToast('Failed to delete comment', 'error');
+    } finally {
+      setDeletingCommentId(null);
+    }
   };
   
   const formatCount = (num) => {
@@ -431,6 +567,28 @@ export default function PostDetail() {
               >
                 <Share2 className="w-6 h-6" />
               </button>
+              
+              {/* Repost */}
+              <motion.button
+                whileTap={{ scale: 1.2 }}
+                onClick={handleRepost}
+                disabled={isReposting}
+                className={`flex items-center gap-2 ${
+                  post.isReposted 
+                    ? 'text-green-500' 
+                    : 'text-petmeme-text dark:text-petmeme-text-dark'
+                } ${isReposting ? 'opacity-50' : ''}`}
+              >
+                <motion.div
+                  animate={isReposting ? { rotate: 360 } : { rotate: 0 }}
+                  transition={{ duration: 0.5, repeat: isReposting ? Infinity : 0 }}
+                >
+                  <Repeat2 className="w-6 h-6" />
+                </motion.div>
+                {(post.repostCount || 0) > 0 && (
+                  <span className="font-medium">{formatCount(post.repostCount || 0)}</span>
+                )}
+              </motion.button>
             </div>
             
             <motion.button
@@ -519,6 +677,23 @@ export default function PostDetail() {
                     >
                       Reply
                     </button>
+                    {/* Delete button - only show for comment owner */}
+                    {user?.uid && comment.userId === user.uid && (
+                      <button 
+                        onClick={() => handleDeleteComment(comment.id)}
+                        disabled={deletingCommentId === comment.id}
+                        className="text-xs text-petmeme-muted hover:text-red-500 font-medium flex items-center gap-1"
+                      >
+                        {deletingCommentId === comment.id ? (
+                          <span className="animate-pulse">Deleting...</span>
+                        ) : (
+                          <>
+                            <Trash2 className="w-3 h-3" />
+                            Delete
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                   
                   {/* Replies */}

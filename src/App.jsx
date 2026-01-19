@@ -4,7 +4,6 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from './config/firebase';
 import { useAuthStore } from './store/authStore';
-import { useUIStore } from './store/uiStore';
 
 // Layouts
 import MainLayout from './layouts/MainLayout';
@@ -29,13 +28,12 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 
 function App() {
   const { setUser, setLoading, isLoading, user, isOnboarded } = useAuthStore();
-  const { isDarkMode } = useUIStore();
   
-  // Apply dark mode on mount
+  // Force dark mode only - no light mode for investor demo
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', isDarkMode);
-    document.documentElement.classList.toggle('light', !isDarkMode);
-  }, [isDarkMode]);
+    document.documentElement.classList.add('dark');
+    document.documentElement.classList.remove('light');
+  }, []);
   
   // Listen to Firebase auth state
   useEffect(() => {
@@ -75,6 +73,10 @@ function App() {
                 setPet(null);
               }
             }
+            
+            // Load following list from Firestore
+            const { loadFollowingFromFirestore } = useAuthStore.getState();
+            loadFollowingFromFirestore();
           } catch (error) {
             console.log('Could not fetch pet from Firestore:', error.message);
             // Keep existing behavior if Firestore fails

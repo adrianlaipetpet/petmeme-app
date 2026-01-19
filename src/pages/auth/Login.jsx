@@ -6,10 +6,8 @@ import {
   createUserWithEmailAndPassword 
 } from 'firebase/auth';
 import { auth, googleProvider } from '../../config/firebase';
-import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import { reliableImages } from '../../data/demoData';
 
 export default function Login() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -94,30 +92,30 @@ export default function Login() {
         </motion.span>
       </div>
       
-      {/* 🎨 LOGO ONLY - No text beside it! */}
-      <div className="text-center mb-8 relative">
-        <motion.div
-          animate={{ 
-            scale: [1, 1.05, 1],
-            rotate: [0, 3, -3, 0]
-          }}
-          transition={{ duration: 2, repeat: Infinity, repeatDelay: 2 }}
-          className="inline-block mb-6"
-        >
-          {/* Logo Image - Medium size for login */}
-          <img
-            src="/lmeow-logo.png"
-            alt="Lmeow"
-            className="w-32 h-32 md:w-40 md:h-40 object-contain mx-auto drop-shadow-xl"
-          />
-        </motion.div>
+      {/* Logo + Tagline */}
+      <div className="text-center mb-6 relative">
+        <motion.img
+          src="/lmeow-logo.png"
+          alt="Lmeow"
+          className="w-24 h-24 md:w-28 md:h-28 object-contain mx-auto"
+          style={{ filter: 'drop-shadow(0 4px 12px rgba(236, 72, 153, 0.3))' }}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4 }}
+        />
         
-        <p className="text-primary-500 font-semibold text-lg">
-          Pet Coding Memes 🐱🐶💻
-        </p>
-        <p className="text-lmeow-muted mt-2">
-          {isSignUp ? 'Join the purr-fect meme revolution! 🎉' : 'Welcome back, fur-iend! 🐾'}
-        </p>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.4 }}
+          className="mt-3 text-base md:text-lg font-medium text-lmeow-text-dark"
+        >
+          {isSignUp ? (
+            <>Paw-sitively Viral – Sign Up! <span className="text-primary-400">🐾</span></>
+          ) : (
+            <>Log in or your pet will judge you <span className="inline-block">😾</span></>
+          )}
+        </motion.p>
       </div>
       
       {/* Google Sign In */}
@@ -145,31 +143,33 @@ export default function Login() {
       {/* Email Form */}
       <form onSubmit={handleEmailAuth} className="space-y-4">
         <div className="relative">
-          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary-400" />
+          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary-400 z-10 pointer-events-none" />
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="your@email.com"
-            className="input-field pl-12"
+            className="input-field"
+            style={{ paddingLeft: '3.5rem' }}
             disabled={loading}
           />
         </div>
         
         <div className="relative">
-          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary-400" />
+          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary-400 z-10 pointer-events-none" />
           <input
             type={showPassword ? 'text' : 'password'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Super secret password"
-            className="input-field pl-12 pr-12"
+            placeholder="Enter your password"
+            className="input-field"
+            style={{ paddingLeft: '3.5rem', paddingRight: '3.5rem' }}
             disabled={loading}
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-lmeow-muted hover:text-primary-500"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-lmeow-muted hover:text-primary-500 z-10"
           >
             {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
           </button>
@@ -204,51 +204,6 @@ export default function Login() {
           {isSignUp ? 'Sign In' : 'Join Now!'}
         </button>
       </p>
-      
-      {/* Demo Mode - Big & Fun */}
-      <div className="mt-8 pt-6 border-t-2 border-dashed border-primary-200 dark:border-primary-800">
-        <p className="text-center text-sm text-lmeow-muted mb-3">
-          Just want to explore the chaos? 👀
-        </p>
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => {
-            const { setUser, setPet } = useAuthStore.getState();
-            setUser({
-              uid: 'demo-user-123',
-              email: 'demo@lmeow.app',
-              displayName: 'Demo User',
-              photoURL: null,
-              isDemo: true,
-            });
-            setPet({
-              id: 'demo-user-123',
-              name: 'Sir Meowsalot',
-              type: '🐈 Cat',
-              breed: 'Orange Tabby',
-              behaviors: ['dramatic', 'foodie', 'lazy'],
-              photoURL: reliableImages.profile1,
-              bio: 'Professional napper & treat enthusiast 🍗',
-              stats: {
-                posts: 47,
-                likes: 51112,
-                followers: 12500,
-                following: 342,
-              },
-            });
-            showToast('Welcome to the meme party! 🎉😸', 'success');
-          }}
-          className="w-full py-4 bg-gradient-to-r from-primary-500 via-accent-coral to-secondary-500 text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3 text-lg"
-        >
-          <img src="/lmeow-logo.png" alt="Lmeow" className="w-8 h-8 object-contain" />
-          Try Demo Mode
-          <span className="text-2xl">🐾</span>
-        </motion.button>
-        <p className="text-center text-xs text-lmeow-muted mt-2">
-          No signup needed — dive right in!
-        </p>
-      </div>
     </motion.div>
   );
 }

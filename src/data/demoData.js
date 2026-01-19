@@ -579,7 +579,7 @@ export const demoComments = [
 ];
 
 // ========================================
-// Meow Madness Challenges (Coding themed!)
+// Pet Challenges (Coding themed!)
 // ========================================
 export const activeCampaigns = [
   {

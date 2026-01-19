@@ -169,13 +169,15 @@ html {
 
 body {
   font-family: var(--font-body);
-  background-color: var(--color-lmeow-bg);
-  color: var(--color-lmeow-text);
+  /* Force dark mode for investor demo */
+  background-color: var(--color-lmeow-bg-dark);
+  color: var(--color-lmeow-text-dark);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-.dark body {
+/* Ensure dark mode is always applied */
+html, .dark body {
   background-color: var(--color-lmeow-bg-dark);
   color: var(--color-lmeow-text-dark);
 }
@@ -196,12 +198,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(to bottom, var(--color-primary-300), var(--color-primary-400));
-  border-radius: 9999px;
-}
-
-.dark ::-webkit-scrollbar-thumb {
   background: linear-gradient(to bottom, var(--color-primary-700), var(--color-primary-800));
+  border-radius: 9999px;
 }
 
 /* ========================================
@@ -214,7 +212,7 @@ h1, h2, h3, h4, h5, h6 {
   color: white;
   font-weight: 600;
   border-radius: 1rem;
-  transition: all 0.2s ease-out;
+  transition: all 0.3s ease-out;
   box-shadow: 0 4px 14px rgba(236, 72, 153, 0.35);
   position: relative;
   overflow: hidden;
@@ -246,18 +244,12 @@ h1, h2, h3, h4, h5, h6 {
 
 .btn-secondary {
   padding: 0.75rem 1.5rem;
-  background: white;
-  border: 2px solid var(--color-primary-300);
-  color: var(--color-primary-600);
+  background: var(--color-lmeow-card-dark);
+  border: 2px solid var(--color-primary-700);
+  color: var(--color-primary-400);
   font-weight: 600;
   border-radius: 1rem;
-  transition: all 0.2s ease-out;
-}
-
-.dark .btn-secondary {
-  background: var(--color-lmeow-card-dark);
-  border-color: var(--color-primary-700);
-  color: var(--color-primary-400);
+  transition: all 0.3s ease-out;
 }
 
 .btn-secondary:hover {
@@ -310,16 +302,11 @@ h1, h2, h3, h4, h5, h6 {
    ======================================== */
 
 .card {
-  background: var(--color-lmeow-card);
+  background: var(--color-lmeow-card-dark);
   border-radius: 1.5rem;
   box-shadow: var(--shadow-card);
   transition: all 0.3s;
-  border: 1px solid rgba(236, 72, 153, 0.1);
-}
-
-.dark .card {
-  background: var(--color-lmeow-card-dark);
-  border-color: rgba(236, 72, 153, 0.15);
+  border: 1px solid rgba(236, 72, 153, 0.15);
 }
 
 .card:hover {
@@ -347,19 +334,25 @@ h1, h2, h3, h4, h5, h6 {
 .input-field {
   width: 100%;
   padding: 0.875rem 1.25rem;
-  background: white;
-  border: 2px solid var(--color-primary-200);
+  background: var(--color-lmeow-card-dark);
+  border: 2px solid rgba(236, 72, 153, 0.3);
   border-radius: 1rem;
-  color: var(--color-lmeow-text);
-  transition: all 0.2s;
+  color: var(--color-lmeow-text-dark);
+  transition: all 0.3s;
   outline: none;
   font-size: 1rem;
 }
 
-.dark .input-field {
-  background: var(--color-lmeow-card-dark);
-  border-color: rgba(236, 72, 153, 0.3);
-  color: var(--color-lmeow-text-dark);
+/* Input with left icon - ensure proper spacing */
+.input-field.pl-14,
+.input-field[class*="pl-14"] {
+  padding-left: 3.5rem !important;
+}
+
+/* Input with right icon */
+.input-field.pr-14,
+.input-field[class*="pr-14"] {
+  padding-right: 3.5rem !important;
 }
 
 .input-field::placeholder {
@@ -376,16 +369,12 @@ h1, h2, h3, h4, h5, h6 {
    ======================================== */
 
 .feed-card {
-  background: var(--color-lmeow-card);
+  background: var(--color-lmeow-card-dark);
   border-radius: 1.5rem;
   overflow: hidden;
   box-shadow: var(--shadow-card);
   transition: all 0.3s;
-  border: 1px solid rgba(236, 72, 153, 0.08);
-}
-
-.dark .feed-card {
-  background: var(--color-lmeow-card-dark);
+  border: 1px solid rgba(236, 72, 153, 0.12);
 }
 
 .feed-card:hover {
@@ -418,11 +407,6 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 0.875rem;
   font-weight: 600;
   border-radius: 9999px;
-  background: linear-gradient(135deg, var(--color-primary-100), var(--color-secondary-100));
-  color: var(--color-primary-700);
-}
-
-.dark .badge {
   background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(168, 85, 247, 0.2));
   color: var(--color-primary-300);
 }
@@ -548,10 +532,6 @@ h1, h2, h3, h4, h5, h6 {
    ======================================== */
 
 .gradient-hero {
-  background: linear-gradient(135deg, var(--color-primary-100), var(--color-secondary-100), var(--color-accent-lavender));
-}
-
-.dark .gradient-hero {
   background: linear-gradient(135deg, rgba(131, 24, 67, 0.3), var(--color-lmeow-bg-dark), rgba(88, 28, 135, 0.3));
 }
 

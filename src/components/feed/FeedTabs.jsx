@@ -4,7 +4,6 @@ import { useFeedStore } from '../../store/feedStore';
 const tabs = [
   { id: 'foryou', label: 'For You', emoji: '✨' },
   { id: 'following', label: 'Following', emoji: '👥' },
-  { id: 'trending', label: 'Trending', emoji: '🔥' },
 ];
 
 export default function FeedTabs() {
