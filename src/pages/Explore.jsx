@@ -531,7 +531,7 @@ export default function Explore() {
                       <span className="text-lg">{getHashtagEmoji(item.tag)}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-petmeme-text dark:text-petmeme-text-dark truncate">
+                      <p className="font-semibold text-petmeme-text dark:text-petmeme-text-dark text-sm break-all">
                         #{item.tag}
                       </p>
                       <p className="text-xs text-petmeme-muted">
