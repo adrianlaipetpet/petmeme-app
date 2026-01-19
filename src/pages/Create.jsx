@@ -549,19 +549,29 @@ CRITICAL for ITEMS:
                 },
                 {
                   type: 'text',
-                  text: `You are a viral pet meme caption generator. Look at this ${petTypeStr} photo.
+                  text: `You are a viral pet meme caption generator. Look at this photo.
 
-Pet name: ${petContext.petName || petTypeStr}
-Detected mood/scene: ${scene}
+Pet info:
+- Name: ${petContext.petName || petTypeStr}
+- Type: ${petTypeStr}
+- Breed: ${petContext.breed || 'unknown'}
+- Mood: ${scene}
 
-Generate 2 VIRAL, FUNNY meme captions based on what you see in the image. Make them:
-- SHORT (under 60 characters ideal)
-- HILARIOUS and relatable to pet owners
-- Use emojis sparingly but effectively (1-3 max)
-- Reference common pet behaviors: treats, zoomies, naps, begging, being dramatic, guilty face, etc.
-- Similar style to viral memes like "When you hear the treat bag 👀" or "I didn't do it 😇"
+Generate 2 VIRAL, FUNNY meme captions. Requirements:
+- SHORT (under 60 characters)
+- HILARIOUS and relatable
+- Use 1-2 emojis max
+- If the pet has a name, you MAY use it (but not required)
+- Reference THIS SPECIFIC BREED's stereotypes if applicable:
+  * Golden Retrievers: always happy, loves everyone, food obsessed
+  * Huskies: dramatic, talkative, escape artists
+  * Corgis: short legs, big attitude, loaf shape
+  * Persian cats: grumpy face, judgy, fluffy diva
+  * Siamese: vocal, demanding, chatty
+  * Maine Coon: giant, majestic, gentle giant
+- Do NOT reference other breeds
 
-Output ONLY the 2 captions, one per line. No numbering, no explanations, no quotes.`
+Output ONLY 2 captions, one per line. No numbering, no quotes.`
                 }
               ]
             }],
@@ -610,24 +620,6 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
     setShowScenarioSelector(false);
     
     try {
-      // Build context from pet profile + user behaviors
-      // If pet in photo doesn't match user's pet, use generic name!
-      const useGenericName = !isPetMatch && detectedBreed;
-      const genericName = detectedPetType === 'cat' ? 'Kitty' : 
-                          detectedPetType === 'dog' ? 'Doggo' : 'Buddy';
-      
-      const petContext = {
-        petName: useGenericName ? genericName : pet.name,
-        petType: detectedPetType || pet.type,
-        breed: detectedBreed || pet.breed,
-        behaviors: [...(pet.behaviors || []), ...selectedBehaviors],
-        isUsersPet: isPetMatch, // Track if this is the user's actual pet
-      };
-      
-      if (useGenericName) {
-        console.log(`📛 Using generic name "${genericName}" since photo shows ${detectedBreed}, not ${pet.breed}`);
-      }
-      
       let imageContext;
       
       if (manualScenario) {
@@ -647,6 +639,38 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
         }
         
         imageContext = imageContext || selectedScenario;
+      }
+      
+      // Use the RETURNED isPetMatch value, not the state (which is async)
+      const petMatchResult = imageContext?.isPetMatch ?? true;
+      const detectedBreedResult = imageContext?.breed || null;
+      const detectedTypeResult = imageContext?.petType || null;
+      
+      // If pet in photo doesn't match user's pet, use generic name!
+      const useGenericName = !petMatchResult && detectedBreedResult;
+      const genericName = (detectedTypeResult || '').toLowerCase().includes('cat') ? 'Kitty' : 
+                          (detectedTypeResult || '').toLowerCase().includes('dog') ? 'Doggo' : 'Buddy';
+      
+      console.log('🔍 Pet match check for captions:', { 
+        petMatchResult, 
+        detectedBreedResult, 
+        useGenericName,
+        willUseName: useGenericName ? genericName : pet.name 
+      });
+      
+      // Build petContext with correct name based on pet match
+      const petContext = {
+        petName: useGenericName ? genericName : pet.name,
+        petType: detectedTypeResult || pet.type,
+        breed: detectedBreedResult || pet.breed,
+        behaviors: [...(pet.behaviors || []), ...selectedBehaviors],
+        isUsersPet: petMatchResult,
+      };
+      
+      if (useGenericName) {
+        console.log(`📛 Using generic name "${genericName}" since photo shows ${detectedBreedResult}, not user's pet`);
+      } else {
+        console.log(`✅ Using owner's pet name "${pet.name}" - this is their pet!`);
       }
       
       // Log what AI detected (for debugging)
