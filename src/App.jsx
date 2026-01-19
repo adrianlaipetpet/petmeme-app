@@ -130,6 +130,7 @@ function App() {
             <Route path="/profile/:petId" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/browse/:type/:value" element={<FilteredContent />} />
+            <Route path="/browse/:type" element={<FilteredContent />} />
           </Route>
           
           {/* Post detail (full screen) */}
