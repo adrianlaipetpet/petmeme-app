@@ -268,58 +268,92 @@ export default function Explore() {
     return '✨';
   };
   
-  // Get breed image URL - using accurate breed-specific images
+  // Get breed image URL - using exact breed-specific stock photos
   const getBreedImage = (breed, petType) => {
-    // Accurate breed-specific image URLs
     const breedImages = {
-      // Dogs - accurate breed photos
-      'golden retriever': 'https://images.unsplash.com/photo-1633722715463-d30f4f325e24?w=200&h=200&fit=crop&crop=face',
-      'labrador': 'https://images.unsplash.com/photo-1579213838058-5a5e0e5d5e5a?w=200&h=200&fit=crop&crop=face',
-      'husky': 'https://images.unsplash.com/photo-1605568427561-40dd23c2acea?w=200&h=200&fit=crop&crop=face',
-      'siberian husky': 'https://images.unsplash.com/photo-1605568427561-40dd23c2acea?w=200&h=200&fit=crop&crop=face',
-      'corgi': 'https://images.unsplash.com/photo-1612536057832-2ff7ead58194?w=200&h=200&fit=crop&crop=face',
-      'welsh corgi': 'https://images.unsplash.com/photo-1612536057832-2ff7ead58194?w=200&h=200&fit=crop&crop=face',
-      'pembroke': 'https://images.unsplash.com/photo-1612536057832-2ff7ead58194?w=200&h=200&fit=crop&crop=face',
-      'shiba': 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=200&h=200&fit=crop&crop=face',
-      'shiba inu': 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=200&h=200&fit=crop&crop=face',
-      'pomeranian': 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=200&h=200&fit=crop&crop=face',
-      'bulldog': 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=200&h=200&fit=crop&crop=face',
-      'french bulldog': 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=200&h=200&fit=crop&crop=face',
-      'english bulldog': 'https://images.unsplash.com/photo-1585559700398-1385b3a8aeb6?w=200&h=200&fit=crop&crop=face',
-      'beagle': 'https://images.unsplash.com/photo-1505628346881-b72b27e84530?w=200&h=200&fit=crop&crop=face',
-      'german shepherd': 'https://images.unsplash.com/photo-1589941013453-ec89f33b5e95?w=200&h=200&fit=crop&crop=face',
-      'poodle': 'https://images.unsplash.com/photo-1616149569609-3889a14a9c40?w=200&h=200&fit=crop&crop=face',
-      'dachshund': 'https://images.unsplash.com/photo-1612195583950-b8fd34c87093?w=200&h=200&fit=crop&crop=face',
-      'boxer': 'https://images.unsplash.com/photo-1543071220-6ee5bf71a54e?w=200&h=200&fit=crop&crop=face',
-      'rottweiler': 'https://images.unsplash.com/photo-1567752881298-894bb81f9379?w=200&h=200&fit=crop&crop=face',
-      'yorkshire': 'https://images.unsplash.com/photo-1626809766286-4ee5e7125a73?w=200&h=200&fit=crop&crop=face',
-      'yorkie': 'https://images.unsplash.com/photo-1626809766286-4ee5e7125a73?w=200&h=200&fit=crop&crop=face',
-      'chihuahua': 'https://images.unsplash.com/photo-1605639156388-3ce4145dd26d?w=200&h=200&fit=crop&crop=face',
-      'maltese': 'https://images.unsplash.com/photo-1600804340584-c7db2eacf0bf?w=200&h=200&fit=crop&crop=face',
-      'border collie': 'https://images.unsplash.com/photo-1503256207526-0d5d80fa2f47?w=200&h=200&fit=crop&crop=face',
-      'australian shepherd': 'https://images.unsplash.com/photo-1606567595334-d39972c85dfd?w=200&h=200&fit=crop&crop=face',
-      'samoyed': 'https://images.unsplash.com/photo-1529429617124-95b109e86bb8?w=200&h=200&fit=crop&crop=face',
-      'shih tzu': 'https://images.unsplash.com/photo-1587559070757-f72a388edbba?w=200&h=200&fit=crop&crop=face',
-      'pit bull': 'https://images.unsplash.com/photo-1541599540903-216a46ca1dc0?w=200&h=200&fit=crop&crop=face',
-      'pitbull': 'https://images.unsplash.com/photo-1541599540903-216a46ca1dc0?w=200&h=200&fit=crop&crop=face',
-      'pug': 'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=200&h=200&fit=crop&crop=face',
+      // ===== DOG BREEDS =====
+      'golden retriever': 'https://i.ytimg.com/vi/XR_pu8bD8wQ/maxresdefault.jpg',
+      'labrador': 'https://www.breednbreeder.com/Images/Labrador_Retriever-Maharashtra-Mumbai-20250730_134535.png',
+      'german shepherd': 'https://d3544la1u8djza.cloudfront.net/APHI/Blog/2021/03-17/young+german+shepherd+puppy+lying+on+the+floor+with+ears+up-min.jpg',
+      'shepherd': 'https://d3544la1u8djza.cloudfront.net/APHI/Blog/2021/03-17/young+german+shepherd+puppy+lying+on+the+floor+with+ears+up-min.jpg',
+      'bulldog': 'https://cdn.abcotvs.com/dip/images/432731_121114-BulldogPuppy.jpg',
+      'english bulldog': 'https://cdn.abcotvs.com/dip/images/432731_121114-BulldogPuppy.jpg',
+      'poodle': 'https://imageserver.petsbest.com/marketing/blog/toy-poodle.jpg',
+      'beagle': 'https://i.ytimg.com/vi/bx7BjjqHf2U/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLAdzZxUJspm8k-O4dPSAwYpCoXX2w',
+      'rottweiler': 'https://i.ytimg.com/vi/7oLoDoYBFpk/maxresdefault.jpg',
+      'husky': 'https://i.ytimg.com/vi/hvwaH3HH-AU/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLAVBpoh6TygMJa-SfMcV_cXqHXsEA',
+      'siberian husky': 'https://i.ytimg.com/vi/hvwaH3HH-AU/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLAVBpoh6TygMJa-SfMcV_cXqHXsEA',
+      'corgi': 'https://d128mjo55rz53e.cloudfront.net/media/images/blog-breed-corgi_1_1.max-500x500.format-jpeg.jpg',
+      'welsh corgi': 'https://d128mjo55rz53e.cloudfront.net/media/images/blog-breed-corgi_1_1.max-500x500.format-jpeg.jpg',
+      'pembroke': 'https://d128mjo55rz53e.cloudfront.net/media/images/blog-breed-corgi_1_1.max-500x500.format-jpeg.jpg',
+      'dachshund': 'https://t4.ftcdn.net/jpg/03/31/43/27/360_F_331432762_wqIB4ngu7AloDCxDLaLkEeztYrIzmPcZ.jpg',
+      'pomeranian': 'https://images.unsplash.com/photo-1582456891925-a53965520520?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'chihuahua': 'https://media.istockphoto.com/id/1313232209/photo/brown-chihuahua-sitting-on-floor-small-dog-in-asian-house-feeling-happy-and-relax-dog.jpg?s=612x612&w=0&k=20&c=lcSklrJbafwStJzKqU68imMG77hlEoCOkCCUeb_TEFk=',
+      'shiba inu': 'https://www.carecredit.com/sites/cc/image/hero_shiba_inu.jpg',
+      'shiba': 'https://www.carecredit.com/sites/cc/image/hero_shiba_inu.jpg',
+      'border collie': 'https://media.istockphoto.com/id/485673645/photo/border-collie-puppy-with-paws-on-white-rustic-fence-iii.jpg?s=612x612&w=0&k=20&c=19JwsVjfVC2aEHXDcoFhxVmtTVsoZxjVjYQIH8-P85Y=',
+      'collie': 'https://media.istockphoto.com/id/485673645/photo/border-collie-puppy-with-paws-on-white-rustic-fence-iii.jpg?s=612x612&w=0&k=20&c=19JwsVjfVC2aEHXDcoFhxVmtTVsoZxjVjYQIH8-P85Y=',
+      'australian shepherd': 'https://www.dailypaws.com/thmb/rcHQ83jGUcvK-vdW-wq8UCUkHnI=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/australian-shepherd-full-body-635701178-2000-9bd0c8b0c70a4f47be38bcf441278b05.jpg',
+      'french bulldog': 'https://imageserver.petsbest.com/marketing/blog/french-bulldog.jpg',
+      'pit bull': 'https://i.ytimg.com/vi/0-gOLD2omhU/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLB-gAHpIL8cIiDGXDNvossYaP7UqA',
+      'pitbull': 'https://i.ytimg.com/vi/0-gOLD2omhU/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLB-gAHpIL8cIiDGXDNvossYaP7UqA',
+      'boxer': 'https://t4.ftcdn.net/jpg/02/94/68/55/360_F_294685592_r50224hMlZqk6j6L140Fg1QHnZfHiEKQ.jpg',
+      'great dane': 'https://www.greatpetcare.com/wp-content/uploads/2020/12/shutterstock_232598998-1.jpg',
+      'doberman': 'https://t3.ftcdn.net/jpg/02/11/68/94/360_F_211689487_MXpT5avAp29r8gkEvzggE9gMmRRwrzT4.jpg',
+      'maltese': 'https://t3.ftcdn.net/jpg/02/99/34/16/360_F_299341611_8mR9ZKnooOWMZdFtwYtIvE2mghfG0iUz.jpg',
+      'shih tzu': 'https://blog.myollie.com/wp-content/uploads/2021/05/cute-Shih-Tzu-with-mud-on-his-fur-sticks-tongue-out-.jpg',
+      'yorkshire terrier': 'https://consumer-cms.petfinder.com/sites/default/files/images/content/Yorkshire%20Terrier%204.jpg',
+      'yorkshire': 'https://consumer-cms.petfinder.com/sites/default/files/images/content/Yorkshire%20Terrier%204.jpg',
+      'yorkie': 'https://consumer-cms.petfinder.com/sites/default/files/images/content/Yorkshire%20Terrier%204.jpg',
+      'cavalier king charles': 'https://pet-health-content-media.chewy.com/wp-content/uploads/2024/09/11180347/202105cavalier-king-charles-spaniel-flower-garden.jpg',
+      'bernese mountain dog': 'https://t3.ftcdn.net/jpg/02/04/35/68/360_F_204356895_muhSOX9DL9ofmr4OY84g7X96BeyIgfyJ.jpg',
+      'bernese': 'https://t3.ftcdn.net/jpg/02/04/35/68/360_F_204356895_muhSOX9DL9ofmr4OY84g7X96BeyIgfyJ.jpg',
+      'samoyed': 'https://media.istockphoto.com/id/1003652324/photo/young-happy-smiling-white-samoyed-dog-or-bjelkier-smiley-sammy-outdoor-in-green-spring-meadow.jpg?s=612x612&w=0&k=20&c=CsfjkwnnPiyIGzFz0vu_S3Y0iHtwfOLS9WVvURrtwIM=',
+      'akita': 'https://stayakita.com/assets/uploads/2020/02/akitastories_akitainu_lead.jpg',
+      'mixed breed dog': 'https://www.rd.com/wp-content/uploads/2022/01/gettyimages-175274310-e1641875594224.jpg',
       
-      // Cats - accurate breed photos
-      'persian': 'https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=200&h=200&fit=crop&crop=face',
-      'siamese': 'https://images.unsplash.com/photo-1555036015-5ff72f5f4c4d?w=200&h=200&fit=crop&crop=face',
-      'maine coon': 'https://images.unsplash.com/photo-1606214174585-fe31582dc6ee?w=200&h=200&fit=crop&crop=face',
-      'british shorthair': 'https://images.unsplash.com/photo-1595433707802-6b2626ef1c91?w=200&h=200&fit=crop&crop=face',
-      'ragdoll': 'https://images.unsplash.com/photo-1596854407944-bf87f6fdd49e?w=200&h=200&fit=crop&crop=face',
-      'bengal': 'https://images.unsplash.com/photo-1598463166228-c0f90d180918?w=200&h=200&fit=crop&crop=face',
-      'scottish fold': 'https://images.unsplash.com/photo-1561948955-570b270e7c36?w=200&h=200&fit=crop&crop=face',
-      'tabby': 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=200&h=200&fit=crop&crop=face',
-      'orange tabby': 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=200&h=200&fit=crop&crop=face',
-      'calico': 'https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=200&h=200&fit=crop&crop=face',
-      'sphynx': 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=200&h=200&fit=crop&crop=face',
-      'russian blue': 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=200&h=200&fit=crop&crop=face',
-      'abyssinian': 'https://images.unsplash.com/photo-1574144611937-0df059b5ef3e?w=200&h=200&fit=crop&crop=face',
-      'munchkin': 'https://images.unsplash.com/photo-1595433707802-6b2626ef1c91?w=200&h=200&fit=crop&crop=face',
-      'birman': 'https://images.unsplash.com/photo-1596854407944-bf87f6fdd49e?w=200&h=200&fit=crop&crop=face',
+      // ===== CAT BREEDS =====
+      'persian': 'https://d3544la1u8djza.cloudfront.net/APHI/Blog/2016/10_October/persians/Persian+Cat+Facts+History+Personality+and+Care+_+ASPCA+Pet+Health+Insurance+_+white+Persian+cat+resting+on+a+brown+sofa-min.jpg',
+      'maine coon': 'https://stewartpet.com/wp-content/uploads/cute-maine-coon-cat.jpg',
+      'siamese': 'https://media.istockphoto.com/id/1076432222/photo/siamese-kitten.jpg?s=612x612&w=0&k=20&c=KjJzsMuiJYBzlxDpVeOBv9bYcjZQlnEd7W-dP7oEUh0=',
+      'ragdoll': 'https://moderncat.com/wp-content/uploads/2013/09/Ragdoll-Header_bigstock-408978611_Rawlik.jpg',
+      'british shorthair': 'https://cfa.org/wp-content/uploads/2024/04/2023-k07i-BabyrayBlueCheeses.webp',
+      'bengal': 'https://www.trupanion.com/images/trupanionwebsitelibraries/bg/bengal-cat.jpg?sfvrsn=fc36dda4_5',
+      'abyssinian': 'https://d3544la1u8djza.cloudfront.net/APHI/Blog/2020/09-24/About+Abyssinians+Appearance+Personality+and+Health+_+ASPCA+Pet+Health+Insurance+_+Abyssinian+cat+resting+atop+a+cat+tree-min.jpg',
+      'scottish fold': 'https://cdn.shopify.com/s/files/1/0765/3946/1913/files/Scottish_Fold_on_the_Table.jpg?v=1738746295',
+      'sphynx': 'https://moderncat.com/wp-content/uploads/2014/09/bigstock-Cute-Sphynx-Cat-On-Sofa-At-Hom-467147599-1024x683.jpg',
+      'russian blue': 'https://www.dailypaws.com/thmb/9YLApdymhj3xf0rTDVTA_iWOgOA=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/russian-blue-cat-175701659-2000-44a0d33338f540a18d7b9c1573073141.jpg',
+      'birman': 'https://www.thesprucepets.com/thmb/D5s03LINbIYpZuiG6uvBpKrAKXk=/3500x0/filters:no_upscale():strip_icc()/GettyImages-623368786-f66c97ad6d2d494287b448415f4340a8.jpg',
+      'american shorthair': 'https://d3544la1u8djza.cloudfront.net/APHI/Blog/2021/09-24/American+Shorthair+kitten+ready+to+pounce-min.jpg',
+      'oriental': 'https://media.gettyimages.com/id/1474660153/photo/little-cute-kitten-of-oriental-cat-breed-of-white-and-brown-color-with-blue-eyes-and-big-ears.jpg?b=1&s=1024x1024&w=gi&k=20&c=_0-QVkpZiEaLOezqR3Aq7_sIcj61K0zzhxP1d6c3ZkU=',
+      'norwegian forest cat': 'https://www.thesprucepets.com/thmb/c4xUQ9bmuswDR-umoAKTmwH_r-A=/1500x0/filters:no_upscale():strip_icc()/norwegian-forest-cat-4170085-fe84aa86023446c4b64236ddfbdefd2b.jpg',
+      'norwegian forest': 'https://www.thesprucepets.com/thmb/c4xUQ9bmuswDR-umoAKTmwH_r-A=/1500x0/filters:no_upscale():strip_icc()/norwegian-forest-cat-4170085-fe84aa86023446c4b64236ddfbdefd2b.jpg',
+      'devon rex': 'https://www.petassure.com/petassure/file-streams/page/uRLlDST5zY5GjbHr00N395unusual-cat-breeds-devon-rex.jpg.jpg',
+      'exotic shorthair': 'https://d3544la1u8djza.cloudfront.net/APHI/Blog/2020/11-12/attributes+of+an+exotic+shorthair+cat+_+orange+and+white+exotic+kitten+lying+on+a+tan+couch-min.jpg',
+      'himalayan': 'https://www.aspcapetinsurance.com/media/2406/fun-facts-about-himalayan-cats.jpg',
+      'tonkinese': 'https://images.ctfassets.net/440y9b545yd9/5WXgxWGLh0LDV93b7EPvJS/3244454a8b44c699bc8b3bdca35b1073/Tonkinese850.jpg',
+      'burmese': 'https://d3544la1u8djza.cloudfront.net/APHI/Blog/2021/07-08/brown+Burmese+kitten+lying+on+a+cream+couch-min.jpg',
+      'munchkin': 'https://www.petrebels.com/en/wp-content/uploads/sites/3/2023/03/bobbi-wu-yJ1fX6PAXtU-unsplash-scaled.jpg',
+      'tabby': 'https://wopet.com/uploads/admin/image/20250328/629d69b43bfecd308fd24e19d58a0436.png',
+      'calico': 'https://www.thesprucepets.com/thmb/loFQWR7ifuP9PEsFEDdrxzvTmFs=/2939x0/filters:no_upscale():strip_icc()/calico-cats-photo-gallery-4031810-hero-7d2fe547778840e5a5ec9762d7f3d256.jpg',
+      'tuxedo cat': 'https://www.thesprucepets.com/thmb/YNW9oqXaG2AKcQH7DMZzB1yYEis=/1500x0/filters:no_upscale():strip_icc()/about-tuxedo-cats-554695-hero-1dada8b97a9f4f229880ce3ad9047e99.jpg',
+      'tuxedo': 'https://www.thesprucepets.com/thmb/YNW9oqXaG2AKcQH7DMZzB1yYEis=/1500x0/filters:no_upscale():strip_icc()/about-tuxedo-cats-554695-hero-1dada8b97a9f4f229880ce3ad9047e99.jpg',
+      'orange tabby': 'https://media.istockphoto.com/id/590055188/photo/kitten-playing-with-toy-mouse.jpg?s=612x612&w=0&k=20&c=KQuhrNjfVNSLrwUsJ9b5Nwt7pyRNAFQjxq38fRHyKso=',
+      'mixed breed cat': 'https://d3544la1u8djza.cloudfront.net/APHI/Blog/2021/09-24/American+Shorthair+kitten+ready+to+pounce-min.jpg',
+      
+      // ===== OTHER PETS =====
+      'rabbit': 'https://www.rd.com/wp-content/uploads/2020/04/GettyImages-694542042-e1586274805503-scaled.jpg?fit=700%2C468',
+      'hamster': 'https://i.ytimg.com/vi/lnvBWVztcl4/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLDi9Fc2QdFrGrcjzPBtfOqawgny2g',
+      'guinea pig': 'https://www.dupontvet.com/blog/wp-content/uploads/2020/11/Dupont_iStock-825722848.jpg',
+      'parrot': 'https://s.yimg.com/ny/api/res/1.2/gSFK.cfO_0IJoulhWkPv4w--/YXBwaWQ9aGlnaGxhbmRlcjt3PTEyNDI7aD04Mjg7Y2Y9d2VicA--/https://media.zenfs.com/en/pethelpful_915/7c6aefe5c7587cfb9ea7b3f1f04b9abb',
+      'cockatiel': 'https://www.shutterstock.com/image-photo/cute-cockatiel-tilting-head-curiosity-260nw-2642310853.jpg',
+      'turtle': 'https://i.ytimg.com/vi/p4Jj9QZFJvw/mqdefault.jpg',
+      'hedgehog': 'https://vetmed.illinois.edu/wp-content/uploads/2021/04/pc-keller-hedgehog.jpg',
+      'ferret': 'https://thumbs.dreamstime.com/b/adorable-ferret-suit-business-photoshoot-cute-tiny-tie-poses-charming-photo-perfect-pet-apparel-websites-social-359170356.jpg',
+      'chinchilla': 'https://i.ytimg.com/vi/7WU5vouP8PM/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLA6JjLjp6lBTBbRyWVdwZHmOyI00A',
+      'fish': 'https://i.ytimg.com/vi/lUS1QySwwqc/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLB-gAHpIL8cIiDGXDNvossYaP7UqA',
+      'gecko': 'https://www.vice.com/wp-content/uploads/sites/2/2019/12/1575658159035-GettyImages-957195932-leopard-gecko-holding-a-heart.jpeg?w=1024',
+      'iguana': 'https://thumbs.dreamstime.com/b/cute-cartoon-style-iguana-exaggerated-features-including-large-eyes-vibrant-green-scales-sits-lush-jungle-setting-375675146.jpg',
     };
     
     const breedLower = breed.toLowerCase().trim();
@@ -336,26 +370,11 @@ export default function Explore() {
       }
     }
     
-    // Deterministic fallback based on breed name (so same breed always gets same image)
+    // Fallback based on pet type
     const isDog = (petType || '').toLowerCase().includes('dog');
-    
-    // Create a simple hash from the breed name for consistent fallback selection
-    const hashCode = breedLower.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    
-    // Fallback dog/cat images (will be consistent per breed name)
-    const dogFallbacks = [
-      'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=100&h=100&fit=crop',
-      'https://images.unsplash.com/photo-1552053831-71594a27632d?w=100&h=100&fit=crop',
-      'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=100&h=100&fit=crop',
-    ];
-    const catFallbacks = [
-      'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=100&h=100&fit=crop',
-      'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=100&h=100&fit=crop',
-      'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=100&h=100&fit=crop',
-    ];
-    
-    const fallbacks = isDog ? dogFallbacks : catFallbacks;
-    return fallbacks[hashCode % fallbacks.length];
+    return isDog 
+      ? 'https://www.rd.com/wp-content/uploads/2022/01/gettyimages-175274310-e1641875594224.jpg'
+      : 'https://d3544la1u8djza.cloudfront.net/APHI/Blog/2021/09-24/American+Shorthair+kitten+ready+to+pounce-min.jpg';
   };
 
   return (
