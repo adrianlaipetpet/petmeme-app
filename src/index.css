@@ -1,6 +1,10 @@
 /* Tailwind CSS v4 */
 @import "tailwindcss";
 
+/* Force class-based dark mode (not prefers-color-scheme) */
+/* This ensures dark mode works regardless of device settings */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Google Fonts - Poppins (body) & Fredoka (headings) */
 @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap');
 
