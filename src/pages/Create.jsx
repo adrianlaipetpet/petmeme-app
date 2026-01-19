@@ -215,17 +215,30 @@ export default function Create() {
                 },
                 {
                   type: 'text', 
-                  text: `Analyze this pet photo. Reply in EXACTLY this format (4 lines, nothing else):
-BEHAVIOR: [one word from: sleeping, staring, playing, eating, sitting, derpy, guilty, excited, scared, judging, dramatic, relaxed]
-PET_TYPE: [one word: dog, cat, rabbit, bird, other]
-BREED: [specific breed name like "Golden Retriever", "Persian Cat", "Shiba Inu", "Mixed Breed", etc.]
-ITEMS: [comma-separated list of notable objects/items visible like: food, treats, laptop, keyboard, bed, couch, toy, ball, bone, bowl, leash, window, box, bag, clothes, blanket, pillow, phone, coffee, water]
+                  text: `Analyze this pet photo carefully. You MUST respond with EXACTLY 4 lines in this format:
 
-Be specific about the breed. For ITEMS, list any notable objects you see (not the pet itself). If no notable items, say "none".`
+BEHAVIOR: [pick ONE: sleeping, staring, playing, eating, sitting, derpy, guilty, excited, scared, judging, dramatic, relaxed]
+PET_TYPE: [pick ONE: dog, cat, rabbit, bird, other]
+BREED: [specific breed like "Golden Retriever", "Persian", "Shiba Inu", "Mixed Breed"]
+ITEMS: [list ALL visible objects: food, treats, bowl, laptop, keyboard, bed, couch, sofa, toy, ball, bone, leash, window, box, bag, clothes, blanket, pillow, phone, coffee, water, carpet, floor, grass, table, chair]
+
+IMPORTANT for ITEMS:
+- List EVERY visible object or background item you can see
+- Separate items with commas
+- Include furniture, food, toys, electronics, etc.
+- If pet is near food/bowl, include "food" or "bowl"
+- If pet is on bed/couch, include "bed" or "couch"
+- Only say "none" if literally nothing else is visible
+
+Example response:
+BEHAVIOR: sitting
+PET_TYPE: dog
+BREED: Golden Retriever
+ITEMS: food, bowl, floor, carpet`
                 }
               ]
             }],
-            max_tokens: 150,
+            max_tokens: 200,
           }),
         });
         
@@ -242,33 +255,65 @@ Be specific about the breed. For ITEMS, list any notable objects you see (not th
           console.log('✅ AI response:', content);
           
           // Parse the structured response
-          const lines = content.split('\n');
+          const lines = content.split('\n').filter(l => l.trim());
           let behavior = 'sitting';
           let petType = 'dog';
           let breed = null;
           let items = [];
           
+          console.log('📝 Parsing', lines.length, 'lines from AI response...');
+          
           lines.forEach(line => {
-            const upperLine = line.toUpperCase();
-            if (upperLine.startsWith('BEHAVIOR:')) {
-              const val = line.split(':')[1]?.trim().toLowerCase();
+            const upperLine = line.toUpperCase().trim();
+            console.log('  Parsing line:', line);
+            
+            if (upperLine.startsWith('BEHAVIOR:') || upperLine.startsWith('BEHAVIOR ')) {
+              const val = line.split(/[:\s]+/).slice(1).join(' ').trim().toLowerCase();
               const validScenes = ['sleeping', 'staring', 'playing', 'eating', 'sitting', 'derpy', 'guilty', 'excited', 'scared', 'judging', 'dramatic', 'relaxed'];
               behavior = validScenes.find(s => val?.includes(s)) || 'sitting';
-            } else if (upperLine.startsWith('PET_TYPE:')) {
-              petType = line.split(':')[1]?.trim().toLowerCase() || 'dog';
-            } else if (upperLine.startsWith('BREED:')) {
-              breed = line.split(':')[1]?.trim() || null;
+              console.log('  → Behavior:', behavior);
+            } else if (upperLine.startsWith('PET_TYPE:') || upperLine.startsWith('PET_TYPE ') || upperLine.startsWith('PET TYPE:')) {
+              petType = line.split(/[:\s]+/).slice(1).join(' ').trim().toLowerCase() || 'dog';
+              console.log('  → Pet Type:', petType);
+            } else if (upperLine.startsWith('BREED:') || upperLine.startsWith('BREED ')) {
+              breed = line.split(':').slice(1).join(':').trim() || null;
               // Clean up breed name
               if (breed) {
                 breed = breed.replace(/^["']|["']$/g, '').trim();
               }
-            } else if (upperLine.startsWith('ITEMS:')) {
-              const itemsStr = line.split(':')[1]?.trim() || '';
+              console.log('  → Breed:', breed);
+            } else if (upperLine.startsWith('ITEMS:') || upperLine.startsWith('ITEMS ') || upperLine.includes('ITEMS:')) {
+              // More flexible parsing for ITEMS line
+              const colonIndex = line.indexOf(':');
+              const itemsStr = colonIndex > -1 ? line.substring(colonIndex + 1).trim() : '';
+              console.log('  → Raw items string:', itemsStr);
+              
               if (itemsStr.toLowerCase() !== 'none' && itemsStr.length > 0) {
-                items = itemsStr.split(',').map(i => i.trim().toLowerCase()).filter(i => i && i !== 'none');
+                items = itemsStr
+                  .split(/[,;]+/)  // Split by comma or semicolon
+                  .map(i => i.trim().toLowerCase())
+                  .filter(i => i && i !== 'none' && i.length > 1);
+                console.log('  → Parsed items:', items);
               }
             }
           });
+          
+          // 🔄 Fallback: If no items detected but behavior suggests items, infer them
+          if (items.length === 0) {
+            const behaviorToItems = {
+              'eating': ['food', 'bowl'],
+              'sleeping': ['bed'],
+              'playing': ['toy'],
+              'sitting': [],  // Could be anywhere
+            };
+            const inferredItems = behaviorToItems[behavior] || [];
+            if (inferredItems.length > 0) {
+              items = inferredItems;
+              console.log('🔄 Inferred items from behavior:', items);
+            }
+          }
+          
+          console.log('📊 Final parsed result:', { behavior, petType, breed, items });
           
           // Update breed state
           if (breed) {
@@ -561,11 +606,18 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
       // Log what AI detected (for debugging)
       if (imageContext?.scene) {
         console.log('🧠 AI detected scene:', imageContext.scene);
+        console.log('📦 AI detected items:', imageContext.items);
         console.log('📊 Using viral template matching...');
         
         // 🎯 AUTO-SELECT the detected behavior in behavior tags!
         const detectedScene = imageContext.scene.toLowerCase();
         setDetectedBehavior(detectedScene);
+        
+        // Store detected items in state for later use
+        if (imageContext.items && imageContext.items.length > 0) {
+          setDetectedItems(imageContext.items);
+          console.log('📦 Stored detected items:', imageContext.items);
+        }
         
         // Map scene to behavior tag (some scenes map to different tag names)
         const sceneToBehavior = {
@@ -611,15 +663,24 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
         };
         
         // Get behaviors from detected items
+        console.log('🔍 Looking up behaviors for items:', imageContext.items);
         const itemBehaviors = (imageContext.items || [])
-          .map(item => itemToBehavior[item])
+          .map(item => {
+            const behavior = itemToBehavior[item];
+            if (behavior) console.log(`  📦 Item "${item}" → #${behavior}`);
+            return behavior;
+          })
           .filter(Boolean);
+        
+        console.log('🏷️ Item behaviors found:', itemBehaviors);
         
         // Combine all behaviors: detected scene + items + user selected
         const allBehaviors = [...new Set([
           mappedBehavior,
           ...itemBehaviors,
         ])];
+        
+        console.log('🏷️ All behaviors to tag:', allBehaviors);
         
         // Auto-add detected behaviors to selected behaviors
         allBehaviors.forEach(behavior => {
