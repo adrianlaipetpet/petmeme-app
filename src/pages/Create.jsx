@@ -1521,17 +1521,82 @@ Output ONLY 2 captions, one per line. No numbering, no quotes.`
             </motion.button>
           </div>
           
-          {/* Detected behavior indicator */}
-          {detectedBehavior && (
+          {/* 🔍 AI Detection Panel - Shows what AI detected from the image */}
+          {(detectedBehavior || detectedBreed || detectedItems.length > 0) && (
             <motion.div 
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-4 flex items-center gap-2"
+              className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl border border-blue-200 dark:border-blue-800"
             >
-              <span className="text-xs text-petmeme-muted">AI detected:</span>
-              <span className="px-3 py-1 bg-gradient-to-r from-green-100 to-teal-100 dark:from-green-900/30 dark:to-teal-900/30 text-green-700 dark:text-green-300 rounded-full text-sm font-medium">
-                {getBehaviorDisplay(detectedBehavior)}
-              </span>
+              <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-2 flex items-center gap-1">
+                🔍 AI Detection Results
+              </p>
+              
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {/* Behavior */}
+                {detectedBehavior && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-petmeme-muted">Behavior:</span>
+                    <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full font-medium">
+                      {detectedBehavior}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Pet Type */}
+                {detectedPetType && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-petmeme-muted">Type:</span>
+                    <span className="px-2 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full font-medium">
+                      {detectedPetType}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Breed */}
+                {detectedBreed && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-petmeme-muted">Breed:</span>
+                    <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full font-medium">
+                      {detectedBreed}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Pet Match */}
+                <div className="flex items-center gap-1">
+                  <span className="text-petmeme-muted">Your pet?</span>
+                  <span className={`px-2 py-0.5 rounded-full font-medium ${
+                    isPetMatch 
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' 
+                      : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                  }`}>
+                    {isPetMatch ? '✓ Yes' : '✗ No'}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Items detected */}
+              {detectedItems.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-700">
+                  <span className="text-petmeme-muted text-xs">Items: </span>
+                  <span className="text-xs text-petmeme-text dark:text-petmeme-text-dark">
+                    {detectedItems.join(', ')}
+                  </span>
+                </div>
+              )}
+              
+              {/* Auto-tagged behaviors */}
+              {selectedBehaviors.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-700">
+                  <span className="text-petmeme-muted text-xs">Auto-tagged: </span>
+                  {selectedBehaviors.map(b => (
+                    <span key={b} className="inline-block px-2 py-0.5 mr-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-xs font-medium">
+                      #{b}
+                    </span>
+                  ))}
+                </div>
+              )}
             </motion.div>
           )}
           

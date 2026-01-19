@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
-  Search, TrendingUp, X, PawPrint, Sparkles, 
-  ChevronRight, Flame, Zap, Star
+  Search, X, PawPrint, Sparkles, 
+  ChevronRight, Flame, Star
 } from 'lucide-react';
 import { useFeedStore } from '../store/feedStore';
 import { useAuthStore } from '../store/authStore';
@@ -42,15 +42,7 @@ const BEHAVIOR_MOODS = [
   { id: 'derpy', emoji: '🤪', label: 'Derpy', color: 'from-yellow-400 to-lime-500' },
 ];
 
-// 💝 Personalized categories based on pet personality
-const PERSONALITY_MATCHES = {
-  playful: { emoji: '🎉', behaviors: ['zoomies', 'playing', 'excited'] },
-  lazy: { emoji: '😴', behaviors: ['sleeping', 'lazy', 'cuddly'] },
-  dramatic: { emoji: '👑', behaviors: ['dramatic', 'grumpy', 'vocal'] },
-  cuddly: { emoji: '🥰', behaviors: ['cuddly', 'clingy', 'sleeping'] },
-  foodie: { emoji: '🍖', behaviors: ['eating', 'foodie', 'begging'] },
-  mischievous: { emoji: '😈', behaviors: ['sneaky', 'destroyer', 'guilty'] },
-};
+// Note: Personalized section now uses user's ACTUAL behaviors directly
 
 export default function Explore() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -133,17 +125,27 @@ export default function Explore() {
     }
   };
 
-  // Get personalized recommendations based on pet
+  // Get personalized recommendations based on pet's ACTUAL behaviors
+  // Only shows content matching what the user selected - no extra suggestions
   const getPersonalizedSection = () => {
     if (!pet?.behaviors?.length) return null;
     
-    const primaryBehavior = pet.behaviors[0]?.toLowerCase();
-    const match = PERSONALITY_MATCHES[primaryBehavior] || PERSONALITY_MATCHES.playful;
+    // Use the user's ACTUAL behaviors, not mapped ones
+    const userBehaviors = pet.behaviors.map(b => b.toLowerCase());
+    
+    // Get emoji for first behavior
+    const primaryBehavior = userBehaviors[0];
+    const behaviorEmojis = {
+      zoomies: '🌀', lazy: '😴', dramatic: '🎭', foodie: '🍖', 
+      destroyer: '💥', derpy: '🤪', vocal: '🗣️', cuddly: '🥰',
+      scared: '😱', jealous: '😤', clingy: '🥺', genius: '🧠',
+      playful: '🎾', sleeping: '💤', eating: '🍖',
+    };
     
     return {
       title: `Perfect for ${pet.name || 'Your Pet'}`,
-      emoji: match.emoji,
-      behaviors: match.behaviors,
+      emoji: behaviorEmojis[primaryBehavior] || '💝',
+      behaviors: userBehaviors, // Use ONLY user's actual behaviors
     };
   };
 
@@ -161,13 +163,45 @@ export default function Explore() {
     return emojiMap[tag.toLowerCase()] || '🏷️';
   };
   
-  // Get breed image URL
+  // Get breed image URL - using stable, consistent URLs
   const getBreedImage = (breed, petType) => {
-    const breedSlug = breed.toLowerCase().replace(/\s+/g, '-');
-    if (petType === 'cat') {
-      return `https://cataas.com/cat?width=100&height=100&t=${breedSlug}`;
+    // Use specific stable image URLs for common breeds
+    const breedImages = {
+      // Dogs
+      'golden retriever': 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=100&h=100&fit=crop',
+      'labrador': 'https://images.unsplash.com/photo-1579213838058-8a0a0a0a0a0a?w=100&h=100&fit=crop',
+      'husky': 'https://images.unsplash.com/photo-1605568427561-40dd23c2acea?w=100&h=100&fit=crop',
+      'corgi': 'https://images.unsplash.com/photo-1612536057832-2ff7ead58194?w=100&h=100&fit=crop',
+      'shiba inu': 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=100&h=100&fit=crop',
+      'pomeranian': 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=100&h=100&fit=crop',
+      'bulldog': 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=100&h=100&fit=crop',
+      'beagle': 'https://images.unsplash.com/photo-1505628346881-b72b27e84530?w=100&h=100&fit=crop',
+      'german shepherd': 'https://images.unsplash.com/photo-1589941013453-ec89f33b5e95?w=100&h=100&fit=crop',
+      'poodle': 'https://images.unsplash.com/photo-1616149256749-a4d66e8b0efb?w=100&h=100&fit=crop',
+      // Cats
+      'persian': 'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=100&h=100&fit=crop',
+      'siamese': 'https://images.unsplash.com/photo-1513360371669-4adf3dd7dff8?w=100&h=100&fit=crop',
+      'maine coon': 'https://images.unsplash.com/photo-1606214174585-fe31582dc6ee?w=100&h=100&fit=crop',
+      'british shorthair': 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=100&h=100&fit=crop',
+      'ragdoll': 'https://images.unsplash.com/photo-1595433707802-6b2626ef1c91?w=100&h=100&fit=crop',
+      'bengal': 'https://images.unsplash.com/photo-1596854407944-bf87f6fdd49e?w=100&h=100&fit=crop',
+      'scottish fold': 'https://images.unsplash.com/photo-1561948955-570b270e7c36?w=100&h=100&fit=crop',
+    };
+    
+    const breedLower = breed.toLowerCase();
+    
+    // Check for exact or partial match
+    for (const [key, url] of Object.entries(breedImages)) {
+      if (breedLower.includes(key) || key.includes(breedLower)) {
+        return url;
+      }
     }
-    return `https://placedog.net/100/100?id=${breedSlug}`;
+    
+    // Fallback to generic but stable images
+    const isDog = (petType || '').toLowerCase().includes('dog');
+    return isDog 
+      ? 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=100&h=100&fit=crop'
+      : 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=100&h=100&fit=crop';
   };
 
   return (
@@ -286,7 +320,7 @@ export default function Explore() {
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-heading text-xl font-bold text-petmeme-text dark:text-petmeme-text-dark flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-primary-500" />
+              <span className="text-xl">🔥</span>
               Trending Tags
             </h2>
           </div>
@@ -303,9 +337,11 @@ export default function Explore() {
               >
                 <Link
                   to={`/browse/hashtag/${encodeURIComponent(item.tag)}`}
-                  className="card p-4 flex items-center gap-3 hover:shadow-card-hover transition-all bg-gradient-to-br from-white to-gray-50 dark:from-petmeme-card-dark dark:to-gray-800/50"
+                  className="card p-4 flex items-center gap-3 hover:shadow-card-hover transition-all bg-gradient-to-br from-white to-gray-50 dark:from-petmeme-card-dark dark:to-gray-800/50 border border-gray-100 dark:border-gray-700"
                 >
-                  <span className="text-2xl">{getHashtagEmoji(item.tag)}</span>
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-100 to-accent-lavender/30 dark:from-primary-900/40 dark:to-accent-lavender/20 flex items-center justify-center">
+                    <span className="text-lg">{getHashtagEmoji(item.tag)}</span>
+                  </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-petmeme-text dark:text-petmeme-text-dark truncate">
                       #{item.tag}
