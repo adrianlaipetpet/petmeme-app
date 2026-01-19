@@ -690,12 +690,13 @@ Output ONLY 2 captions, one per line. No numbering, no quotes.`
         }
         
         // Map scene to behavior tag (some scenes map to different tag names)
+        // NOTE: 'sitting' intentionally has NO behavior tag - too common/generic
         const sceneToBehavior = {
           'sleeping': 'lazy',
           'staring': 'dramatic',
           'playing': 'zoomies',
           'eating': 'foodie',
-          'sitting': 'lazy',
+          'sitting': null,        // No auto-tag - most pets sit!
           'derpy': 'derpy',
           'guilty': 'destroyer',
           'excited': 'zoomies',
@@ -705,7 +706,8 @@ Output ONLY 2 captions, one per line. No numbering, no quotes.`
           'relaxed': 'cuddly',
         };
         
-        const mappedBehavior = sceneToBehavior[detectedScene] || detectedScene;
+        // Get mapped behavior (null means no auto-tag for this scene)
+        const mappedBehavior = sceneToBehavior[detectedScene];
         
         // 📦 Map detected items to behaviors for auto-tagging
         const itemToBehavior = {
@@ -749,17 +751,28 @@ Output ONLY 2 captions, one per line. No numbering, no quotes.`
         }
         
         // Only add 1-2 behaviors max: scene behavior + maybe item behavior
-        const behaviorsToAdd = [mappedBehavior];
+        // Skip null behaviors (e.g., 'sitting' has no auto-tag)
+        const behaviorsToAdd = [];
+        
+        if (mappedBehavior && behaviorTags.includes(mappedBehavior)) {
+          behaviorsToAdd.push(mappedBehavior);
+        }
+        
         if (itemBehavior && itemBehavior !== mappedBehavior && behaviorTags.includes(itemBehavior)) {
           behaviorsToAdd.push(itemBehavior);
         }
         
-        console.log('🏷️ Behaviors to auto-tag (max 2):', behaviorsToAdd);
+        console.log('🏷️ Behaviors to auto-tag:', behaviorsToAdd);
         
         // Auto-add detected behaviors to selected behaviors (REPLACE, don't append endlessly)
-        setSelectedBehaviors(behaviorsToAdd);
-        
-        showToast(`Auto-tagged: ${behaviorsToAdd.map(b => '#' + b).join(' ')} 🎯`, 'info');
+        if (behaviorsToAdd.length > 0) {
+          setSelectedBehaviors(behaviorsToAdd);
+          showToast(`Auto-tagged: ${behaviorsToAdd.map(b => '#' + b).join(' ')} 🎯`, 'info');
+        } else {
+          // No behaviors auto-detected (e.g., just sitting)
+          setSelectedBehaviors([]);
+          console.log('📝 No specific behavior detected (generic pose)');
+        }
         
         // 🏷️ Generate hashtags - use CORRECT pet type (normalize to lowercase)
         const normalizedPetType = (imageContext.petType || petContext.petType || 'dog').toLowerCase();
