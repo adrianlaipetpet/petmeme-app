@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Play, Heart, Grid, List, Loader2, Sparkles, TrendingUp } from 'lucide-react';
-import { demoPosts, trendingTags, popularBreeds } from '../data/demoData';
 import { useFeedStore } from '../store/feedStore';
 import { useAuthStore } from '../store/authStore';
 import FeedCard from '../components/feed/FeedCard';
@@ -20,26 +19,15 @@ export default function FilteredContent() {
     loadPostsByBreed,
     loadPostsByBehavior,
     loadPersonalizedPosts,
+    getPopularBreeds,
   } = useFeedStore();
-  const { user, pet } = useAuthStore();
+  const { pet } = useAuthStore();
   
   // Decode the filter value
   const filterValue = decodeURIComponent(value || '');
   
-  // Calculate trending score for sorting
-  const calculateTrendingScore = (post) => {
-    const now = new Date();
-    const postTime = post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt);
-    const hoursSincePost = Math.max(1, (now - postTime) / (1000 * 60 * 60));
-    
-    const engagement = (post.likeCount || 0) + 
-                       (post.repostCount || 0) * 2 + 
-                       (post.commentCount || 0) * 1.5;
-    
-    return engagement / Math.pow(hoursSincePost, 0.5);
-  };
-  
   // Load posts based on filter type
+  // Note: feedStore queries already sort by trending score
   useEffect(() => {
     const loadFilteredPosts = async () => {
       setIsLoading(true);
@@ -48,40 +36,44 @@ export default function FilteredContent() {
       try {
         switch (type) {
           case 'hashtag':
-            fetchedPosts = await loadPostsByHashtag(filterValue);
+            console.log('🏷️ Loading hashtag:', filterValue);
+            fetchedPosts = await loadPostsByHashtag(filterValue, 50);
             break;
           case 'breed':
-            fetchedPosts = await loadPostsByBreed(filterValue);
+            console.log('🐕 Loading breed:', filterValue);
+            fetchedPosts = await loadPostsByBreed(filterValue, 50);
             break;
           case 'behavior':
-            fetchedPosts = await loadPostsByBehavior(filterValue);
+            console.log('🎭 Loading behavior:', filterValue);
+            fetchedPosts = await loadPostsByBehavior(filterValue, 50);
             break;
           case 'trending':
+            console.log('🔥 Loading trending posts');
             fetchedPosts = await loadTrendingPosts(50);
             break;
           case 'foryou':
+            console.log('💝 Loading personalized posts');
             if (pet?.behaviors?.length) {
-              fetchedPosts = await loadPersonalizedPosts(pet.behaviors);
+              fetchedPosts = await loadPersonalizedPosts(pet.behaviors, 50);
             } else {
               fetchedPosts = await loadTrendingPosts(30);
             }
             break;
           case 'breeds':
-            // Show all breeds - just load trending for now
+            // Show all popular breeds with their posts
+            console.log('🐾 Loading all breeds');
             fetchedPosts = await loadTrendingPosts(50);
             break;
           default:
             fetchedPosts = await loadTrendingPosts(30);
         }
         
-        // Sort by trending score
-        fetchedPosts.sort((a, b) => calculateTrendingScore(b) - calculateTrendingScore(a));
-        
+        // Posts are already sorted by trending from feedStore
+        console.log(`✅ Loaded ${fetchedPosts.length} posts for ${type}/${filterValue || 'all'}`);
         setPosts(fetchedPosts);
       } catch (error) {
         console.error('Error loading filtered posts:', error);
-        // Fall back to demo posts if Firestore fails
-        setPosts(demoPosts);
+        setPosts([]);
       } finally {
         setIsLoading(false);
       }
@@ -90,22 +82,39 @@ export default function FilteredContent() {
     loadFilteredPosts();
   }, [type, filterValue, pet?.behaviors]);
   
+  // Emoji mappings for hashtags and behaviors
+  const getHashtagEmoji = (tag) => {
+    const emojiMap = {
+      zoomies: '🌀', sleepy: '😴', sleeping: '💤', treats: '🍖', eating: '🍖',
+      playing: '🎾', dramatic: '🎭', cuddly: '🥰', grumpy: '😾', derpy: '🤪',
+      lazy: '😴', foodie: '😋', scared: '😱', guilty: '😬', genius: '🧠',
+      clingy: '🥺', vocal: '🗣️', destroyer: '💥', sneaky: '🥷', excited: '🎉',
+      puppyeyes: '🥺', chonky: '🐱', dogpark: '🐕', catlife: '🐱', doglife: '🐕',
+    };
+    return emojiMap[tag?.toLowerCase()] || '🏷️';
+  };
+  
+  // Check if a breed is a dog breed
+  const isDogBreed = (breedName) => {
+    const dogBreeds = ['retriever', 'husky', 'corgi', 'pomeranian', 'shiba', 'beagle', 
+      'bulldog', 'poodle', 'labrador', 'shepherd', 'dachshund', 'boxer', 'schnauzer'];
+    const lower = (breedName || '').toLowerCase();
+    return dogBreeds.some(db => lower.includes(db));
+  };
+  
   // Get display info based on filter type
   const getFilterInfo = () => {
     switch (type) {
       case 'hashtag': {
-        const tag = trendingTags.find(t => t.tag === filterValue);
         return {
           title: `#${filterValue}`,
-          emoji: tag?.emoji || '🏷️',
+          emoji: getHashtagEmoji(filterValue),
           subtitle: posts.length > 0 ? `${posts.length} posts` : 'Explore posts with this hashtag',
           gradient: 'from-primary-500 to-accent-lavender',
         };
       }
       case 'breed': {
-        const breed = popularBreeds.find(b => b.breed === filterValue);
-        const isDog = breed?.type === 'dog' || filterValue.toLowerCase().includes('retriever') || 
-                     filterValue.toLowerCase().includes('husky') || filterValue.toLowerCase().includes('corgi');
+        const isDog = isDogBreed(filterValue);
         return {
           title: filterValue,
           emoji: isDog ? '🐕' : '🐱',
@@ -114,15 +123,9 @@ export default function FilteredContent() {
         };
       }
       case 'behavior': {
-        const behaviorEmojis = {
-          zoomies: '🌀', sleeping: '💤', eating: '🍖', playing: '🎾',
-          dramatic: '🎭', cuddly: '🥰', grumpy: '😾', derpy: '🤪',
-          lazy: '😴', foodie: '😋', scared: '😱', guilty: '😬',
-          genius: '🧠', clingy: '🥺', vocal: '🗣️', destroyer: '💥',
-        };
         return {
           title: filterValue.charAt(0).toUpperCase() + filterValue.slice(1),
-          emoji: behaviorEmojis[filterValue] || '🐾',
+          emoji: getHashtagEmoji(filterValue),
           subtitle: posts.length > 0 ? `${posts.length} ${filterValue} pets` : 'Pets with this mood',
           gradient: 'from-accent-coral to-pink-500',
         };
@@ -131,14 +134,14 @@ export default function FilteredContent() {
         return {
           title: 'Trending',
           emoji: '🔥',
-          subtitle: 'Hot memes right now',
+          subtitle: `${posts.length} hot memes right now`,
           gradient: 'from-orange-500 to-red-500',
         };
       case 'foryou':
         return {
           title: `For ${pet?.name || 'You'}`,
           emoji: '💝',
-          subtitle: 'Personalized picks based on your pet',
+          subtitle: `${posts.length} personalized picks`,
           gradient: 'from-pink-500 to-rose-500',
         };
       case 'breeds':

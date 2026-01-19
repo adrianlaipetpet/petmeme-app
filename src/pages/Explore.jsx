@@ -1,37 +1,33 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
-  Search, TrendingUp, Hash, X, PawPrint, Sparkles, 
-  ChevronRight, Play, Flame, Zap, Star
+  Search, TrendingUp, X, PawPrint, Sparkles, 
+  ChevronRight, Flame, Zap, Star
 } from 'lucide-react';
 import { useFeedStore } from '../store/feedStore';
 import { useAuthStore } from '../store/authStore';
 
-// 🔥 Trending hashtags with engagement data
-const TRENDING_HASHTAGS = [
-  { tag: 'zoomies', emoji: '🌀', count: 12400 },
-  { tag: 'sleepycat', emoji: '😴', count: 8900 },
-  { tag: 'treattime', emoji: '🍖', count: 7500 },
-  { tag: 'catlaptop', emoji: '💻', count: 6200 },
-  { tag: 'puppyeyes', emoji: '🥺', count: 5800 },
-  { tag: 'chonkycat', emoji: '🐱', count: 5400 },
-  { tag: 'dogpark', emoji: '🐕', count: 4800 },
-  { tag: 'midnightsnack', emoji: '🌙', count: 3900 },
+// 🔥 Default/fallback trending hashtags (used while loading)
+const DEFAULT_HASHTAGS = [
+  { tag: 'zoomies', emoji: '🌀', count: 0 },
+  { tag: 'sleepy', emoji: '😴', count: 0 },
+  { tag: 'treats', emoji: '🍖', count: 0 },
+  { tag: 'playing', emoji: '🎾', count: 0 },
+  { tag: 'cuddly', emoji: '🥰', count: 0 },
+  { tag: 'derpy', emoji: '🤪', count: 0 },
 ];
 
-// 🐾 Popular breeds with images
-const POPULAR_BREEDS = [
-  { breed: 'Golden Retriever', emoji: '🐕', type: 'dog', image: 'https://placedog.net/100/100?id=golden' },
-  { breed: 'Persian', emoji: '🐱', type: 'cat', image: 'https://cataas.com/cat?width=100&height=100&t=persian' },
-  { breed: 'Husky', emoji: '🐺', type: 'dog', image: 'https://placedog.net/100/100?id=husky' },
-  { breed: 'Siamese', emoji: '🐱', type: 'cat', image: 'https://cataas.com/cat?width=100&height=100&t=siamese' },
-  { breed: 'Corgi', emoji: '🦊', type: 'dog', image: 'https://placedog.net/100/100?id=corgi' },
-  { breed: 'Maine Coon', emoji: '🦁', type: 'cat', image: 'https://cataas.com/cat?width=100&height=100&t=mainecoon' },
-  { breed: 'Shiba Inu', emoji: '🐕', type: 'dog', image: 'https://placedog.net/100/100?id=shiba' },
-  { breed: 'British Shorthair', emoji: '🐱', type: 'cat', image: 'https://cataas.com/cat?width=100&height=100&t=british' },
-  { breed: 'Pomeranian', emoji: '🐶', type: 'dog', image: 'https://placedog.net/100/100?id=pom' },
-  { breed: 'Bengal', emoji: '🐆', type: 'cat', image: 'https://cataas.com/cat?width=100&height=100&t=bengal' },
+// 🐾 Default/fallback popular breeds (used while loading)
+const DEFAULT_BREEDS = [
+  { breed: 'Golden Retriever', petType: 'dog' },
+  { breed: 'Persian', petType: 'cat' },
+  { breed: 'Husky', petType: 'dog' },
+  { breed: 'Siamese', petType: 'cat' },
+  { breed: 'Corgi', petType: 'dog' },
+  { breed: 'Maine Coon', petType: 'cat' },
+  { breed: 'Shiba Inu', petType: 'dog' },
+  { breed: 'British Shorthair', petType: 'cat' },
 ];
 
 // 🎭 Behavior moods
@@ -59,25 +55,61 @@ const PERSONALITY_MATCHES = {
 export default function Explore() {
   const [searchQuery, setSearchQuery] = useState('');
   const [featuredPosts, setFeaturedPosts] = useState([]);
+  const [trendingHashtags, setTrendingHashtags] = useState(DEFAULT_HASHTAGS);
+  const [popularBreeds, setPopularBreeds] = useState(DEFAULT_BREEDS);
   const [isLoadingFeatured, setIsLoadingFeatured] = useState(true);
-  const { loadTrendingPosts } = useFeedStore();
+  const [isLoadingHashtags, setIsLoadingHashtags] = useState(true);
+  const [isLoadingBreeds, setIsLoadingBreeds] = useState(true);
+  
+  const { loadTrendingPosts, getTrendingHashtags, getPopularBreeds } = useFeedStore();
   const { pet } = useAuthStore();
   const navigate = useNavigate();
 
-  // Load featured/trending posts on mount
+  // Load all explore data on mount
   useEffect(() => {
-    const loadFeatured = async () => {
+    const loadExploreData = async () => {
+      // Load featured posts
       setIsLoadingFeatured(true);
       try {
         const posts = await loadTrendingPosts(6);
         setFeaturedPosts(posts.slice(0, 3));
+        console.log('✅ Loaded', posts.length, 'featured posts');
       } catch (e) {
         console.error('Failed to load featured:', e);
       } finally {
         setIsLoadingFeatured(false);
       }
+      
+      // Load trending hashtags
+      setIsLoadingHashtags(true);
+      try {
+        const hashtags = await getTrendingHashtags(8);
+        if (hashtags.length > 0) {
+          setTrendingHashtags(hashtags);
+          console.log('✅ Loaded', hashtags.length, 'trending hashtags');
+        }
+      } catch (e) {
+        console.error('Failed to load hashtags:', e);
+      } finally {
+        setIsLoadingHashtags(false);
+      }
+      
+      // Load popular breeds
+      setIsLoadingBreeds(true);
+      try {
+        const breeds = await getPopularBreeds(10);
+        if (breeds.length > 0) {
+          setPopularBreeds(breeds);
+          console.log('✅ Loaded', breeds.length, 'popular breeds');
+        }
+      } catch (e) {
+        console.error('Failed to load breeds:', e);
+      } finally {
+        setIsLoadingBreeds(false);
+      }
     };
-    loadFeatured();
+    
+    loadExploreData();
   }, []);
 
   // Format large numbers
@@ -116,6 +148,27 @@ export default function Explore() {
   };
 
   const personalizedSection = getPersonalizedSection();
+  
+  // Get emoji for a hashtag
+  const getHashtagEmoji = (tag) => {
+    const emojiMap = {
+      zoomies: '🌀', sleeping: '💤', sleepy: '💤', eating: '🍖', playing: '🎾',
+      dramatic: '🎭', cuddly: '🥰', grumpy: '😾', derpy: '🤪', lazy: '😴',
+      foodie: '😋', treats: '🍖', scared: '😱', guilty: '😬', genius: '🧠',
+      vocal: '🗣️', clingy: '🥺', destroyer: '💥', sneaky: '🥷', excited: '🎉',
+      puppyeyes: '🥺', chonky: '🐱', dogpark: '🐕', catlife: '🐱', doglife: '🐕',
+    };
+    return emojiMap[tag.toLowerCase()] || '🏷️';
+  };
+  
+  // Get breed image URL
+  const getBreedImage = (breed, petType) => {
+    const breedSlug = breed.toLowerCase().replace(/\s+/g, '-');
+    if (petType === 'cat') {
+      return `https://cataas.com/cat?width=100&height=100&t=${breedSlug}`;
+    }
+    return `https://placedog.net/100/100?id=${breedSlug}`;
+  };
 
   return (
     <div className="min-h-screen pb-24 bg-gradient-to-b from-petmeme-bg to-primary-50/30 dark:from-petmeme-bg-dark dark:to-primary-950/20">
@@ -239,7 +292,7 @@ export default function Explore() {
           </div>
           
           <div className="grid grid-cols-2 gap-3">
-            {TRENDING_HASHTAGS.slice(0, 6).map((item, index) => (
+            {(isLoadingHashtags ? DEFAULT_HASHTAGS : trendingHashtags).slice(0, 6).map((item, index) => (
               <motion.div
                 key={item.tag}
                 initial={{ opacity: 0, y: 10 }}
@@ -252,13 +305,13 @@ export default function Explore() {
                   to={`/browse/hashtag/${encodeURIComponent(item.tag)}`}
                   className="card p-4 flex items-center gap-3 hover:shadow-card-hover transition-all bg-gradient-to-br from-white to-gray-50 dark:from-petmeme-card-dark dark:to-gray-800/50"
                 >
-                  <span className="text-2xl">{item.emoji}</span>
+                  <span className="text-2xl">{getHashtagEmoji(item.tag)}</span>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-petmeme-text dark:text-petmeme-text-dark truncate">
                       #{item.tag}
                     </p>
                     <p className="text-xs text-petmeme-muted">
-                      {formatCount(item.count)} posts
+                      {item.count > 0 ? `${formatCount(item.count)} posts` : 'Explore'}
                     </p>
                   </div>
                   <ChevronRight className="w-4 h-4 text-petmeme-muted flex-shrink-0" />
@@ -284,42 +337,51 @@ export default function Explore() {
           </div>
           
           <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-4 px-4 pb-2">
-            {POPULAR_BREEDS.map((item, index) => (
-              <motion.div
-                key={item.breed}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.05 }}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex-shrink-0"
-              >
-                <Link
-                  to={`/browse/breed/${encodeURIComponent(item.breed)}`}
-                  className="block text-center"
+            {(isLoadingBreeds ? DEFAULT_BREEDS : popularBreeds).map((item, index) => {
+              const petType = item.petType || 'dog';
+              const isDog = petType === 'dog' || petType?.includes('dog');
+              return (
+                <motion.div
+                  key={item.breed}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.05 }}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex-shrink-0"
                 >
-                  <div className={`w-20 h-20 rounded-full overflow-hidden border-3 ${
-                    item.type === 'dog' 
-                      ? 'border-orange-300 dark:border-orange-600' 
-                      : 'border-purple-300 dark:border-purple-600'
-                  } mx-auto mb-2 shadow-lg bg-gray-100 dark:bg-gray-800`}>
-                    <img
-                      src={item.image}
-                      alt={item.breed}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.src = item.type === 'dog' 
-                          ? 'https://placedog.net/100/100' 
-                          : 'https://cataas.com/cat?width=100&height=100';
-                      }}
-                    />
-                  </div>
-                  <p className="text-xs font-medium text-petmeme-text dark:text-petmeme-text-dark max-w-[80px] truncate mx-auto">
-                    {item.emoji} {item.breed}
-                  </p>
-                </Link>
-              </motion.div>
-            ))}
+                  <Link
+                    to={`/browse/breed/${encodeURIComponent(item.breed)}`}
+                    className="block text-center"
+                  >
+                    <div className={`w-20 h-20 rounded-full overflow-hidden border-3 ${
+                      isDog 
+                        ? 'border-orange-300 dark:border-orange-600' 
+                        : 'border-purple-300 dark:border-purple-600'
+                    } mx-auto mb-2 shadow-lg bg-gray-100 dark:bg-gray-800`}>
+                      <img
+                        src={getBreedImage(item.breed, petType)}
+                        alt={item.breed}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.src = isDog 
+                            ? 'https://placedog.net/100/100' 
+                            : 'https://cataas.com/cat?width=100&height=100';
+                        }}
+                      />
+                    </div>
+                    <p className="text-xs font-medium text-petmeme-text dark:text-petmeme-text-dark max-w-[80px] truncate mx-auto">
+                      {isDog ? '🐕' : '🐱'} {item.breed}
+                    </p>
+                    {item.count > 0 && (
+                      <p className="text-xs text-petmeme-muted">
+                        {item.count} posts
+                      </p>
+                    )}
+                  </Link>
+                </motion.div>
+              );
+            })}
           </div>
         </section>
 

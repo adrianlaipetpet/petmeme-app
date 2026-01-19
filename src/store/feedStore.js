@@ -903,23 +903,52 @@ export const useFeedStore = create((set, get) => ({
   // ========================================
   // EXPLORE TAB QUERIES 🔍
   // Trending, Hashtags, Breeds, Behaviors, Personalized
+  // All queries use TRENDING SCORE sorting!
   // ========================================
   
   /**
+   * Calculate trending score for a post
+   * Higher score = more trending
+   * Formula: (likes + reposts*2 + comments*1.5) / sqrt(hoursSincePost)
+   */
+  _calculateTrendingScore: (post) => {
+    const now = new Date();
+    const postTime = post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt || now);
+    const hoursSincePost = Math.max(0.5, (now - postTime) / (1000 * 60 * 60)); // Min 0.5 hours
+    
+    const engagement = (post.likeCount || 0) + 
+                       (post.repostCount || 0) * 2 + 
+                       (post.commentCount || 0) * 1.5;
+    
+    // Decay factor using square root - recent posts get boost
+    const score = engagement / Math.pow(hoursSincePost, 0.5);
+    
+    return score;
+  },
+  
+  /**
+   * Sort posts by trending score (highest first)
+   */
+  _sortByTrending: (posts) => {
+    const calcScore = get()._calculateTrendingScore;
+    return [...posts].sort((a, b) => calcScore(b) - calcScore(a));
+  },
+  
+  /**
    * Load trending posts (sorted by engagement velocity)
-   * Uses simple query + client-side trending score calculation
+   * Fetches all non-deleted original posts, sorts by trending score
    */
   loadTrendingPosts: async (limitCount = 30) => {
     try {
-      console.log('🔥 Loading trending posts...');
+      console.log('🔥 Loading trending posts with scoring...');
       
       const postsRef = collection(db, 'posts');
-      // Get recent posts with high engagement potential
-      const q = query(postsRef, limit(limitCount * 2)); // Fetch more to filter
+      // Fetch more to have a good pool for sorting
+      const q = query(postsRef, limit(100));
       
       const snapshot = await getDocs(q);
       
-      const posts = snapshot.docs
+      let posts = snapshot.docs
         .map(doc => {
           const data = doc.data();
           return {
@@ -930,7 +959,20 @@ export const useFeedStore = create((set, get) => ({
         })
         .filter(post => !post.deleted && post.type !== 'repost');
       
-      console.log('🔥 Got', posts.length, 'posts for trending');
+      // Calculate trending score for each post
+      const calcScore = get()._calculateTrendingScore;
+      posts = posts.map(post => ({
+        ...post,
+        _trendingScore: calcScore(post),
+      }));
+      
+      // Sort by trending score (highest first)
+      posts.sort((a, b) => b._trendingScore - a._trendingScore);
+      
+      console.log('🔥 Trending posts sorted. Top scores:', 
+        posts.slice(0, 3).map(p => ({ id: p.id, score: p._trendingScore?.toFixed(2), likes: p.likeCount }))
+      );
+      
       return posts.slice(0, limitCount);
     } catch (error) {
       console.error('❌ Error loading trending posts:', error);
@@ -940,37 +982,58 @@ export const useFeedStore = create((set, get) => ({
   
   /**
    * Load posts by hashtag (arrayContains query)
-   * Prioritizes trending within the hashtag
+   * Tries multiple case variations, sorts by trending
    */
-  loadPostsByHashtag: async (hashtag, limitCount = 20) => {
+  loadPostsByHashtag: async (hashtag, limitCount = 30) => {
     if (!hashtag) return [];
     
     try {
       console.log('🏷️ Loading posts with hashtag:', hashtag);
       
       const postsRef = collection(db, 'posts');
-      // Query posts where hashtags array contains the search term
-      const q = query(
-        postsRef,
-        where('hashtags', 'array-contains', hashtag.toLowerCase()),
-        limit(limitCount)
-      );
+      const allPosts = new Map(); // Use Map to dedupe by ID
       
-      const snapshot = await getDocs(q);
+      // Try multiple case variations
+      const variations = [
+        hashtag.toLowerCase(),
+        hashtag,
+        hashtag.charAt(0).toUpperCase() + hashtag.slice(1).toLowerCase(),
+      ];
       
-      const posts = snapshot.docs
-        .map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data,
-            createdAt: data.createdAt?.toDate() || new Date(),
-          };
-        })
-        .filter(post => !post.deleted);
+      for (const variant of variations) {
+        try {
+          const q = query(
+            postsRef,
+            where('hashtags', 'array-contains', variant),
+            limit(50)
+          );
+          
+          const snapshot = await getDocs(q);
+          
+          snapshot.docs.forEach(doc => {
+            if (!allPosts.has(doc.id)) {
+              const data = doc.data();
+              if (!data.deleted) {
+                allPosts.set(doc.id, {
+                  id: doc.id,
+                  ...data,
+                  createdAt: data.createdAt?.toDate() || new Date(),
+                });
+              }
+            }
+          });
+        } catch (e) {
+          console.log('Hashtag variant query failed:', variant);
+        }
+      }
+      
+      let posts = Array.from(allPosts.values());
+      
+      // Sort by trending score
+      posts = get()._sortByTrending(posts);
       
       console.log('🏷️ Found', posts.length, 'posts with hashtag:', hashtag);
-      return posts;
+      return posts.slice(0, limitCount);
     } catch (error) {
       console.error('❌ Error loading posts by hashtag:', error);
       return [];
@@ -979,37 +1042,65 @@ export const useFeedStore = create((set, get) => ({
   
   /**
    * Load posts by breed (detectedBreed field)
-   * Returns posts featuring a specific breed
+   * Uses case-insensitive matching, sorts by trending
    */
-  loadPostsByBreed: async (breed, limitCount = 20) => {
+  loadPostsByBreed: async (breed, limitCount = 30) => {
     if (!breed) return [];
     
     try {
       console.log('🐕 Loading posts with breed:', breed);
       
       const postsRef = collection(db, 'posts');
-      // Query by detectedBreed field
-      const q = query(
+      
+      // First try exact match
+      let q = query(
         postsRef,
         where('detectedBreed', '==', breed),
-        limit(limitCount)
+        limit(50)
       );
       
-      const snapshot = await getDocs(q);
+      let snapshot = await getDocs(q);
+      let posts = [];
       
-      const posts = snapshot.docs
-        .map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data,
-            createdAt: data.createdAt?.toDate() || new Date(),
-          };
-        })
-        .filter(post => !post.deleted);
+      if (snapshot.empty) {
+        // If no exact match, fetch all and filter client-side (case-insensitive)
+        console.log('🐕 No exact match, trying case-insensitive search...');
+        q = query(postsRef, limit(200));
+        snapshot = await getDocs(q);
+        
+        const breedLower = breed.toLowerCase();
+        posts = snapshot.docs
+          .map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              createdAt: data.createdAt?.toDate() || new Date(),
+            };
+          })
+          .filter(post => {
+            if (post.deleted) return false;
+            const postBreed = (post.detectedBreed || '').toLowerCase();
+            return postBreed.includes(breedLower) || breedLower.includes(postBreed);
+          });
+      } else {
+        posts = snapshot.docs
+          .map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              createdAt: data.createdAt?.toDate() || new Date(),
+            };
+          })
+          .filter(post => !post.deleted);
+      }
+      
+      // Sort by trending score
+      posts = get()._sortByTrending(posts);
       
       console.log('🐕 Found', posts.length, 'posts with breed:', breed);
-      return posts;
+      return posts.slice(0, limitCount);
     } catch (error) {
       console.error('❌ Error loading posts by breed:', error);
       return [];
@@ -1018,37 +1109,58 @@ export const useFeedStore = create((set, get) => ({
   
   /**
    * Load posts by behavior (behaviors array)
-   * Returns posts tagged with a specific behavior
+   * Tries multiple case variations, sorts by trending
    */
-  loadPostsByBehavior: async (behavior, limitCount = 20) => {
+  loadPostsByBehavior: async (behavior, limitCount = 30) => {
     if (!behavior) return [];
     
     try {
       console.log('🎭 Loading posts with behavior:', behavior);
       
       const postsRef = collection(db, 'posts');
-      // Query posts where behaviors array contains the behavior
-      const q = query(
-        postsRef,
-        where('behaviors', 'array-contains', behavior.toLowerCase()),
-        limit(limitCount)
-      );
+      const allPosts = new Map();
       
-      const snapshot = await getDocs(q);
+      // Try multiple case variations
+      const variations = [
+        behavior.toLowerCase(),
+        behavior,
+        behavior.charAt(0).toUpperCase() + behavior.slice(1).toLowerCase(),
+      ];
       
-      const posts = snapshot.docs
-        .map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data,
-            createdAt: data.createdAt?.toDate() || new Date(),
-          };
-        })
-        .filter(post => !post.deleted);
+      for (const variant of variations) {
+        try {
+          const q = query(
+            postsRef,
+            where('behaviors', 'array-contains', variant),
+            limit(50)
+          );
+          
+          const snapshot = await getDocs(q);
+          
+          snapshot.docs.forEach(doc => {
+            if (!allPosts.has(doc.id)) {
+              const data = doc.data();
+              if (!data.deleted) {
+                allPosts.set(doc.id, {
+                  id: doc.id,
+                  ...data,
+                  createdAt: data.createdAt?.toDate() || new Date(),
+                });
+              }
+            }
+          });
+        } catch (e) {
+          console.log('Behavior variant query failed:', variant);
+        }
+      }
+      
+      let posts = Array.from(allPosts.values());
+      
+      // Sort by trending score
+      posts = get()._sortByTrending(posts);
       
       console.log('🎭 Found', posts.length, 'posts with behavior:', behavior);
-      return posts;
+      return posts.slice(0, limitCount);
     } catch (error) {
       console.error('❌ Error loading posts by behavior:', error);
       return [];
@@ -1057,7 +1169,7 @@ export const useFeedStore = create((set, get) => ({
   
   /**
    * Load personalized posts based on pet personality/behaviors
-   * Matches user's pet behaviors to post behaviors
+   * Matches user's pet behaviors to post behaviors, sorts by relevance + trending
    */
   loadPersonalizedPosts: async (petBehaviors = [], limitCount = 30) => {
     if (!petBehaviors || petBehaviors.length === 0) {
@@ -1069,31 +1181,36 @@ export const useFeedStore = create((set, get) => ({
       console.log('💝 Loading personalized posts for behaviors:', petBehaviors);
       
       const postsRef = collection(db, 'posts');
-      const allPosts = [];
+      const allPosts = new Map();
       
       // Query for each behavior (Firestore doesn't support multiple array-contains)
-      // Take first 3 behaviors to avoid too many queries
-      const behaviorsToQuery = petBehaviors.slice(0, 3);
+      // Take first 5 behaviors for better coverage
+      const behaviorsToQuery = petBehaviors.slice(0, 5);
       
       for (const behavior of behaviorsToQuery) {
+        // Try lowercase version
+        const behaviorLower = behavior.toLowerCase();
+        
         try {
           const q = query(
             postsRef,
-            where('behaviors', 'array-contains', behavior.toLowerCase()),
-            limit(15)
+            where('behaviors', 'array-contains', behaviorLower),
+            limit(20)
           );
           
           const snapshot = await getDocs(q);
           
           snapshot.docs.forEach(doc => {
-            const data = doc.data();
-            if (!data.deleted && !allPosts.find(p => p.id === doc.id)) {
-              allPosts.push({
-                id: doc.id,
-                ...data,
-                createdAt: data.createdAt?.toDate() || new Date(),
-                matchedBehavior: behavior, // Track which behavior matched
-              });
+            if (!allPosts.has(doc.id)) {
+              const data = doc.data();
+              if (!data.deleted && data.type !== 'repost') {
+                allPosts.set(doc.id, {
+                  id: doc.id,
+                  ...data,
+                  createdAt: data.createdAt?.toDate() || new Date(),
+                  matchedBehavior: behaviorLower,
+                });
+              }
             }
           });
         } catch (e) {
@@ -1101,28 +1218,127 @@ export const useFeedStore = create((set, get) => ({
         }
       }
       
-      console.log('💝 Found', allPosts.length, 'personalized posts');
+      let posts = Array.from(allPosts.values());
       
-      // Sort by number of matching behaviors and engagement
-      allPosts.sort((a, b) => {
-        const aMatches = petBehaviors.filter(b => 
-          a.behaviors?.includes(b.toLowerCase())
-        ).length;
-        const bMatches = petBehaviors.filter(b => 
-          b.behaviors?.includes(b.toLowerCase())
+      console.log('💝 Found', posts.length, 'personalized posts');
+      
+      // Calculate match score + trending score for each post
+      const calcTrending = get()._calculateTrendingScore;
+      const behaviorsLower = petBehaviors.map(b => b.toLowerCase());
+      
+      posts = posts.map(post => {
+        // Count how many of the user's behaviors match this post
+        const matchCount = (post.behaviors || []).filter(b => 
+          behaviorsLower.includes(b.toLowerCase())
         ).length;
         
-        if (bMatches !== aMatches) return bMatches - aMatches;
+        const trendingScore = calcTrending(post);
         
-        // Secondary sort by engagement
-        const aEngagement = (a.likeCount || 0) + (a.repostCount || 0) * 2;
-        const bEngagement = (b.likeCount || 0) + (b.repostCount || 0) * 2;
-        return bEngagement - aEngagement;
+        // Combined score: match count * 10 + trending score
+        const combinedScore = matchCount * 10 + trendingScore;
+        
+        return {
+          ...post,
+          _matchCount: matchCount,
+          _trendingScore: trendingScore,
+          _combinedScore: combinedScore,
+        };
       });
       
-      return allPosts.slice(0, limitCount);
+      // Sort by combined score (relevance + trending)
+      posts.sort((a, b) => b._combinedScore - a._combinedScore);
+      
+      console.log('💝 Top personalized:', 
+        posts.slice(0, 3).map(p => ({ 
+          id: p.id, 
+          matches: p._matchCount, 
+          trending: p._trendingScore?.toFixed(2) 
+        }))
+      );
+      
+      return posts.slice(0, limitCount);
     } catch (error) {
       console.error('❌ Error loading personalized posts:', error);
+      return [];
+    }
+  },
+  
+  /**
+   * Get trending hashtags from posts (aggregates hashtag counts)
+   */
+  getTrendingHashtags: async (limitCount = 10) => {
+    try {
+      console.log('📊 Calculating trending hashtags...');
+      
+      const postsRef = collection(db, 'posts');
+      const q = query(postsRef, limit(200)); // Sample recent posts
+      
+      const snapshot = await getDocs(q);
+      
+      // Count hashtag occurrences
+      const hashtagCounts = new Map();
+      
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        if (data.deleted || data.type === 'repost') return;
+        
+        (data.hashtags || []).forEach(tag => {
+          const tagLower = tag.toLowerCase();
+          const current = hashtagCounts.get(tagLower) || { tag: tag, count: 0, engagement: 0 };
+          current.count += 1;
+          current.engagement += (data.likeCount || 0) + (data.repostCount || 0) * 2;
+          hashtagCounts.set(tagLower, current);
+        });
+      });
+      
+      // Sort by count * engagement
+      const sorted = Array.from(hashtagCounts.values())
+        .map(h => ({ ...h, score: h.count * Math.sqrt(h.engagement + 1) }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, limitCount);
+      
+      console.log('📊 Top hashtags:', sorted.slice(0, 5).map(h => h.tag));
+      
+      return sorted;
+    } catch (error) {
+      console.error('❌ Error getting trending hashtags:', error);
+      return [];
+    }
+  },
+  
+  /**
+   * Get popular breeds from posts (aggregates breed counts)
+   */
+  getPopularBreeds: async (limitCount = 10) => {
+    try {
+      console.log('🐾 Calculating popular breeds...');
+      
+      const postsRef = collection(db, 'posts');
+      const q = query(postsRef, limit(200));
+      
+      const snapshot = await getDocs(q);
+      
+      const breedCounts = new Map();
+      
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        if (data.deleted || data.type === 'repost' || !data.detectedBreed) return;
+        
+        const breed = data.detectedBreed;
+        const current = breedCounts.get(breed) || { breed, count: 0, petType: data.detectedPetType };
+        current.count += 1;
+        breedCounts.set(breed, current);
+      });
+      
+      const sorted = Array.from(breedCounts.values())
+        .sort((a, b) => b.count - a.count)
+        .slice(0, limitCount);
+      
+      console.log('🐾 Top breeds:', sorted.slice(0, 5).map(b => b.breed));
+      
+      return sorted;
+    } catch (error) {
+      console.error('❌ Error getting popular breeds:', error);
       return [];
     }
   },

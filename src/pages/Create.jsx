@@ -658,8 +658,12 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
         memeText: memeText, // Structured for FeedCard rendering
         textOverlay: textOverlay.trim() || null, // Keep for backwards compat
         overlayPosition: overlayPosition,
-        behaviors: selectedBehaviors,
-        hashtags: selectedHashtags, // Fun viral hashtags!
+        // Include detected behavior + selected behaviors for better queryability
+        behaviors: [...new Set([
+          ...(detectedBehavior ? [detectedBehavior.toLowerCase()] : []),
+          ...selectedBehaviors.map(b => b.toLowerCase())
+        ])],
+        hashtags: selectedHashtags.map(h => h.toLowerCase()), // Store lowercase for consistent querying
         
         // ===== 🐕 AI-DETECTED BREED (for categorization!) =====
         detectedBreed: detectedBreed || null,  // e.g. "Golden Retriever", "Persian Cat"
