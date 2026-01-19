@@ -228,7 +228,7 @@ Analyze IMAGE 1 and compare it to IMAGE 2. Respond with EXACTLY 5 lines:
 SAME_PET: [YES if the pet in Image 1 is the SAME INDIVIDUAL animal as Image 2, NO if different animal even if same breed]
 BEHAVIOR: [pick ONE: sleeping, laying, staring, playing, eating, sitting, derpy, guilty, excited, scared, judging, dramatic, relaxed]
 PET_TYPE: [pick ONE: dog, cat, rabbit, bird, other]
-BREED: [specific breed like "Golden Retriever", "Persian", "Shiba Inu", "Mixed Breed"]
+BREED: [specific breed - if MULTIPLE pets of DIFFERENT breeds, pick ONE breed randomly, do NOT say "Mixed Breed" unless it's actually a mixed breed dog/cat]
 ITEMS: [list visible objects - IMPORTANT: distinguish between REAL food vs food-shaped TOYS. Only list "food" if it's ACTUAL food, not a toy shaped like food. List "toy" for any toys including food-shaped toys]
 
 CRITICAL for SAME_PET:
@@ -244,7 +244,7 @@ CRITICAL for ITEMS:
 
 BEHAVIOR: [pick ONE: sleeping, laying, staring, playing, eating, sitting, derpy, guilty, excited, scared, judging, dramatic, relaxed]
 PET_TYPE: [pick ONE: dog, cat, rabbit, bird, other]
-BREED: [specific breed like "Golden Retriever", "Persian", "Shiba Inu", "Mixed Breed"]
+BREED: [specific breed - if MULTIPLE pets of DIFFERENT breeds, pick ONE breed randomly, do NOT say "Mixed Breed" unless it's actually a mixed breed dog/cat]
 ITEMS: [list visible objects - IMPORTANT: distinguish between REAL food vs food-shaped TOYS. Only list "food" if it's ACTUAL food, not a toy shaped like food. List "toy" for any toys including food-shaped toys]
 
 CRITICAL for ITEMS:
