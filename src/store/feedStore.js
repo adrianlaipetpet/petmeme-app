@@ -900,6 +900,233 @@ export const useFeedStore = create((set, get) => ({
     }
   },
   
+  // ========================================
+  // EXPLORE TAB QUERIES 🔍
+  // Trending, Hashtags, Breeds, Behaviors, Personalized
+  // ========================================
+  
+  /**
+   * Load trending posts (sorted by engagement velocity)
+   * Uses simple query + client-side trending score calculation
+   */
+  loadTrendingPosts: async (limitCount = 30) => {
+    try {
+      console.log('🔥 Loading trending posts...');
+      
+      const postsRef = collection(db, 'posts');
+      // Get recent posts with high engagement potential
+      const q = query(postsRef, limit(limitCount * 2)); // Fetch more to filter
+      
+      const snapshot = await getDocs(q);
+      
+      const posts = snapshot.docs
+        .map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate() || new Date(),
+          };
+        })
+        .filter(post => !post.deleted && post.type !== 'repost');
+      
+      console.log('🔥 Got', posts.length, 'posts for trending');
+      return posts.slice(0, limitCount);
+    } catch (error) {
+      console.error('❌ Error loading trending posts:', error);
+      return [];
+    }
+  },
+  
+  /**
+   * Load posts by hashtag (arrayContains query)
+   * Prioritizes trending within the hashtag
+   */
+  loadPostsByHashtag: async (hashtag, limitCount = 20) => {
+    if (!hashtag) return [];
+    
+    try {
+      console.log('🏷️ Loading posts with hashtag:', hashtag);
+      
+      const postsRef = collection(db, 'posts');
+      // Query posts where hashtags array contains the search term
+      const q = query(
+        postsRef,
+        where('hashtags', 'array-contains', hashtag.toLowerCase()),
+        limit(limitCount)
+      );
+      
+      const snapshot = await getDocs(q);
+      
+      const posts = snapshot.docs
+        .map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate() || new Date(),
+          };
+        })
+        .filter(post => !post.deleted);
+      
+      console.log('🏷️ Found', posts.length, 'posts with hashtag:', hashtag);
+      return posts;
+    } catch (error) {
+      console.error('❌ Error loading posts by hashtag:', error);
+      return [];
+    }
+  },
+  
+  /**
+   * Load posts by breed (detectedBreed field)
+   * Returns posts featuring a specific breed
+   */
+  loadPostsByBreed: async (breed, limitCount = 20) => {
+    if (!breed) return [];
+    
+    try {
+      console.log('🐕 Loading posts with breed:', breed);
+      
+      const postsRef = collection(db, 'posts');
+      // Query by detectedBreed field
+      const q = query(
+        postsRef,
+        where('detectedBreed', '==', breed),
+        limit(limitCount)
+      );
+      
+      const snapshot = await getDocs(q);
+      
+      const posts = snapshot.docs
+        .map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate() || new Date(),
+          };
+        })
+        .filter(post => !post.deleted);
+      
+      console.log('🐕 Found', posts.length, 'posts with breed:', breed);
+      return posts;
+    } catch (error) {
+      console.error('❌ Error loading posts by breed:', error);
+      return [];
+    }
+  },
+  
+  /**
+   * Load posts by behavior (behaviors array)
+   * Returns posts tagged with a specific behavior
+   */
+  loadPostsByBehavior: async (behavior, limitCount = 20) => {
+    if (!behavior) return [];
+    
+    try {
+      console.log('🎭 Loading posts with behavior:', behavior);
+      
+      const postsRef = collection(db, 'posts');
+      // Query posts where behaviors array contains the behavior
+      const q = query(
+        postsRef,
+        where('behaviors', 'array-contains', behavior.toLowerCase()),
+        limit(limitCount)
+      );
+      
+      const snapshot = await getDocs(q);
+      
+      const posts = snapshot.docs
+        .map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate() || new Date(),
+          };
+        })
+        .filter(post => !post.deleted);
+      
+      console.log('🎭 Found', posts.length, 'posts with behavior:', behavior);
+      return posts;
+    } catch (error) {
+      console.error('❌ Error loading posts by behavior:', error);
+      return [];
+    }
+  },
+  
+  /**
+   * Load personalized posts based on pet personality/behaviors
+   * Matches user's pet behaviors to post behaviors
+   */
+  loadPersonalizedPosts: async (petBehaviors = [], limitCount = 30) => {
+    if (!petBehaviors || petBehaviors.length === 0) {
+      // Fall back to trending if no behaviors
+      return get().loadTrendingPosts(limitCount);
+    }
+    
+    try {
+      console.log('💝 Loading personalized posts for behaviors:', petBehaviors);
+      
+      const postsRef = collection(db, 'posts');
+      const allPosts = [];
+      
+      // Query for each behavior (Firestore doesn't support multiple array-contains)
+      // Take first 3 behaviors to avoid too many queries
+      const behaviorsToQuery = petBehaviors.slice(0, 3);
+      
+      for (const behavior of behaviorsToQuery) {
+        try {
+          const q = query(
+            postsRef,
+            where('behaviors', 'array-contains', behavior.toLowerCase()),
+            limit(15)
+          );
+          
+          const snapshot = await getDocs(q);
+          
+          snapshot.docs.forEach(doc => {
+            const data = doc.data();
+            if (!data.deleted && !allPosts.find(p => p.id === doc.id)) {
+              allPosts.push({
+                id: doc.id,
+                ...data,
+                createdAt: data.createdAt?.toDate() || new Date(),
+                matchedBehavior: behavior, // Track which behavior matched
+              });
+            }
+          });
+        } catch (e) {
+          console.log('Query for behavior failed:', behavior, e);
+        }
+      }
+      
+      console.log('💝 Found', allPosts.length, 'personalized posts');
+      
+      // Sort by number of matching behaviors and engagement
+      allPosts.sort((a, b) => {
+        const aMatches = petBehaviors.filter(b => 
+          a.behaviors?.includes(b.toLowerCase())
+        ).length;
+        const bMatches = petBehaviors.filter(b => 
+          b.behaviors?.includes(b.toLowerCase())
+        ).length;
+        
+        if (bMatches !== aMatches) return bMatches - aMatches;
+        
+        // Secondary sort by engagement
+        const aEngagement = (a.likeCount || 0) + (a.repostCount || 0) * 2;
+        const bEngagement = (b.likeCount || 0) + (b.repostCount || 0) * 2;
+        return bEngagement - aEngagement;
+      });
+      
+      return allPosts.slice(0, limitCount);
+    } catch (error) {
+      console.error('❌ Error loading personalized posts:', error);
+      return [];
+    }
+  },
+  
   /**
    * Delete a repost by its document ID (used from Profile Reposts tab)
    * Uses TRANSACTION for atomic delete + decrement

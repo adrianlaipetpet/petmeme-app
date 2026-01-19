@@ -15,7 +15,7 @@ import Splash from './pages/Splash';
 import Login from './pages/auth/Login';
 import Onboarding from './pages/auth/Onboarding';
 import Home from './pages/Home';
-import Discover from './pages/Discover';
+import Explore from './pages/Explore';
 import Create from './pages/Create';
 import Profile from './pages/Profile';
 import Campaigns from './pages/Campaigns';
@@ -123,7 +123,7 @@ function App() {
           {/* Protected routes with main layout */}
           <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
             <Route path="/" element={<Home />} />
-            <Route path="/discover" element={<Discover />} />
+            <Route path="/discover" element={<Explore />} />
             <Route path="/create" element={<Create />} />
             <Route path="/campaigns" element={<Campaigns />} />
             <Route path="/profile" element={<Profile />} />
