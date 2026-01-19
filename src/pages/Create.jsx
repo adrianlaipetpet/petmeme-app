@@ -708,65 +708,47 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
           'window': 'dramatic',  // Staring out window
         };
         
-        // Get behaviors from detected items
+        // Get ONE primary behavior from detected items (most relevant only)
         console.log('🔍 Looking up behaviors for items:', imageContext.items);
-        const itemBehaviors = (imageContext.items || [])
-          .map(item => {
-            const behavior = itemToBehavior[item];
-            if (behavior) console.log(`  📦 Item "${item}" → #${behavior}`);
-            return behavior;
-          })
-          .filter(Boolean);
+        let itemBehavior = null;
         
-        console.log('🏷️ Item behaviors found:', itemBehaviors);
-        
-        // Combine all behaviors: detected scene + items + user selected
-        const allBehaviors = [...new Set([
-          mappedBehavior,
-          ...itemBehaviors,
-        ])];
-        
-        console.log('🏷️ All behaviors to tag:', allBehaviors);
-        
-        // Auto-add detected behaviors to selected behaviors
-        allBehaviors.forEach(behavior => {
-          if (behaviorTags.includes(behavior) && !selectedBehaviors.includes(behavior)) {
-            setSelectedBehaviors(prev => [...new Set([behavior, ...prev])]);
+        // Priority order: food > toy > furniture
+        const itemPriority = ['food', 'treats', 'bowl', 'toy', 'ball', 'laptop', 'bed', 'couch'];
+        for (const priorityItem of itemPriority) {
+          if ((imageContext.items || []).includes(priorityItem)) {
+            itemBehavior = itemToBehavior[priorityItem];
+            if (itemBehavior) {
+              console.log(`  📦 Primary item "${priorityItem}" → #${itemBehavior}`);
+              break;
+            }
           }
-        });
-        
-        if (allBehaviors.length > 1) {
-          showToast(`Auto-tagged: ${allBehaviors.map(b => '#' + b).join(' ')} 🎯`, 'info');
-        } else {
-          showToast(`Auto-tagged: #${mappedBehavior} 🎯`, 'info');
         }
         
-        // 🏷️ Generate hashtags from behaviors + items!
-        const hashtagBehaviors = [...allBehaviors, detectedScene, ...selectedBehaviors];
-        const petType = petContext.petType?.toLowerCase().includes('dog') ? 'dog' : 'cat';
+        // Only add 1-2 behaviors max: scene behavior + maybe item behavior
+        const behaviorsToAdd = [mappedBehavior];
+        if (itemBehavior && itemBehavior !== mappedBehavior && behaviorTags.includes(itemBehavior)) {
+          behaviorsToAdd.push(itemBehavior);
+        }
         
-        // Also add item-based hashtags directly
-        const itemHashtags = (imageContext.items || [])
-          .filter(item => ['food', 'laptop', 'coffee', 'box', 'toy', 'bed'].includes(item))
-          .map(item => {
-            const itemToHashtag = {
-              'food': 'treattime',
-              'laptop': 'catcodingbuddy',
-              'coffee': 'morningcoffee',
-              'box': 'ififitsisits',
-              'toy': 'playtime',
-              'bed': 'naptime',
-            };
-            return itemToHashtag[item] || item;
-          });
+        console.log('🏷️ Behaviors to auto-tag (max 2):', behaviorsToAdd);
         
-        const hashtags = [
-          ...generateHashtagsFromBehaviors([...new Set(hashtagBehaviors)], petType),
-          ...itemHashtags,
-        ];
+        // Auto-add detected behaviors to selected behaviors (REPLACE, don't append endlessly)
+        setSelectedBehaviors(behaviorsToAdd);
         
-        setSuggestedHashtags([...new Set(hashtags)]);
-        console.log('🏷️ Generated hashtags from behaviors + items:', hashtags);
+        showToast(`Auto-tagged: ${behaviorsToAdd.map(b => '#' + b).join(' ')} 🎯`, 'info');
+        
+        // 🏷️ Generate hashtags - use CORRECT pet type (normalize to lowercase)
+        const normalizedPetType = (imageContext.petType || petContext.petType || 'dog').toLowerCase();
+        const petTypeForHashtags = normalizedPetType.includes('dog') ? 'dog' : 
+                                    normalizedPetType.includes('cat') ? 'cat' : 'pet';
+        
+        console.log('🐾 Pet type for hashtags:', petTypeForHashtags);
+        
+        // Generate hashtags from just the 1-2 detected behaviors
+        const hashtags = generateHashtagsFromBehaviors(behaviorsToAdd, petTypeForHashtags);
+        
+        setSuggestedHashtags(hashtags);
+        console.log('🏷️ Generated hashtags:', hashtags);
       }
       
       // 🔥 Use the NEW VIRAL GENERATOR! 🔥
@@ -818,32 +800,23 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
   };
   
   const regenerateHashtags = () => {
-    const behaviors = detectedBehavior 
-      ? [detectedBehavior, ...selectedBehaviors] 
-      : selectedBehaviors;
-    const petType = pet?.type?.toLowerCase().includes('dog') ? 'dog' : 'cat';
+    // Use selected behaviors, or detected behavior, or default
+    const behaviors = selectedBehaviors.length > 0 
+      ? selectedBehaviors.slice(0, 2)  // Max 2 behaviors
+      : detectedBehavior 
+        ? [detectedBehavior] 
+        : ['playing'];
     
-    // Include item-based hashtags
-    const itemHashtags = (detectedItems || [])
-      .filter(item => ['food', 'laptop', 'coffee', 'box', 'toy', 'bed'].includes(item))
-      .map(item => {
-        const itemToHashtag = {
-          'food': 'treattime',
-          'laptop': 'catcodingbuddy',
-          'coffee': 'morningcoffee',
-          'box': 'ififitsisits',
-          'toy': 'playtime',
-          'bed': 'naptime',
-        };
-        return itemToHashtag[item] || item;
-      });
+    // Normalize pet type correctly
+    const detectedType = (detectedPetType || pet?.type || 'dog').toLowerCase();
+    const petType = detectedType.includes('dog') ? 'dog' : 
+                    detectedType.includes('cat') ? 'cat' : 'pet';
     
-    const hashtags = [
-      ...generateHashtagsFromBehaviors(behaviors.length > 0 ? behaviors : ['playing'], petType),
-      ...itemHashtags,
-    ];
+    console.log('🔄 Regenerating hashtags for:', { behaviors, petType });
     
-    setSuggestedHashtags([...new Set(hashtags)]);
+    const hashtags = generateHashtagsFromBehaviors(behaviors, petType);
+    
+    setSuggestedHashtags(hashtags);
     showToast('Fresh hashtags generated! 🏷️', 'success');
   };
   

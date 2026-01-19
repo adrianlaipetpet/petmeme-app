@@ -74,6 +74,11 @@ const generateHashtagTemplates = (behavior, petType = 'pet') => {
   const normalizedBehavior = behavior.toLowerCase().trim();
   const capitalizedBehavior = capitalize(behavior);
   
+  // Normalize pet type to exactly 'dog', 'cat', or 'pet'
+  const normalizedPetType = (petType || 'pet').toLowerCase();
+  const petTypeClean = normalizedPetType.includes('dog') ? 'dog' : 
+                       normalizedPetType.includes('cat') ? 'cat' : 'pet';
+  
   // Get behavior-specific data or use defaults
   const behaviorSynonyms = synonyms[normalizedBehavior] || [normalizedBehavior];
   const behaviorEmojis = emojis[normalizedBehavior] || ['🐾', '😹'];
@@ -101,8 +106,9 @@ const generateHashtagTemplates = (behavior, petType = 'pet') => {
   });
   
   // Template: #PetTypeBehavior (e.g., #DogZoomies, #CatNap)
+  // Use the normalized pet type - NO random picking!
   templates.push(() => {
-    const pet = petType === 'dog' ? 'Dog' : petType === 'cat' ? 'Cat' : pickRandom(['Dog', 'Cat', 'Pet']);
+    const pet = petTypeClean === 'dog' ? 'Dog' : petTypeClean === 'cat' ? 'Cat' : 'Pet';
     return `${pet}${capitalizedBehavior}`;
   });
   
@@ -121,8 +127,8 @@ const generateHashtagTemplates = (behavior, petType = 'pet') => {
     return `${adj}${capitalizedBehavior}`;
   });
   
-  // Add pet-type specific tags (lower priority)
-  const petSpecificTags = petType === 'dog' ? dogTags : petType === 'cat' ? catTags : genericTags;
+  // Add pet-type specific tags (lower priority) - use normalized type
+  const petSpecificTags = petTypeClean === 'dog' ? dogTags : petTypeClean === 'cat' ? catTags : genericTags;
   templates.push(() => pickRandom(petSpecificTags));
   
   return templates;
@@ -176,8 +182,8 @@ export const generateHashtags = (behavior, petType = 'pet', count = 5) => {
 
 /**
  * Generate hashtags from multiple behaviors
- * @param {string[]} behaviors - Array of detected behaviors
- * @param {string} petType - The pet type
+ * @param {string[]} behaviors - Array of detected behaviors (max 2 recommended)
+ * @param {string} petType - The pet type ('dog', 'cat', or 'pet')
  * @returns {string[]} Array of 5 unique hashtags
  */
 export const generateHashtagsFromBehaviors = (behaviors, petType = 'pet') => {
@@ -185,20 +191,30 @@ export const generateHashtagsFromBehaviors = (behaviors, petType = 'pet') => {
     return pickMultipleRandom(behaviorHashtags.genericTags, 5);
   }
   
+  // Normalize pet type
+  const normalizedPetType = (petType || 'pet').toLowerCase();
+  const petTypeClean = normalizedPetType.includes('dog') ? 'dog' : 
+                       normalizedPetType.includes('cat') ? 'cat' : 'pet';
+  
+  console.log('📝 Generating hashtags for:', { behaviors, petTypeClean });
+  
   const allHashtags = new Set();
   
-  // Generate 2-3 hashtags per behavior
-  const tagsPerBehavior = Math.ceil(5 / behaviors.length);
+  // Limit to max 2 behaviors to avoid too many unrelated tags
+  const behaviorsToUse = behaviors.slice(0, 2);
   
-  behaviors.forEach(behavior => {
-    const tags = generateHashtags(behavior, petType, tagsPerBehavior);
+  // Generate 2-3 hashtags per behavior
+  const tagsPerBehavior = Math.ceil(4 / behaviorsToUse.length);
+  
+  behaviorsToUse.forEach(behavior => {
+    const tags = generateHashtags(behavior, petTypeClean, tagsPerBehavior);
     tags.forEach(tag => allHashtags.add(tag));
   });
   
-  // Add a pet-type specific tag
-  const petTags = petType === 'dog' 
+  // Add ONE pet-type specific tag (matching the actual pet type!)
+  const petTags = petTypeClean === 'dog' 
     ? behaviorHashtags.dogTags 
-    : petType === 'cat' 
+    : petTypeClean === 'cat' 
       ? behaviorHashtags.catTags 
       : behaviorHashtags.genericTags;
   
