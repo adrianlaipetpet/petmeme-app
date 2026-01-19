@@ -224,23 +224,49 @@ export default function FeedCard({ post, isDemo = false }) {
   
   return (
     <article className="feed-card relative overflow-hidden">
-      {/* Repost attribution banner 🔄 */}
-      {isRepost && post.reposter && (
+      {/* Repost attribution banner 🔄 - supports multiple reposters! */}
+      {(isRepost && post.reposter) || (post.wasReposted && post.repostedBy?.length > 0) ? (
         <motion.div 
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 border-b border-green-100 dark:border-green-800"
         >
-          <Repeat2 className="w-4 h-4 text-green-600 dark:text-green-400" />
-          <Link 
-            to={`/profile/${post.reposter.id}`}
-            className="text-sm text-green-700 dark:text-green-300 hover:underline font-medium"
-          >
-            Reposted by {post.reposter.name}
-          </Link>
-          <span className="text-green-500">🔄</span>
+          <Repeat2 className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+          <div className="text-sm text-green-700 dark:text-green-300 font-medium flex-1 min-w-0">
+            {/* Multiple reposters (consolidated view) */}
+            {post.repostedBy?.length > 0 ? (
+              <span>
+                Reposted by{' '}
+                {post.repostedBy.slice(0, 2).map((reposter, i) => (
+                  <span key={reposter.id}>
+                    {i > 0 && ', '}
+                    <Link 
+                      to={`/profile/${reposter.id}`}
+                      className="hover:underline"
+                    >
+                      {reposter.name}
+                    </Link>
+                  </span>
+                ))}
+                {post.repostedBy.length > 2 && (
+                  <span className="text-green-600 dark:text-green-400">
+                    {' '}and {post.repostedBy.length - 2} other{post.repostedBy.length > 3 ? 's' : ''}
+                  </span>
+                )}
+              </span>
+            ) : (
+              /* Single reposter (old format) */
+              <Link 
+                to={`/profile/${post.reposter?.id}`}
+                className="hover:underline"
+              >
+                Reposted by {post.reposter?.name}
+              </Link>
+            )}
+          </div>
+          <span className="text-green-500 flex-shrink-0">🔄</span>
         </motion.div>
-      )}
+      ) : null}
       
       {/* Brand badge */}
       {post.isBrandPost && (

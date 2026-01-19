@@ -304,7 +304,8 @@ export const useFeedStore = create((set, get) => ({
   },
   
   // Subscribe to real-time updates (live feed - updates automatically!)
-  // Filters out deleted posts, enriches reposts with original metrics
+  // Filters out deleted posts, consolidates reposts by same original
+  // Shows "Reposted by X, Y, and Z" when multiple users repost the same thing
   subscribeToFeed: (userId = null) => {
     const { unsubscribe: existingUnsub } = get();
     if (existingUnsub) existingUnsub();
@@ -312,13 +313,13 @@ export const useFeedStore = create((set, get) => ({
     console.log('🔴 Setting up real-time feed listener for user:', userId);
     
     const postsRef = collection(db, 'posts');
-    const q = query(postsRef, limit(50));
+    const q = query(postsRef, limit(100)); // Fetch more to consolidate reposts
     
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       console.log('🔴 Real-time update: got', snapshot.docs.length, 'posts');
       
       // First pass: map all posts
-      let posts = snapshot.docs
+      let allPosts = snapshot.docs
         .map(docSnap => {
           const data = docSnap.data();
           return {
@@ -330,93 +331,125 @@ export const useFeedStore = create((set, get) => ({
         })
         .filter(post => !post.deleted);
       
+      // Separate originals and reposts
+      const originalPosts = allPosts.filter(p => p.type !== 'repost');
+      const reposts = allPosts.filter(p => p.type === 'repost');
+      
+      // Build a map of originalPostId -> array of reposters
+      const repostsByOriginal = new Map();
+      reposts.forEach(repost => {
+        const origId = repost.originalPostId;
+        if (!origId) return;
+        
+        if (!repostsByOriginal.has(origId)) {
+          repostsByOriginal.set(origId, {
+            reposters: [],
+            latestRepostTime: repost.createdAt,
+            repostIds: [],
+          });
+        }
+        
+        const entry = repostsByOriginal.get(origId);
+        entry.reposters.push({
+          id: repost.reposter?.id || repost.ownerId,
+          name: repost.reposter?.name || 'Someone',
+          photoUrl: repost.reposter?.photoUrl || null,
+        });
+        entry.repostIds.push(repost.id);
+        
+        // Track the latest repost time for sorting
+        if (repost.createdAt > entry.latestRepostTime) {
+          entry.latestRepostTime = repost.createdAt;
+        }
+      });
+      
+      console.log('🔴 Found reposts for', repostsByOriginal.size, 'unique originals');
+      
       // Build a set of originalPostIds that this user has reposted
-      // Look at ALL reposts (not just visible ones) owned by this user
       const userRepostOriginalIds = new Set();
       if (userId) {
-        posts.forEach(post => {
-          if (post.type === 'repost' && post.ownerId === userId && post.originalPostId) {
-            userRepostOriginalIds.add(post.originalPostId);
+        reposts.forEach(repost => {
+          if (repost.ownerId === userId && repost.originalPostId) {
+            userRepostOriginalIds.add(repost.originalPostId);
           }
         });
       }
-      console.log('🔴 User has reposted these originals:', [...userRepostOriginalIds]);
-      
-      // Collect original post IDs from reposts to fetch their metrics
-      const originalPostIds = new Set();
-      posts.forEach(post => {
-        if (post.type === 'repost' && post.originalPostId) {
-          originalPostIds.add(post.originalPostId);
-        }
-      });
       
       // Build a map of original posts for metrics
       const originalPostsMap = new Map();
-      if (originalPostIds.size > 0) {
-        // Check if originals are already in our posts array
-        posts.forEach(post => {
-          if (originalPostIds.has(post.id)) {
-            originalPostsMap.set(post.id, {
-              likeCount: post.likeCount || 0,
-              commentCount: post.commentCount || 0,
-              repostCount: post.repostCount || 0,
-              isLiked: post.isLiked,
+      originalPosts.forEach(post => {
+        originalPostsMap.set(post.id, post);
+      });
+      
+      // Fetch any missing originals (if repost exists but original isn't in feed)
+      const missingOrigIds = [...repostsByOriginal.keys()].filter(id => !originalPostsMap.has(id));
+      for (const origId of missingOrigIds) {
+        try {
+          const origDoc = await getDoc(doc(db, 'posts', origId));
+          if (origDoc.exists()) {
+            const origData = origDoc.data();
+            originalPostsMap.set(origId, {
+              id: origId,
+              ...origData,
+              createdAt: origData.createdAt?.toDate() || new Date(),
+              isLiked: userId ? (origData.likedBy || []).includes(userId) : false,
             });
           }
-        });
-        
-        // For any missing originals, fetch from Firestore
-        const missingIds = [...originalPostIds].filter(id => !originalPostsMap.has(id));
-        for (const origId of missingIds) {
-          try {
-            const origDoc = await getDoc(doc(db, 'posts', origId));
-            if (origDoc.exists()) {
-              const origData = origDoc.data();
-              originalPostsMap.set(origId, {
-                likeCount: origData.likeCount || 0,
-                commentCount: origData.commentCount || 0,
-                repostCount: origData.repostCount || 0,
-                isLiked: userId ? (origData.likedBy || []).includes(userId) : false,
-              });
-            }
-          } catch (e) {
-            console.log('Could not fetch original post:', origId);
-          }
+        } catch (e) {
+          console.log('Could not fetch original post:', origId);
         }
       }
       
-      // Enrich posts with isReposted flag and original metrics
-      posts = posts.map(post => {
+      // Build the final feed: consolidate reposts into original posts
+      let feedPosts = [];
+      const addedOriginalIds = new Set();
+      
+      // First, add original posts with repost info attached
+      originalPosts.forEach(post => {
         const enriched = { ...post };
+        enriched.isReposted = userRepostOriginalIds.has(post.id);
         
-        // For ORIGINAL posts: check if current user has reposted it
-        if (post.type !== 'repost') {
-          enriched.isReposted = userRepostOriginalIds.has(post.id);
-        } else {
-          // For REPOST posts: check if user has reposted the original
-          enriched.isReposted = userRepostOriginalIds.has(post.originalPostId);
+        // Attach reposter info if this post has been reposted
+        if (repostsByOriginal.has(post.id)) {
+          const repostInfo = repostsByOriginal.get(post.id);
+          enriched.repostedBy = repostInfo.reposters;
+          enriched.repostIds = repostInfo.repostIds;
+          enriched.wasReposted = true;
+          // Boost visibility: use latest repost time for sorting if more recent
+          enriched.boostTime = repostInfo.latestRepostTime;
         }
         
-        // For reposts, add original metrics
-        if (post.type === 'repost' && post.originalPostId) {
-          enriched.originalMetrics = originalPostsMap.get(post.originalPostId) || {
-            likeCount: 0,
-            commentCount: 0,
-            repostCount: 0,
-            isLiked: false,
-          };
-          // Also set isLiked based on original
-          enriched.isLiked = enriched.originalMetrics.isLiked;
-        }
-        
-        return enriched;
+        feedPosts.push(enriched);
+        addedOriginalIds.add(post.id);
       });
       
-      // Sort by createdAt (newest first)
-      posts.sort((a, b) => b.createdAt - a.createdAt);
+      // For reposts where original isn't already in feed, add the original
+      repostsByOriginal.forEach((repostInfo, origId) => {
+        if (!addedOriginalIds.has(origId) && originalPostsMap.has(origId)) {
+          const originalPost = originalPostsMap.get(origId);
+          const enriched = {
+            ...originalPost,
+            isReposted: userRepostOriginalIds.has(origId),
+            repostedBy: repostInfo.reposters,
+            repostIds: repostInfo.repostIds,
+            wasReposted: true,
+            boostTime: repostInfo.latestRepostTime,
+          };
+          feedPosts.push(enriched);
+          addedOriginalIds.add(origId);
+        }
+      });
       
-      console.log('🔴 Showing', posts.length, 'enriched posts');
-      set({ posts, isLoading: false, hasMore: posts.length >= 30 });
+      // Sort: prioritize posts with recent reposts, then by createdAt
+      feedPosts.sort((a, b) => {
+        // Use boostTime (latest repost) if available, otherwise createdAt
+        const aTime = a.boostTime || a.createdAt;
+        const bTime = b.boostTime || b.createdAt;
+        return bTime - aTime;
+      });
+      
+      console.log('🔴 Showing', feedPosts.length, 'consolidated posts (reposts merged)');
+      set({ posts: feedPosts, isLoading: false, hasMore: feedPosts.length >= 30 });
     }, (error) => {
       console.error('❌ Real-time feed error:', error);
     });
