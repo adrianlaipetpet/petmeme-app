@@ -500,20 +500,20 @@ export default function Explore() {
           
           {isLoadingHashtags ? (
             /* Loading skeleton */
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="card p-4 flex items-center gap-3 animate-pulse">
-                  <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700" />
+                <div key={i} className="card p-2.5 flex items-center gap-2 animate-pulse">
+                  <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
                   <div className="flex-1">
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20 mb-2" />
-                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-14" />
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-16 mb-1" />
+                    <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded w-10" />
                   </div>
                 </div>
               ))}
             </div>
           ) : trendingHashtags.length > 0 && trendingHashtags[0].count > 0 ? (
             /* Real trending hashtags with posts */
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               {trendingHashtags.slice(0, 6).map((item, index) => (
                 <motion.div
                   key={item.tag}
@@ -525,20 +525,20 @@ export default function Explore() {
                 >
                   <Link
                     to={`/browse/hashtag/${encodeURIComponent(item.tag)}`}
-                    className="card p-4 flex items-center gap-3 hover:shadow-card-hover transition-all bg-gradient-to-br from-white to-gray-50 dark:from-petmeme-card-dark dark:to-gray-800/50 border border-gray-100 dark:border-gray-700"
+                    className="card p-2.5 flex items-center gap-2 hover:shadow-card-hover transition-all bg-gradient-to-br from-white to-gray-50 dark:from-petmeme-card-dark dark:to-gray-800/50 border border-gray-100 dark:border-gray-700"
                   >
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-coral/20 to-orange-100 dark:from-accent-coral/30 dark:to-orange-900/20 flex items-center justify-center">
-                      <span className="text-lg">{getHashtagEmoji(item.tag)}</span>
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent-coral/20 to-orange-100 dark:from-accent-coral/30 dark:to-orange-900/20 flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm">{getHashtagEmoji(item.tag)}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-petmeme-text dark:text-petmeme-text-dark text-sm break-all">
+                      <p className="font-semibold text-petmeme-text dark:text-petmeme-text-dark text-xs break-all leading-tight">
                         #{item.tag}
                       </p>
-                      <p className="text-xs text-petmeme-muted">
+                      <p className="text-[10px] text-petmeme-muted">
                         {formatCount(item.count)} {item.count === 1 ? 'post' : 'posts'}
                       </p>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-petmeme-muted flex-shrink-0" />
+                    <ChevronRight className="w-3 h-3 text-petmeme-muted flex-shrink-0" />
                   </Link>
                 </motion.div>
               ))}
