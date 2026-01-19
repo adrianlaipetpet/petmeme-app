@@ -226,7 +226,7 @@ IMAGE 2: The user's pet (named "${pet?.name}", a ${pet?.breed} ${pet?.type})
 Analyze IMAGE 1 and compare it to IMAGE 2. Respond with EXACTLY 5 lines:
 
 SAME_PET: [YES if the pet in Image 1 is the SAME INDIVIDUAL animal as Image 2, NO if different animal even if same breed]
-BEHAVIOR: [pick ONE: sleeping, staring, playing, eating, sitting, derpy, guilty, excited, scared, judging, dramatic, relaxed]
+BEHAVIOR: [pick ONE: sleeping, laying, staring, playing, eating, sitting, derpy, guilty, excited, scared, judging, dramatic, relaxed]
 PET_TYPE: [pick ONE: dog, cat, rabbit, bird, other]
 BREED: [specific breed like "Golden Retriever", "Persian", "Shiba Inu", "Mixed Breed"]
 ITEMS: [list visible objects - IMPORTANT: distinguish between REAL food vs food-shaped TOYS. Only list "food" if it's ACTUAL food, not a toy shaped like food. List "toy" for any toys including food-shaped toys]
@@ -242,7 +242,7 @@ CRITICAL for ITEMS:
 - If unsure, prefer "toy" over "food"`
           : `Analyze this pet photo carefully. Respond with EXACTLY 4 lines:
 
-BEHAVIOR: [pick ONE: sleeping, staring, playing, eating, sitting, derpy, guilty, excited, scared, judging, dramatic, relaxed]
+BEHAVIOR: [pick ONE: sleeping, laying, staring, playing, eating, sitting, derpy, guilty, excited, scared, judging, dramatic, relaxed]
 PET_TYPE: [pick ONE: dog, cat, rabbit, bird, other]
 BREED: [specific breed like "Golden Retriever", "Persian", "Shiba Inu", "Mixed Breed"]
 ITEMS: [list visible objects - IMPORTANT: distinguish between REAL food vs food-shaped TOYS. Only list "food" if it's ACTUAL food, not a toy shaped like food. List "toy" for any toys including food-shaped toys]
@@ -307,7 +307,7 @@ CRITICAL for ITEMS:
               console.log('  → Same Pet:', samePet);
             } else if (upperLine.startsWith('BEHAVIOR:') || upperLine.startsWith('BEHAVIOR ')) {
               const val = line.split(/[:\s]+/).slice(1).join(' ').trim().toLowerCase();
-              const validScenes = ['sleeping', 'staring', 'playing', 'eating', 'sitting', 'derpy', 'guilty', 'excited', 'scared', 'judging', 'dramatic', 'relaxed'];
+              const validScenes = ['sleeping', 'laying', 'lying', 'staring', 'playing', 'eating', 'sitting', 'derpy', 'guilty', 'excited', 'scared', 'judging', 'dramatic', 'relaxed'];
               behavior = validScenes.find(s => val?.includes(s)) || 'sitting';
               console.log('  → Behavior:', behavior);
             } else if (upperLine.startsWith('PET_TYPE:') || upperLine.startsWith('PET_TYPE ') || upperLine.startsWith('PET TYPE:')) {
@@ -693,6 +693,8 @@ Output ONLY 2 captions, one per line. No numbering, no quotes.`
         // NOTE: 'sitting' intentionally has NO behavior tag - too common/generic
         const sceneToBehavior = {
           'sleeping': 'lazy',
+          'laying': 'lazy',       // Laying down = lazy
+          'lying': 'lazy',        // Alternative spelling
           'staring': 'dramatic',
           'playing': 'zoomies',
           'eating': 'foodie',
