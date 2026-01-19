@@ -88,6 +88,10 @@ export default function Create() {
   const [detectedBreed, setDetectedBreed] = useState(null);
   const [detectedPetType, setDetectedPetType] = useState(null);
   const [showBreedSelector, setShowBreedSelector] = useState(false);
+  const [isPetMatch, setIsPetMatch] = useState(true); // Does photo match user's pet?
+  
+  // 🔍 Detected items/objects in photo
+  const [detectedItems, setDetectedItems] = useState([]);
   
   const fileInputRef = useRef(null);
   
@@ -121,6 +125,8 @@ export default function Create() {
       setDetectedBreed(null);
       setDetectedPetType(null);
       setDetectedBehavior(null);
+      setDetectedItems([]);
+      setIsPetMatch(true);
       setSuggestedHashtags([]);
       // Start AI generation (which now includes breed detection!)
       generateAICaptions();
@@ -151,11 +157,13 @@ export default function Create() {
   const removeMedia = (index) => {
     setMediaFiles(prev => prev.filter((_, i) => i !== index));
     setMediaPreviews(prev => prev.filter((_, i) => i !== index));
-    // Reset breed detection when primary media is removed
+    // Reset all detection states when primary media is removed
     if (index === 0) {
       setDetectedBreed(null);
       setDetectedPetType(null);
       setDetectedBehavior(null);
+      setDetectedItems([]);
+      setIsPetMatch(true);
       setAiSuggestions([]);
       setSuggestedHashtags([]);
     }
@@ -186,7 +194,7 @@ export default function Create() {
           return null;
         }
         
-        console.log('🤖 Calling Gemini Vision API for behavior + breed detection...');
+        console.log('🤖 Calling Gemini Vision API for behavior + breed + items detection...');
         
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
@@ -207,16 +215,17 @@ export default function Create() {
                 },
                 {
                   type: 'text', 
-                  text: `Analyze this pet photo. Reply in EXACTLY this format (3 lines, nothing else):
+                  text: `Analyze this pet photo. Reply in EXACTLY this format (4 lines, nothing else):
 BEHAVIOR: [one word from: sleeping, staring, playing, eating, sitting, derpy, guilty, excited, scared, judging, dramatic, relaxed]
 PET_TYPE: [one word: dog, cat, rabbit, bird, other]
 BREED: [specific breed name like "Golden Retriever", "Persian Cat", "Shiba Inu", "Mixed Breed", etc.]
+ITEMS: [comma-separated list of notable objects/items visible like: food, treats, laptop, keyboard, bed, couch, toy, ball, bone, bowl, leash, window, box, bag, clothes, blanket, pillow, phone, coffee, water]
 
-Be specific about the breed. If you're not sure, make your best guess based on appearance.`
+Be specific about the breed. For ITEMS, list any notable objects you see (not the pet itself). If no notable items, say "none".`
                 }
               ]
             }],
-            max_tokens: 100,
+            max_tokens: 150,
           }),
         });
         
@@ -237,6 +246,7 @@ Be specific about the breed. If you're not sure, make your best guess based on a
           let behavior = 'sitting';
           let petType = 'dog';
           let breed = null;
+          let items = [];
           
           lines.forEach(line => {
             const upperLine = line.toUpperCase();
@@ -252,6 +262,11 @@ Be specific about the breed. If you're not sure, make your best guess based on a
               if (breed) {
                 breed = breed.replace(/^["']|["']$/g, '').trim();
               }
+            } else if (upperLine.startsWith('ITEMS:')) {
+              const itemsStr = line.split(':')[1]?.trim() || '';
+              if (itemsStr.toLowerCase() !== 'none' && itemsStr.length > 0) {
+                items = itemsStr.split(',').map(i => i.trim().toLowerCase()).filter(i => i && i !== 'none');
+              }
             }
           });
           
@@ -262,7 +277,36 @@ Be specific about the breed. If you're not sure, make your best guess based on a
             console.log('🐕 Detected breed:', breed, 'Type:', petType);
           }
           
-          showToast(`AI detected: ${breed || 'pet'} ${behavior === 'sleeping' ? '💤' : '🐾'}`, 'success');
+          // Update detected items
+          if (items.length > 0) {
+            setDetectedItems(items);
+            console.log('📦 Detected items:', items);
+          }
+          
+          // 🔍 Check if the pet in photo matches user's pet
+          const userBreed = pet?.breed?.toLowerCase() || '';
+          const userPetType = pet?.type?.toLowerCase() || '';
+          const detectedBreedLower = (breed || '').toLowerCase();
+          const detectedPetTypeLower = (petType || '').toLowerCase();
+          
+          // Match logic: type must match, breed should be similar
+          const typeMatch = userPetType.includes(detectedPetTypeLower) || detectedPetTypeLower.includes(userPetType);
+          const breedMatch = userBreed && detectedBreedLower && (
+            userBreed.includes(detectedBreedLower) || 
+            detectedBreedLower.includes(userBreed) ||
+            // Fuzzy match for common breed variations
+            (userBreed.includes('mix') || detectedBreedLower.includes('mix'))
+          );
+          
+          const petMatches = typeMatch && (breedMatch || !userBreed || userBreed === 'unknown');
+          setIsPetMatch(petMatches);
+          
+          if (!petMatches && userBreed) {
+            console.log(`⚠️ Pet mismatch! User has ${pet?.breed} (${pet?.type}) but photo shows ${breed} (${petType})`);
+            showToast(`📸 Detected: ${breed} (different from your ${pet?.name})`, 'info');
+          } else {
+            showToast(`AI detected: ${breed || 'pet'} ${behavior === 'sleeping' ? '💤' : '🐾'}`, 'success');
+          }
           
           return {
             scene: behavior,
@@ -270,6 +314,8 @@ Be specific about the breed. If you're not sure, make your best guess based on a
             action: behavior,
             breed: breed,
             petType: petType,
+            items: items,
+            isPetMatch: petMatches,
           };
         }
       } catch (error) {
@@ -474,12 +520,22 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
     
     try {
       // Build context from pet profile + user behaviors
+      // If pet in photo doesn't match user's pet, use generic name!
+      const useGenericName = !isPetMatch && detectedBreed;
+      const genericName = detectedPetType === 'cat' ? 'Kitty' : 
+                          detectedPetType === 'dog' ? 'Doggo' : 'Buddy';
+      
       const petContext = {
-        petName: pet.name,
-        petType: pet.type,
-        breed: pet.breed,
+        petName: useGenericName ? genericName : pet.name,
+        petType: detectedPetType || pet.type,
+        breed: detectedBreed || pet.breed,
         behaviors: [...(pet.behaviors || []), ...selectedBehaviors],
+        isUsersPet: isPetMatch, // Track if this is the user's actual pet
       };
+      
+      if (useGenericName) {
+        console.log(`📛 Using generic name "${genericName}" since photo shows ${detectedBreed}, not ${pet.breed}`);
+      }
       
       let imageContext;
       
@@ -529,18 +585,81 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
         
         const mappedBehavior = sceneToBehavior[detectedScene] || detectedScene;
         
-        // Auto-add detected behavior to selected behaviors (if not already there)
-        if (behaviorTags.includes(mappedBehavior) && !selectedBehaviors.includes(mappedBehavior)) {
-          setSelectedBehaviors(prev => [mappedBehavior, ...prev]);
+        // 📦 Map detected items to behaviors for auto-tagging
+        const itemToBehavior = {
+          'food': 'foodie',
+          'treats': 'foodie',
+          'bowl': 'foodie',
+          'treat': 'foodie',
+          'laptop': 'lazy',      // Pet on laptop = lazy coder cat
+          'keyboard': 'lazy',
+          'bed': 'lazy',
+          'couch': 'cuddly',
+          'blanket': 'cuddly',
+          'pillow': 'cuddly',
+          'toy': 'zoomies',
+          'ball': 'zoomies',
+          'bone': 'foodie',
+          'leash': 'zoomies',    // Ready for walkies
+          'box': 'derpy',        // If I fits, I sits
+          'bag': 'destroyer',
+          'clothes': 'destroyer',
+          'coffee': 'dramatic',  // Judging your coffee
+          'phone': 'jealous',    // Stop looking at phone!
+          'water': 'foodie',
+          'window': 'dramatic',  // Staring out window
+        };
+        
+        // Get behaviors from detected items
+        const itemBehaviors = (imageContext.items || [])
+          .map(item => itemToBehavior[item])
+          .filter(Boolean);
+        
+        // Combine all behaviors: detected scene + items + user selected
+        const allBehaviors = [...new Set([
+          mappedBehavior,
+          ...itemBehaviors,
+        ])];
+        
+        // Auto-add detected behaviors to selected behaviors
+        allBehaviors.forEach(behavior => {
+          if (behaviorTags.includes(behavior) && !selectedBehaviors.includes(behavior)) {
+            setSelectedBehaviors(prev => [...new Set([behavior, ...prev])]);
+          }
+        });
+        
+        if (allBehaviors.length > 1) {
+          showToast(`Auto-tagged: ${allBehaviors.map(b => '#' + b).join(' ')} 🎯`, 'info');
+        } else {
           showToast(`Auto-tagged: #${mappedBehavior} 🎯`, 'info');
         }
         
-        // 🏷️ Generate BEHAVIOR-FOCUSED hashtags!
-        const behaviors = [mappedBehavior, detectedScene, ...selectedBehaviors];
+        // 🏷️ Generate hashtags from behaviors + items!
+        const hashtagBehaviors = [...allBehaviors, detectedScene, ...selectedBehaviors];
         const petType = petContext.petType?.toLowerCase().includes('dog') ? 'dog' : 'cat';
-        const hashtags = generateHashtagsFromBehaviors([...new Set(behaviors)], petType);
-        setSuggestedHashtags(hashtags);
-        console.log('🏷️ Generated behavior-focused hashtags:', hashtags);
+        
+        // Also add item-based hashtags directly
+        const itemHashtags = (imageContext.items || [])
+          .filter(item => ['food', 'laptop', 'coffee', 'box', 'toy', 'bed'].includes(item))
+          .map(item => {
+            const itemToHashtag = {
+              'food': 'treattime',
+              'laptop': 'catcodingbuddy',
+              'coffee': 'morningcoffee',
+              'box': 'ififitsisits',
+              'toy': 'playtime',
+              'bed': 'naptime',
+            };
+            return itemToHashtag[item] || item;
+          });
+        
+        const hashtags = [
+          ...generateHashtagsFromBehaviors([...new Set(hashtagBehaviors)], petType),
+          ...itemHashtags,
+        ];
+        
+        setSuggestedHashtags([...new Set(hashtags)]);
+        console.log('🏷️ Generated hashtags from behaviors + items:', hashtags);
       }
       
       // 🔥 Use the NEW VIRAL GENERATOR! 🔥
@@ -596,8 +715,28 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
       ? [detectedBehavior, ...selectedBehaviors] 
       : selectedBehaviors;
     const petType = pet?.type?.toLowerCase().includes('dog') ? 'dog' : 'cat';
-    const hashtags = generateHashtagsFromBehaviors(behaviors.length > 0 ? behaviors : ['playing'], petType);
-    setSuggestedHashtags(hashtags);
+    
+    // Include item-based hashtags
+    const itemHashtags = (detectedItems || [])
+      .filter(item => ['food', 'laptop', 'coffee', 'box', 'toy', 'bed'].includes(item))
+      .map(item => {
+        const itemToHashtag = {
+          'food': 'treattime',
+          'laptop': 'catcodingbuddy',
+          'coffee': 'morningcoffee',
+          'box': 'ififitsisits',
+          'toy': 'playtime',
+          'bed': 'naptime',
+        };
+        return itemToHashtag[item] || item;
+      });
+    
+    const hashtags = [
+      ...generateHashtagsFromBehaviors(behaviors.length > 0 ? behaviors : ['playing'], petType),
+      ...itemHashtags,
+    ];
+    
+    setSuggestedHashtags([...new Set(hashtags)]);
     showToast('Fresh hashtags generated! 🏷️', 'success');
   };
   
@@ -665,9 +804,11 @@ Output ONLY the 2 captions, one per line. No numbering, no explanations, no quot
         ])],
         hashtags: selectedHashtags.map(h => h.toLowerCase()), // Store lowercase for consistent querying
         
-        // ===== 🐕 AI-DETECTED BREED (for categorization!) =====
+        // ===== 🐕 AI-DETECTED METADATA (for categorization!) =====
         detectedBreed: detectedBreed || null,  // e.g. "Golden Retriever", "Persian Cat"
         detectedPetType: detectedPetType || null, // "dog", "cat", "rabbit", etc.
+        detectedItems: detectedItems || [],    // e.g. ["food", "laptop", "bed"]
+        isUsersPet: isPetMatch,                // Does photo match user's pet profile?
         
         // ===== ENGAGEMENT METRICS =====
         likeCount: 0,

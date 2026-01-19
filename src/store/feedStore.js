@@ -54,6 +54,7 @@ export const useFeedStore = create((set, get) => ({
   })),
   
   // Soft delete post (moves to trash, can be restored)
+  // Also CASCADE DELETES all reposts of this post!
   deletePost: async (postId) => {
     try {
       console.log('🗑️ Soft deleting post:', postId);
@@ -65,12 +66,43 @@ export const useFeedStore = create((set, get) => ({
         deletedAt: serverTimestamp(),
       });
       
-      // Remove from local state (but still exists in Firestore)
+      // CASCADE DELETE: Find and delete all reposts of this post
+      console.log('🔗 Finding reposts to cascade delete...');
+      const postsRef = collection(db, 'posts');
+      const repostsQuery = query(
+        postsRef,
+        where('originalPostId', '==', postId),
+        where('type', '==', 'repost')
+      );
+      
+      const repostsSnapshot = await getDocs(repostsQuery);
+      const repostIds = [];
+      
+      if (!repostsSnapshot.empty) {
+        console.log(`🔗 Found ${repostsSnapshot.size} reposts to delete`);
+        
+        // Soft delete each repost
+        const deletePromises = repostsSnapshot.docs.map(async (repostDoc) => {
+          repostIds.push(repostDoc.id);
+          return updateDoc(doc(db, 'posts', repostDoc.id), {
+            deleted: true,
+            deletedAt: serverTimestamp(),
+            deletedReason: 'original_deleted', // Track why it was deleted
+          });
+        });
+        
+        await Promise.all(deletePromises);
+        console.log('🔗 Cascade deleted', repostIds.length, 'reposts');
+      }
+      
+      // Remove from local state (original + all reposts)
       set((state) => ({
-        posts: state.posts.filter(post => post.id !== postId)
+        posts: state.posts.filter(post => 
+          post.id !== postId && !repostIds.includes(post.id)
+        )
       }));
       
-      console.log('✅ Post moved to trash');
+      console.log('✅ Post and reposts moved to trash');
       return true;
     } catch (error) {
       console.error('❌ Error deleting post:', error);
@@ -98,14 +130,34 @@ export const useFeedStore = create((set, get) => ({
   },
   
   // Permanently delete a post (cannot be undone!)
+  // Also CASCADE DELETES all reposts of this post!
   permanentlyDeletePost: async (postId) => {
     try {
       console.log('🔥 Permanently deleting post:', postId);
       
+      // CASCADE DELETE: Find and permanently delete all reposts first
+      const postsRef = collection(db, 'posts');
+      const repostsQuery = query(
+        postsRef,
+        where('originalPostId', '==', postId),
+        where('type', '==', 'repost')
+      );
+      
+      const repostsSnapshot = await getDocs(repostsQuery);
+      
+      if (!repostsSnapshot.empty) {
+        console.log(`🔗 Permanently deleting ${repostsSnapshot.size} reposts`);
+        const deletePromises = repostsSnapshot.docs.map(repostDoc => 
+          deleteDoc(doc(db, 'posts', repostDoc.id))
+        );
+        await Promise.all(deletePromises);
+      }
+      
+      // Now delete the original post
       const postRef = doc(db, 'posts', postId);
       await deleteDoc(postRef);
       
-      console.log('✅ Post permanently deleted');
+      console.log('✅ Post and all reposts permanently deleted');
       return true;
     } catch (error) {
       console.error('❌ Error permanently deleting post:', error);
