@@ -194,7 +194,68 @@ export default function Create() {
           return null;
         }
         
-        console.log('🤖 Calling Gemini Vision API for behavior + breed + items detection...');
+        // Check if user has a pet photo for comparison
+        const userPetPhotoUrl = pet?.photoURL;
+        const hasUserPetPhoto = userPetPhotoUrl && userPetPhotoUrl.startsWith('http');
+        
+        console.log('🤖 Calling Gemini Vision API...');
+        console.log('  Has user pet photo for comparison:', hasUserPetPhoto);
+        
+        // Build the content array - include user's pet photo if available
+        const contentArray = [
+          {
+            type: 'image_url',
+            image_url: { url: imageData }
+          }
+        ];
+        
+        // If user has a pet photo, include it for comparison
+        if (hasUserPetPhoto) {
+          contentArray.push({
+            type: 'image_url',
+            image_url: { url: userPetPhotoUrl }
+          });
+        }
+        
+        // Build the prompt based on whether we have a reference photo
+        const promptText = hasUserPetPhoto 
+          ? `I'm showing you TWO images:
+IMAGE 1: A new photo that was just uploaded
+IMAGE 2: The user's pet (named "${pet?.name}", a ${pet?.breed} ${pet?.type})
+
+Analyze IMAGE 1 and compare it to IMAGE 2. Respond with EXACTLY 5 lines:
+
+SAME_PET: [YES if the pet in Image 1 is the SAME INDIVIDUAL animal as Image 2, NO if different animal even if same breed]
+BEHAVIOR: [pick ONE: sleeping, staring, playing, eating, sitting, derpy, guilty, excited, scared, judging, dramatic, relaxed]
+PET_TYPE: [pick ONE: dog, cat, rabbit, bird, other]
+BREED: [specific breed like "Golden Retriever", "Persian", "Shiba Inu", "Mixed Breed"]
+ITEMS: [list visible objects - IMPORTANT: distinguish between REAL food vs food-shaped TOYS. Only list "food" if it's ACTUAL food, not a toy shaped like food. List "toy" for any toys including food-shaped toys]
+
+CRITICAL for SAME_PET:
+- Look at fur patterns, markings, face shape, ear shape, eye color
+- Two pets of the same breed are NOT the same pet
+- Only say YES if you're confident it's the exact same individual animal
+
+CRITICAL for ITEMS:
+- "food" = REAL edible food only (kibble, treats, meat, etc.)
+- "toy" = includes food-shaped toys (squeaky hamburger, plush pizza, rubber bone with food print)
+- If unsure, prefer "toy" over "food"`
+          : `Analyze this pet photo carefully. Respond with EXACTLY 4 lines:
+
+BEHAVIOR: [pick ONE: sleeping, staring, playing, eating, sitting, derpy, guilty, excited, scared, judging, dramatic, relaxed]
+PET_TYPE: [pick ONE: dog, cat, rabbit, bird, other]
+BREED: [specific breed like "Golden Retriever", "Persian", "Shiba Inu", "Mixed Breed"]
+ITEMS: [list visible objects - IMPORTANT: distinguish between REAL food vs food-shaped TOYS. Only list "food" if it's ACTUAL food, not a toy shaped like food. List "toy" for any toys including food-shaped toys]
+
+CRITICAL for ITEMS:
+- "food" = REAL edible food only (kibble, treats, meat, etc.)
+- "toy" = includes food-shaped toys (squeaky hamburger, plush pizza, rubber bone with food print)
+- If unsure, prefer "toy" over "food"`;
+        
+        contentArray.push({
+          type: 'text',
+          text: promptText
+        });
         
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
@@ -208,37 +269,9 @@ export default function Create() {
             model: 'google/gemini-3-flash-preview',
             messages: [{
               role: 'user',
-              content: [
-                {
-                  type: 'image_url',
-                  image_url: { url: imageData }
-                },
-                {
-                  type: 'text', 
-                  text: `Analyze this pet photo carefully. You MUST respond with EXACTLY 4 lines in this format:
-
-BEHAVIOR: [pick ONE: sleeping, staring, playing, eating, sitting, derpy, guilty, excited, scared, judging, dramatic, relaxed]
-PET_TYPE: [pick ONE: dog, cat, rabbit, bird, other]
-BREED: [specific breed like "Golden Retriever", "Persian", "Shiba Inu", "Mixed Breed"]
-ITEMS: [list ALL visible objects: food, treats, bowl, laptop, keyboard, bed, couch, sofa, toy, ball, bone, leash, window, box, bag, clothes, blanket, pillow, phone, coffee, water, carpet, floor, grass, table, chair]
-
-IMPORTANT for ITEMS:
-- List EVERY visible object or background item you can see
-- Separate items with commas
-- Include furniture, food, toys, electronics, etc.
-- If pet is near food/bowl, include "food" or "bowl"
-- If pet is on bed/couch, include "bed" or "couch"
-- Only say "none" if literally nothing else is visible
-
-Example response:
-BEHAVIOR: sitting
-PET_TYPE: dog
-BREED: Golden Retriever
-ITEMS: food, bowl, floor, carpet`
-                }
-              ]
+              content: contentArray
             }],
-            max_tokens: 200,
+            max_tokens: 250,
           }),
         });
         
@@ -260,6 +293,7 @@ ITEMS: food, bowl, floor, carpet`
           let petType = 'dog';
           let breed = null;
           let items = [];
+          let samePet = null; // null = no comparison done, true/false = AI comparison result
           
           console.log('📝 Parsing', lines.length, 'lines from AI response...');
           
@@ -267,7 +301,11 @@ ITEMS: food, bowl, floor, carpet`
             const upperLine = line.toUpperCase().trim();
             console.log('  Parsing line:', line);
             
-            if (upperLine.startsWith('BEHAVIOR:') || upperLine.startsWith('BEHAVIOR ')) {
+            if (upperLine.startsWith('SAME_PET:') || upperLine.startsWith('SAME_PET ')) {
+              const val = line.split(':')[1]?.trim().toUpperCase() || '';
+              samePet = val.includes('YES');
+              console.log('  → Same Pet:', samePet);
+            } else if (upperLine.startsWith('BEHAVIOR:') || upperLine.startsWith('BEHAVIOR ')) {
               const val = line.split(/[:\s]+/).slice(1).join(' ').trim().toLowerCase();
               const validScenes = ['sleeping', 'staring', 'playing', 'eating', 'sitting', 'derpy', 'guilty', 'excited', 'scared', 'judging', 'dramatic', 'relaxed'];
               behavior = validScenes.find(s => val?.includes(s)) || 'sitting';
@@ -299,21 +337,14 @@ ITEMS: food, bowl, floor, carpet`
           });
           
           // 🔄 Fallback: If no items detected but behavior suggests items, infer them
-          if (items.length === 0) {
-            const behaviorToItems = {
-              'eating': ['food', 'bowl'],
-              'sleeping': ['bed'],
-              'playing': ['toy'],
-              'sitting': [],  // Could be anywhere
-            };
-            const inferredItems = behaviorToItems[behavior] || [];
-            if (inferredItems.length > 0) {
-              items = inferredItems;
-              console.log('🔄 Inferred items from behavior:', items);
-            }
+          // BUT only for behaviors where the item is likely real (not toys)
+          if (items.length === 0 && behavior === 'sleeping') {
+            items = ['bed'];
+            console.log('🔄 Inferred items from behavior:', items);
           }
+          // NOTE: Don't infer 'food' from 'eating' - could be eating a toy!
           
-          console.log('📊 Final parsed result:', { behavior, petType, breed, items });
+          console.log('📊 Final parsed result:', { behavior, petType, breed, items, samePet });
           
           // Update breed state
           if (breed) {
@@ -329,57 +360,43 @@ ITEMS: food, bowl, floor, carpet`
           }
           
           // 🔍 Check if the pet in photo matches user's pet
-          const userBreed = (pet?.breed || '').toLowerCase().trim();
-          const userPetType = (pet?.type || '').toLowerCase().trim();
-          const detectedBreedLower = (breed || '').toLowerCase().trim();
-          const detectedPetTypeLower = (petType || '').toLowerCase().trim();
-          
           console.log('🔍 PET MATCHING CHECK:');
-          console.log('  User pet:', { breed: pet?.breed, type: pet?.type, name: pet?.name });
+          console.log('  User pet:', { breed: pet?.breed, type: pet?.type, name: pet?.name, hasPhoto: !!pet?.photoURL });
           console.log('  Detected:', { breed, petType });
-          console.log('  Normalized:', { userBreed, userPetType, detectedBreedLower, detectedPetTypeLower });
+          console.log('  AI SAME_PET result:', samePet);
           
-          // Match logic: STRICT breed comparison
-          // Type must match AND breed must be similar
-          const typeMatch = userPetType && detectedPetTypeLower && (
-            userPetType.includes(detectedPetTypeLower) || 
-            detectedPetTypeLower.includes(userPetType)
-          );
+          let petMatches;
           
-          // Breed matching - be strict! Only match if breeds are actually similar
-          let breedMatch = false;
-          if (userBreed && detectedBreedLower) {
-            // Extract core breed name (remove common suffixes)
-            const cleanUserBreed = userBreed.replace(/\s*(cat|dog|mix|mixed|breed)$/i, '').trim();
-            const cleanDetectedBreed = detectedBreedLower.replace(/\s*(cat|dog|mix|mixed|breed)$/i, '').trim();
+          if (samePet !== null) {
+            // We have AI comparison result - use it directly!
+            petMatches = samePet;
+            console.log('  ✅ Using AI visual comparison result:', petMatches);
+          } else {
+            // No AI comparison (no user pet photo) - fall back to breed comparison
+            const userBreed = (pet?.breed || '').toLowerCase().trim();
+            const detectedBreedLower = (breed || '').toLowerCase().trim();
             
-            breedMatch = (
-              cleanUserBreed === cleanDetectedBreed ||
-              cleanUserBreed.includes(cleanDetectedBreed) || 
-              cleanDetectedBreed.includes(cleanUserBreed)
-            );
-            
-            // Special case: if both are "mixed breed" type, they could match
-            if (!breedMatch && (userBreed.includes('mix') && detectedBreedLower.includes('mix'))) {
-              breedMatch = true;
+            if (!userBreed) {
+              // No breed set, can't compare - assume match
+              petMatches = true;
+              console.log('  ⚠️ No user breed set, assuming match');
+            } else {
+              // Simple breed comparison as fallback
+              const cleanUserBreed = userBreed.replace(/\s*(cat|dog|mix|mixed|breed)$/i, '').trim();
+              const cleanDetectedBreed = detectedBreedLower.replace(/\s*(cat|dog|mix|mixed|breed)$/i, '').trim();
+              petMatches = cleanUserBreed === cleanDetectedBreed;
+              console.log('  📋 Fallback breed comparison:', cleanUserBreed, 'vs', cleanDetectedBreed, '=', petMatches);
             }
           }
           
-          console.log('  Type match:', typeMatch);
-          console.log('  Breed match:', breedMatch);
-          
-          // Pet matches only if BOTH type AND breed match
-          // If user has no breed set, we can't determine - assume match
-          const petMatches = !userBreed ? true : (typeMatch && breedMatch);
-          
-          console.log('  ➡️ RESULT: petMatches =', petMatches);
+          console.log('  ➡️ FINAL RESULT: petMatches =', petMatches);
           setIsPetMatch(petMatches);
           
           if (!petMatches) {
-            console.log(`⚠️ Pet mismatch! User has ${pet?.breed} (${pet?.type}) but photo shows ${breed} (${petType})`);
-            showToast(`📸 This looks like a ${breed}! (Your pet: ${pet?.name} the ${pet?.breed})`, 'info');
+            console.log(`⚠️ Different pet detected! Photo shows ${breed}, not ${pet?.name}`);
+            showToast(`📸 This isn't ${pet?.name}! Detected: ${breed}`, 'info');
           } else {
-            showToast(`AI detected: ${breed || 'pet'} ${behavior === 'sleeping' ? '💤' : '🐾'}`, 'success');
+            showToast(`✅ ${pet?.name || breed || 'Pet'} detected! ${behavior === 'sleeping' ? '💤' : '🐾'}`, 'success');
           }
           
           return {
