@@ -329,26 +329,55 @@ ITEMS: food, bowl, floor, carpet`
           }
           
           // 🔍 Check if the pet in photo matches user's pet
-          const userBreed = pet?.breed?.toLowerCase() || '';
-          const userPetType = pet?.type?.toLowerCase() || '';
-          const detectedBreedLower = (breed || '').toLowerCase();
-          const detectedPetTypeLower = (petType || '').toLowerCase();
+          const userBreed = (pet?.breed || '').toLowerCase().trim();
+          const userPetType = (pet?.type || '').toLowerCase().trim();
+          const detectedBreedLower = (breed || '').toLowerCase().trim();
+          const detectedPetTypeLower = (petType || '').toLowerCase().trim();
           
-          // Match logic: type must match, breed should be similar
-          const typeMatch = userPetType.includes(detectedPetTypeLower) || detectedPetTypeLower.includes(userPetType);
-          const breedMatch = userBreed && detectedBreedLower && (
-            userBreed.includes(detectedBreedLower) || 
-            detectedBreedLower.includes(userBreed) ||
-            // Fuzzy match for common breed variations
-            (userBreed.includes('mix') || detectedBreedLower.includes('mix'))
+          console.log('🔍 PET MATCHING CHECK:');
+          console.log('  User pet:', { breed: pet?.breed, type: pet?.type, name: pet?.name });
+          console.log('  Detected:', { breed, petType });
+          console.log('  Normalized:', { userBreed, userPetType, detectedBreedLower, detectedPetTypeLower });
+          
+          // Match logic: STRICT breed comparison
+          // Type must match AND breed must be similar
+          const typeMatch = userPetType && detectedPetTypeLower && (
+            userPetType.includes(detectedPetTypeLower) || 
+            detectedPetTypeLower.includes(userPetType)
           );
           
-          const petMatches = typeMatch && (breedMatch || !userBreed || userBreed === 'unknown');
+          // Breed matching - be strict! Only match if breeds are actually similar
+          let breedMatch = false;
+          if (userBreed && detectedBreedLower) {
+            // Extract core breed name (remove common suffixes)
+            const cleanUserBreed = userBreed.replace(/\s*(cat|dog|mix|mixed|breed)$/i, '').trim();
+            const cleanDetectedBreed = detectedBreedLower.replace(/\s*(cat|dog|mix|mixed|breed)$/i, '').trim();
+            
+            breedMatch = (
+              cleanUserBreed === cleanDetectedBreed ||
+              cleanUserBreed.includes(cleanDetectedBreed) || 
+              cleanDetectedBreed.includes(cleanUserBreed)
+            );
+            
+            // Special case: if both are "mixed breed" type, they could match
+            if (!breedMatch && (userBreed.includes('mix') && detectedBreedLower.includes('mix'))) {
+              breedMatch = true;
+            }
+          }
+          
+          console.log('  Type match:', typeMatch);
+          console.log('  Breed match:', breedMatch);
+          
+          // Pet matches only if BOTH type AND breed match
+          // If user has no breed set, we can't determine - assume match
+          const petMatches = !userBreed ? true : (typeMatch && breedMatch);
+          
+          console.log('  ➡️ RESULT: petMatches =', petMatches);
           setIsPetMatch(petMatches);
           
-          if (!petMatches && userBreed) {
+          if (!petMatches) {
             console.log(`⚠️ Pet mismatch! User has ${pet?.breed} (${pet?.type}) but photo shows ${breed} (${petType})`);
-            showToast(`📸 Detected: ${breed} (different from your ${pet?.name})`, 'info');
+            showToast(`📸 This looks like a ${breed}! (Your pet: ${pet?.name} the ${pet?.breed})`, 'info');
           } else {
             showToast(`AI detected: ${breed || 'pet'} ${behavior === 'sleeping' ? '💤' : '🐾'}`, 'success');
           }
