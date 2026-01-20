@@ -1,13 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  signInWithPopup, 
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword 
 } from 'firebase/auth';
 import { auth, googleProvider } from '../../config/firebase';
 import { useUIStore } from '../../store/uiStore';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+
+// Detect if user is on mobile device
+const isMobile = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
 
 export default function Login() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -17,14 +24,55 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const { showToast } = useUIStore();
   
+  // Handle redirect result when returning from Google sign-in (mobile)
+  useEffect(() => {
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          console.log('Redirect sign-in successful:', result.user.email);
+          showToast('Welcome to Lmeow! 😸', 'success');
+        }
+      } catch (error) {
+        console.error('Redirect result error:', error);
+        if (error.code !== 'auth/popup-closed-by-user') {
+          showToast('Sign-in failed. Please try again 🙀', 'error');
+        }
+      }
+    };
+    
+    handleRedirectResult();
+  }, []);
+  
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      await signInWithPopup(auth, googleProvider);
-      showToast('Welcome to Lmeow! 😸', 'success');
+      // Use redirect on mobile (more reliable), popup on desktop
+      if (isMobile()) {
+        console.log('📱 Mobile detected, using redirect sign-in');
+        await signInWithRedirect(auth, googleProvider);
+        // Note: redirect will navigate away, so we won't reach this point
+      } else {
+        console.log('💻 Desktop detected, using popup sign-in');
+        await signInWithPopup(auth, googleProvider);
+        showToast('Welcome to Lmeow! 😸', 'success');
+      }
     } catch (error) {
       console.error('Google login error:', error);
-      showToast('Oops! The cat knocked over the sign-in 🙀', 'error');
+      // More specific error messages
+      let message = 'Oops! The cat knocked over the sign-in 🙀';
+      if (error.code === 'auth/popup-blocked') {
+        message = 'Popup blocked! Please allow popups for this site 🚫';
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        message = 'Sign-in cancelled. Try again when ready! 😸';
+      } else if (error.code === 'auth/network-request-failed') {
+        message = 'Network error. Check your connection 📶';
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        // User clicked multiple times, ignore
+        setLoading(false);
+        return;
+      }
+      showToast(message, 'error');
     } finally {
       setLoading(false);
     }
@@ -48,13 +96,35 @@ export default function Login() {
       }
     } catch (error) {
       console.error('Email auth error:', error);
-      const message = error.code === 'auth/user-not-found' 
-        ? 'No pet parent found with this email 🔍'
-        : error.code === 'auth/wrong-password'
-        ? 'Wrong password! Did the cat change it? 🙀'
-        : error.code === 'auth/email-already-in-use'
-        ? 'This email already has a fur-ever home!'
-        : 'Something went wrong... blame the cat! 😹';
+      let message = 'Something went wrong... blame the cat! 😹';
+      
+      switch (error.code) {
+        case 'auth/user-not-found':
+          message = 'No pet parent found with this email 🔍';
+          break;
+        case 'auth/wrong-password':
+        case 'auth/invalid-credential':
+          message = 'Wrong password! Did the cat change it? 🙀';
+          break;
+        case 'auth/email-already-in-use':
+          message = 'This email already has a fur-ever home! Try signing in.';
+          break;
+        case 'auth/invalid-email':
+          message = 'That email looks sus... check it again! 🧐';
+          break;
+        case 'auth/weak-password':
+          message = 'Password too weak! Make it at least 6 characters 💪';
+          break;
+        case 'auth/network-request-failed':
+          message = 'Network error. Check your connection 📶';
+          break;
+        case 'auth/too-many-requests':
+          message = 'Too many attempts! Take a catnap and try later 😴';
+          break;
+        default:
+          console.log('Unhandled auth error code:', error.code);
+      }
+      
       showToast(message, 'error');
     } finally {
       setLoading(false);
