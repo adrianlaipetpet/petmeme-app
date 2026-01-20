@@ -60,12 +60,12 @@ export default function PostDetail() {
   const [showMenu, setShowMenu] = useState(false);
   
   useEffect(() => {
-    const loadPost = async () => {
-      console.log('📄 PostDetail: Loading post', postId);
+    const loadPost = async (retryCount = 0) => {
+      console.log('📄 PostDetail: Loading post', postId, retryCount > 0 ? `(retry ${retryCount})` : '');
       setPostNotFound(false);
       
-      // 1. Always try Firestore first for shared links (most reliable source)
-      try {
+      // Helper to fetch from Firestore
+      const fetchFromFirestore = async () => {
         console.log('🔥 Fetching post from Firestore...');
         const postDoc = await getDoc(doc(db, 'posts', postId));
         
@@ -85,7 +85,7 @@ export default function PostDetail() {
           const isLiked = currentUserId && data.likedBy?.includes(currentUserId);
           const isBookmarked = currentUserId && data.bookmarkedBy?.includes(currentUserId);
           
-          const foundPost = {
+          return {
             id: postDoc.id,
             ...data,
             pet: petData,
@@ -93,15 +93,11 @@ export default function PostDetail() {
             isBookmarked,
             createdAt: data.createdAt?.toDate() || new Date(),
           };
-          console.log('✅ Found post in Firestore:', foundPost);
-          setPost(foundPost);
-          return;
         }
-      } catch (error) {
-        console.error('Error fetching post from Firestore:', error);
-      }
+        return null;
+      };
       
-      // 2. Try feedStore as secondary (for posts already loaded in session)
+      // 1. Try feedStore first (instant if already loaded)
       const storePost = posts.find(p => p.id === postId);
       if (storePost) {
         console.log('✅ Found post in feedStore');
@@ -109,7 +105,33 @@ export default function PostDetail() {
         return;
       }
       
-      // 3. Post not found - show error state (don't fall back to demo posts)
+      // 2. Fetch from Firestore
+      try {
+        const firestorePost = await fetchFromFirestore();
+        if (firestorePost) {
+          console.log('✅ Found post in Firestore:', firestorePost.id);
+          setPost(firestorePost);
+          return;
+        }
+      } catch (error) {
+        console.error('Error fetching post from Firestore:', error.code, error.message);
+        
+        // Retry on transient errors (Firebase may still be initializing)
+        if (retryCount < 2 && (error.code === 'unavailable' || error.code === 'permission-denied')) {
+          console.log('⏳ Retrying in 1 second...');
+          setTimeout(() => loadPost(retryCount + 1), 1000);
+          return;
+        }
+      }
+      
+      // 3. Final retry with delay for cold starts
+      if (retryCount === 0) {
+        console.log('⏳ First attempt failed, retrying after delay...');
+        setTimeout(() => loadPost(1), 500);
+        return;
+      }
+      
+      // 4. Post not found after retries
       console.log('❌ Post not found:', postId);
       setPostNotFound(true);
     };
