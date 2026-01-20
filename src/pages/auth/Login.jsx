@@ -244,7 +244,7 @@ export default function Login() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.4 }}
-          className={`mt-3 text-center ${isSignUp ? 'text-xl md:text-2xl font-bold text-lmeow-text-dark' : 'text-base md:text-lg font-medium text-lmeow-text-dark'}`}
+          className="mt-3 text-center text-xl md:text-2xl font-bold text-lmeow-text-dark"
         >
           {isSignUp ? (
             <>Create viral pet memes in seconds – Join the paw-ty! 🐾🔥</>
