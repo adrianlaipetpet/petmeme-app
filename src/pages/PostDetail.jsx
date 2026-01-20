@@ -46,6 +46,7 @@ export default function PostDetail() {
   const [replyingTo, setReplyingTo] = useState(null);
   const [deletingCommentId, setDeletingCommentId] = useState(null);
   const [isReposting, setIsReposting] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   
   useEffect(() => {
     const loadPost = async () => {
@@ -67,9 +68,26 @@ export default function PostDetail() {
         
         if (postDoc.exists()) {
           const data = postDoc.data();
+          
+          // Ensure pet object exists with required fields
+          const pet = data.pet || {
+            id: data.ownerId || postId,
+            name: data.petName || 'Pet',
+            photoUrl: data.petPhotoUrl || null,
+            breed: data.breed || '',
+          };
+          
+          // Check if current user has liked this post
+          const currentUserId = useAuthStore.getState().user?.uid;
+          const isLiked = currentUserId && data.likedBy?.includes(currentUserId);
+          const isBookmarked = currentUserId && data.bookmarkedBy?.includes(currentUserId);
+          
           foundPost = {
             id: postDoc.id,
             ...data,
+            pet,
+            isLiked,
+            isBookmarked,
             createdAt: data.createdAt?.toDate() || new Date(),
           };
           console.log('✅ Found post in Firestore:', foundPost);
@@ -161,35 +179,34 @@ export default function PostDetail() {
     const wasLiked = post.isLiked || (userId && post.likedBy?.includes(userId));
     
     console.log('🐾 PostDetail Like:', { postId: post.id, userId, wasLiked });
-      
-      // Optimistic update
+    
+    // Optimistic update
+    setPost(prev => ({
+      ...prev,
+      isLiked: !wasLiked,
+      likeCount: wasLiked ? Math.max(0, prev.likeCount - 1) : prev.likeCount + 1,
+      likedBy: userId 
+        ? (wasLiked 
+            ? (prev.likedBy || []).filter(id => id !== userId)
+            : [...(prev.likedBy || []), userId])
+        : prev.likedBy
+    }));
+    
+    const result = await toggleLike(post.id, userId);
+    
+    if (!result?.success) {
+      // Revert on error
       setPost(prev => ({
         ...prev,
-        isLiked: !wasLiked,
-        likeCount: wasLiked ? Math.max(0, prev.likeCount - 1) : prev.likeCount + 1,
+        isLiked: wasLiked,
+        likeCount: wasLiked ? prev.likeCount + 1 : Math.max(0, prev.likeCount - 1),
         likedBy: userId 
           ? (wasLiked 
-              ? (prev.likedBy || []).filter(id => id !== userId)
-              : [...(prev.likedBy || []), userId])
+              ? [...(prev.likedBy || []), userId]
+              : (prev.likedBy || []).filter(id => id !== userId))
           : prev.likedBy
       }));
-      
-      const result = await toggleLike(post.id, userId);
-      
-      if (!result?.success) {
-        // Revert on error
-        setPost(prev => ({
-          ...prev,
-          isLiked: wasLiked,
-          likeCount: wasLiked ? prev.likeCount + 1 : Math.max(0, prev.likeCount - 1),
-          likedBy: userId 
-            ? (wasLiked 
-                ? [...(prev.likedBy || []), userId]
-                : (prev.likedBy || []).filter(id => id !== userId))
-            : prev.likedBy
-        }));
-        showToast?.(`Could not ${wasLiked ? 'unlike' : 'like'} post`, 'error');
-      }
+      showToast(`Could not ${wasLiked ? 'unlike' : 'like'} post`, 'error');
     }
   };
   
@@ -433,16 +450,23 @@ export default function PostDetail() {
       <header className="sticky top-0 z-40 bg-petmeme-bg/90 dark:bg-petmeme-bg-dark/90 backdrop-blur-lg border-b border-gray-100 dark:border-gray-800 px-4 py-3">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate(-1)}
-            className="p-2 -ml-2 text-petmeme-text dark:text-petmeme-text-dark hover:text-primary-500"
+            onClick={() => {
+              // If there's browser history, go back; otherwise go to home
+              if (window.history.length > 1) {
+                navigate(-1);
+              } else {
+                navigate('/');
+              }
+            }}
+            className="p-2 -ml-2 text-petmeme-text dark:text-petmeme-text-dark hover:text-primary-500 cursor-pointer"
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
           
-          <Link to={`/profile/${post.pet.id || post.id}`} className="flex items-center gap-3 flex-1">
+          <Link to={`/profile/${post.pet?.id || post.ownerId || post.id}`} className="flex items-center gap-3 flex-1 cursor-pointer">
             <img
-              src={post.pet.photoUrl}
-              alt={post.pet.name}
+              src={post.pet?.photoUrl || post.petPhotoUrl}
+              alt={post.pet?.name || 'Pet'}
               className="w-10 h-10 rounded-full object-cover border-2 border-primary-200"
               onError={(e) => {
                 // Pet-only fallback! 🐱🐶
@@ -453,15 +477,64 @@ export default function PostDetail() {
             />
             <div>
               <p className="font-semibold text-petmeme-text dark:text-petmeme-text-dark">
-                {post.pet.name}
+                {post.pet?.name || post.petName || 'Pet'}
               </p>
-              <p className="text-xs text-petmeme-muted">{post.pet.breed}</p>
+              <p className="text-xs text-petmeme-muted">{post.pet?.breed || post.breed || ''}</p>
             </div>
           </Link>
           
-          <button className="p-2 text-petmeme-muted hover:text-petmeme-text">
-            <MoreHorizontal className="w-6 h-6" />
-          </button>
+          <div className="relative">
+            <button 
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-2 text-petmeme-muted hover:text-petmeme-text cursor-pointer"
+            >
+              <MoreHorizontal className="w-6 h-6" />
+            </button>
+            
+            {/* Dropdown menu */}
+            {showMenu && (
+              <>
+                {/* Backdrop to close menu */}
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setShowMenu(false)}
+                />
+                <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-petmeme-card-dark rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
+                  <button
+                    onClick={() => {
+                      handleShare();
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-4 py-3 text-left text-sm text-petmeme-text dark:text-petmeme-text-dark hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-3"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    Share post
+                  </button>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(window.location.href);
+                      showToast('Link copied!', 'success');
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-4 py-3 text-left text-sm text-petmeme-text dark:text-petmeme-text-dark hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-3"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    Copy link
+                  </button>
+                  <button
+                    onClick={() => {
+                      showToast('Post reported. Thanks for keeping Lmeow safe! 🛡️', 'success');
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-4 py-3 text-left text-sm text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-3"
+                  >
+                    <Flag className="w-4 h-4" />
+                    Report post
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </header>
       
@@ -623,7 +696,7 @@ export default function PostDetail() {
           
           {/* Caption */}
           <p className="text-petmeme-text dark:text-petmeme-text-dark">
-            <span className="font-semibold">{post.pet.name}</span>{' '}
+            <span className="font-semibold">{post.pet?.name || post.petName || 'Pet'}</span>{' '}
             {post.caption}
           </p>
           
@@ -668,19 +741,29 @@ export default function PostDetail() {
             <div key={comment.id} className="space-y-3">
               {/* Main comment */}
               <div className="flex gap-3">
-                <img
-                  src={comment.user.avatar}
-                  alt={comment.user.name}
-                  className="w-9 h-9 rounded-full object-cover flex-shrink-0"
-                  onError={(e) => {
-                    e.target.src = Math.random() > 0.5 ? 'https://placedog.net/50/50?id=comment' : 'https://cataas.com/cat?width=50&height=50&t=comment';
-                  }}
-                />
+                <Link 
+                  to={comment.userId ? `/profile/${comment.userId}` : '#'}
+                  className="flex-shrink-0"
+                  onClick={(e) => !comment.userId && e.preventDefault()}
+                >
+                  <img
+                    src={comment.user.avatar}
+                    alt={comment.user.name}
+                    className="w-9 h-9 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                    onError={(e) => {
+                      e.target.src = Math.random() > 0.5 ? 'https://placedog.net/50/50?id=comment' : 'https://cataas.com/cat?width=50&height=50&t=comment';
+                    }}
+                  />
+                </Link>
                 <div className="flex-1">
                   <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-4 py-2">
-                    <p className="font-semibold text-sm text-petmeme-text dark:text-petmeme-text-dark">
+                    <Link 
+                      to={comment.userId ? `/profile/${comment.userId}` : '#'}
+                      onClick={(e) => !comment.userId && e.preventDefault()}
+                      className="font-semibold text-sm text-petmeme-text dark:text-petmeme-text-dark hover:text-primary-500 cursor-pointer"
+                    >
                       {comment.user.name}
-                    </p>
+                    </Link>
                     <p className="text-sm text-petmeme-text dark:text-petmeme-text-dark mt-1">
                       {comment.text}
                     </p>
