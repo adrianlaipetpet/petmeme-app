@@ -11,7 +11,7 @@ import {
 import { useFeedStore } from '../store/feedStore';
 import { useAuthStore } from '../store/authStore';
 import { useUIStore } from '../store/uiStore';
-import { demoPosts, demoProfiles, demoComments, reliableImages } from '../data/demoData';
+import { demoComments, reliableImages } from '../data/demoData';
 
 // Paw icon for likes
 const PawIcon = ({ filled }) => (
@@ -36,11 +36,10 @@ export default function PostDetail() {
   const { user, pet } = useAuthStore();
   const { showToast } = useUIStore();
   
-  // Helper: navigate to protected route or prompt login
+  // Helper: navigate to protected route or redirect to login
   const handleProtectedNavigation = (path, e) => {
     if (!user) {
       e?.preventDefault();
-      showToast('Create an account to explore more! 🐾', 'info');
       navigate('/login');
       return false;
     }
@@ -48,6 +47,7 @@ export default function PostDetail() {
   };
   
   const [post, setPost] = useState(null);
+  const [postNotFound, setPostNotFound] = useState(false);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [loadingComments, setLoadingComments] = useState(true);
@@ -62,17 +62,9 @@ export default function PostDetail() {
   useEffect(() => {
     const loadPost = async () => {
       console.log('📄 PostDetail: Loading post', postId);
+      setPostNotFound(false);
       
-      // 1. Try to find in feedStore first (already loaded)
-      let foundPost = posts.find(p => p.id === postId);
-      
-      if (foundPost) {
-        console.log('✅ Found post in feedStore');
-        setPost(foundPost);
-        return;
-      }
-      
-      // 2. Try to fetch from Firestore directly
+      // 1. Always try Firestore first for shared links (most reliable source)
       try {
         console.log('🔥 Fetching post from Firestore...');
         const postDoc = await getDoc(doc(db, 'posts', postId));
@@ -81,7 +73,7 @@ export default function PostDetail() {
           const data = postDoc.data();
           
           // Ensure pet object exists with required fields
-          const pet = data.pet || {
+          const petData = data.pet || {
             id: data.ownerId || postId,
             name: data.petName || 'Pet',
             photoUrl: data.petPhotoUrl || null,
@@ -93,10 +85,10 @@ export default function PostDetail() {
           const isLiked = currentUserId && data.likedBy?.includes(currentUserId);
           const isBookmarked = currentUserId && data.bookmarkedBy?.includes(currentUserId);
           
-          foundPost = {
+          const foundPost = {
             id: postDoc.id,
             ...data,
-            pet,
+            pet: petData,
             isLiked,
             isBookmarked,
             createdAt: data.createdAt?.toDate() || new Date(),
@@ -109,19 +101,17 @@ export default function PostDetail() {
         console.error('Error fetching post from Firestore:', error);
       }
       
-      // 3. Try demo posts as fallback
-      foundPost = demoPosts.find(p => p.id === postId);
-      if (foundPost) {
-        console.log('📦 Found post in demo data');
-        setPost(foundPost);
+      // 2. Try feedStore as secondary (for posts already loaded in session)
+      const storePost = posts.find(p => p.id === postId);
+      if (storePost) {
+        console.log('✅ Found post in feedStore');
+        setPost(storePost);
         return;
       }
       
-      // 4. Ultimate fallback - first demo post
-      console.log('⚠️ Post not found, using fallback');
-      if (demoPosts.length > 0) {
-        setPost({ ...demoPosts[0], id: postId });
-      }
+      // 3. Post not found - show error state (don't fall back to demo posts)
+      console.log('❌ Post not found:', postId);
+      setPostNotFound(true);
     };
     
     loadPost();
@@ -181,9 +171,9 @@ export default function PostDetail() {
     const { user } = useAuthStore.getState();
     const userId = user?.uid;
     
-    // Prompt login if not authenticated
+    // Redirect to login if not authenticated
     if (!userId) {
-      showToast('Login to like this post! 🐾', 'info');
+      navigate('/login');
       return;
     }
     
@@ -224,9 +214,9 @@ export default function PostDetail() {
   const handleBookmark = async () => {
     if (!post) return;
     
-    // Prompt login if not authenticated
+    // Redirect to login if not authenticated
     if (!user?.uid) {
-      showToast('Login to save favorites! ❤️', 'info');
+      navigate('/login');
       return;
     }
     
@@ -241,8 +231,9 @@ export default function PostDetail() {
   const handleRepost = async () => {
     if (!post) return;
     
+    // Redirect to login if not authenticated
     if (!user?.uid || !pet) {
-      showToast('Login to repost! 🔐', 'info');
+      navigate('/login');
       return;
     }
     
@@ -344,9 +335,9 @@ export default function PostDetail() {
   const handleSubmitComment = async () => {
     if (!newComment.trim() || !post) return;
     
-    // Prompt login if not authenticated
+    // Redirect to login if not authenticated
     if (!user?.uid) {
-      showToast('Login to comment! 💬', 'info');
+      navigate('/login');
       return;
     }
     
@@ -447,9 +438,29 @@ export default function PostDetail() {
     return num?.toString() || '0';
   };
   
+  if (postNotFound) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-petmeme-bg dark:bg-petmeme-bg-dark">
+        <div className="text-6xl mb-4">😿</div>
+        <h2 className="text-xl font-semibold text-petmeme-text dark:text-petmeme-text-dark mb-2">
+          Post not found
+        </h2>
+        <p className="text-petmeme-muted text-center mb-6">
+          This post may have been deleted or the link is incorrect.
+        </p>
+        <button
+          onClick={() => navigate('/')}
+          className="btn-primary px-6 py-2"
+        >
+          Go to Home
+        </button>
+      </div>
+    );
+  }
+  
   if (!post) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-petmeme-bg dark:bg-petmeme-bg-dark">
         <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
