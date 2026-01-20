@@ -60,6 +60,12 @@ export default function PostDetail() {
   const [showMenu, setShowMenu] = useState(false);
   
   useEffect(() => {
+    // Skip if we already have this post loaded (prevents unnecessary re-fetches)
+    if (post && post.id === postId) {
+      console.log('📄 PostDetail: Post already loaded, skipping fetch');
+      return;
+    }
+    
     const loadPost = async (retryCount = 0) => {
       console.log('📄 PostDetail: Loading post', postId, retryCount > 0 ? `(retry ${retryCount})` : '');
       setPostNotFound(false);
@@ -85,6 +91,13 @@ export default function PostDetail() {
           const isLiked = currentUserId && data.likedBy?.includes(currentUserId);
           const isBookmarked = currentUserId && data.bookmarkedBy?.includes(currentUserId);
           
+          console.log('🔍 Post data:', { 
+            id: postDoc.id, 
+            likedBy: data.likedBy, 
+            currentUserId, 
+            isLiked 
+          });
+          
           return {
             id: postDoc.id,
             ...data,
@@ -100,7 +113,7 @@ export default function PostDetail() {
       // 1. Try feedStore first (instant if already loaded)
       const storePost = posts.find(p => p.id === postId);
       if (storePost) {
-        console.log('✅ Found post in feedStore');
+        console.log('✅ Found post in feedStore, isLiked:', storePost.isLiked);
         setPost(storePost);
         return;
       }
@@ -109,7 +122,7 @@ export default function PostDetail() {
       try {
         const firestorePost = await fetchFromFirestore();
         if (firestorePost) {
-          console.log('✅ Found post in Firestore:', firestorePost.id);
+          console.log('✅ Found post in Firestore:', firestorePost.id, 'isLiked:', firestorePost.isLiked);
           setPost(firestorePost);
           return;
         }
@@ -137,7 +150,8 @@ export default function PostDetail() {
     };
     
     loadPost();
-  }, [postId, posts]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [postId]);
   
   // Load comments from Firestore
   useEffect(() => {
@@ -494,6 +508,7 @@ export default function PostDetail() {
       <header className="sticky top-0 z-40 bg-petmeme-bg/90 dark:bg-petmeme-bg-dark/90 backdrop-blur-lg border-b border-gray-100 dark:border-gray-800 px-4 py-3">
         <div className="flex items-center gap-4">
           <button
+            type="button"
             onClick={() => {
               // If there's browser history, go back; otherwise go to home
               if (window.history.length > 1) {
@@ -502,7 +517,7 @@ export default function PostDetail() {
                 navigate('/');
               }
             }}
-            className="p-2 -ml-2 text-petmeme-text dark:text-petmeme-text-dark hover:text-primary-500 cursor-pointer"
+            className="p-2 -ml-2 text-petmeme-text dark:text-petmeme-text-dark hover:text-primary-500 cursor-pointer z-10"
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
@@ -531,8 +546,9 @@ export default function PostDetail() {
             </div>
           </Link>
           
-          <div className="relative">
+          <div className="relative z-10">
             <button 
+              type="button"
               onClick={() => setShowMenu(!showMenu)}
               className="p-2 text-petmeme-muted hover:text-petmeme-text cursor-pointer"
             >
