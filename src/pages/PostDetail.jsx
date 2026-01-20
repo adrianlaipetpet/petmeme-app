@@ -36,6 +36,17 @@ export default function PostDetail() {
   const { user, pet } = useAuthStore();
   const { showToast } = useUIStore();
   
+  // Helper: navigate to protected route or prompt login
+  const handleProtectedNavigation = (path, e) => {
+    if (!user) {
+      e?.preventDefault();
+      showToast('Create an account to explore more! 🐾', 'info');
+      navigate('/login');
+      return false;
+    }
+    return true;
+  };
+  
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
@@ -463,7 +474,11 @@ export default function PostDetail() {
             <ArrowLeft className="w-6 h-6" />
           </button>
           
-          <Link to={`/profile/${post.pet?.id || post.ownerId || post.id}`} className="flex items-center gap-3 flex-1 cursor-pointer">
+          <Link 
+            to={`/profile/${post.pet?.id || post.ownerId || post.id}`} 
+            className="flex items-center gap-3 flex-1 cursor-pointer"
+            onClick={(e) => handleProtectedNavigation(`/profile/${post.pet?.id || post.ownerId || post.id}`, e)}
+          >
             <img
               src={post.pet?.photoUrl || post.petPhotoUrl}
               alt={post.pet?.name || 'Pet'}
@@ -707,7 +722,8 @@ export default function PostDetail() {
                 <Link 
                   key={behavior} 
                   to={`/browse/behavior/${encodeURIComponent(behavior)}`}
-                  className="badge-behavior text-xs hover:scale-105 transition-transform"
+                  onClick={(e) => handleProtectedNavigation(`/browse/behavior/${behavior}`, e)}
+                  className="badge-behavior text-xs hover:scale-105 transition-transform cursor-pointer"
                 >
                   #{behavior}
                 </Link>
@@ -722,7 +738,8 @@ export default function PostDetail() {
                 <Link 
                   key={tag} 
                   to={`/browse/hashtag/${encodeURIComponent(tag)}`}
-                  className="text-xs text-primary-500 hover:text-primary-600 font-medium"
+                  onClick={(e) => handleProtectedNavigation(`/browse/hashtag/${tag}`, e)}
+                  className="text-xs text-primary-500 hover:text-primary-600 font-medium cursor-pointer"
                 >
                   #{tag}
                 </Link>
@@ -744,7 +761,13 @@ export default function PostDetail() {
                 <Link 
                   to={comment.userId ? `/profile/${comment.userId}` : '#'}
                   className="flex-shrink-0"
-                  onClick={(e) => !comment.userId && e.preventDefault()}
+                  onClick={(e) => {
+                    if (!comment.userId) {
+                      e.preventDefault();
+                      return;
+                    }
+                    handleProtectedNavigation(`/profile/${comment.userId}`, e);
+                  }}
                 >
                   <img
                     src={comment.user.avatar}
@@ -759,7 +782,13 @@ export default function PostDetail() {
                   <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-4 py-2">
                     <Link 
                       to={comment.userId ? `/profile/${comment.userId}` : '#'}
-                      onClick={(e) => !comment.userId && e.preventDefault()}
+                      onClick={(e) => {
+                        if (!comment.userId) {
+                          e.preventDefault();
+                          return;
+                        }
+                        handleProtectedNavigation(`/profile/${comment.userId}`, e);
+                      }}
                       className="font-semibold text-sm text-petmeme-text dark:text-petmeme-text-dark hover:text-primary-500 cursor-pointer"
                     >
                       {comment.user.name}
@@ -867,49 +896,72 @@ export default function PostDetail() {
         </div>
       </div>
       
-      {/* Comment input */}
+      {/* Comment input OR Sign up prompt */}
       <div className="sticky bottom-0 bg-white dark:bg-petmeme-card-dark border-t border-gray-100 dark:border-gray-800 p-4 safe-area-bottom">
-        {replyingTo && (
-          <div className="flex items-center justify-between mb-2 text-sm">
-            <span className="text-petmeme-muted">
-              Replying to {comments.find(c => c.id === replyingTo)?.user.name}
-            </span>
-            <button 
-              onClick={() => setReplyingTo(null)}
-              className="text-primary-500 font-medium"
-            >
-              Cancel
-            </button>
-          </div>
-        )}
-        
-        <div className="flex items-center gap-3">
-          <img
-            src={pet?.photoURL || reliableImages.avatar1}
-            alt="You"
-            className="w-9 h-9 rounded-full object-cover flex-shrink-0"
-            onError={(e) => {
-              e.target.src = Math.random() > 0.5 ? 'https://placedog.net/50/50?id=comment' : 'https://cataas.com/cat?width=50&height=50&t=comment';
-            }}
-          />
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder={replyingTo ? "Write a reply..." : "Add a comment..."}
-              className="input-field pr-12"
-              onKeyPress={(e) => e.key === 'Enter' && handleSubmitComment()}
-            />
+        {!user ? (
+          // Show sign up prompt for non-logged-in users
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <p className="text-sm text-petmeme-text dark:text-petmeme-text-dark font-medium">
+                Join the paw-ty! 🐾
+              </p>
+              <p className="text-xs text-petmeme-muted">
+                Create an account to like, comment & share
+              </p>
+            </div>
             <button
-              onClick={handleSubmitComment}
-              disabled={!newComment.trim()}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-primary-500 disabled:text-gray-300 dark:disabled:text-gray-600"
+              onClick={() => navigate('/login')}
+              className="btn-primary px-6 py-2 text-sm"
             >
-              <Send className="w-5 h-5" />
+              Sign Up
             </button>
           </div>
-        </div>
+        ) : (
+          // Show comment input for logged-in users
+          <>
+            {replyingTo && (
+              <div className="flex items-center justify-between mb-2 text-sm">
+                <span className="text-petmeme-muted">
+                  Replying to {comments.find(c => c.id === replyingTo)?.user.name}
+                </span>
+                <button 
+                  onClick={() => setReplyingTo(null)}
+                  className="text-primary-500 font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+            
+            <div className="flex items-center gap-3">
+              <img
+                src={pet?.photoURL || reliableImages.avatar1}
+                alt="You"
+                className="w-9 h-9 rounded-full object-cover flex-shrink-0"
+                onError={(e) => {
+                  e.target.src = Math.random() > 0.5 ? 'https://placedog.net/50/50?id=comment' : 'https://cataas.com/cat?width=50&height=50&t=comment';
+                }}
+              />
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder={replyingTo ? "Write a reply..." : "Add a comment..."}
+                  className="input-field pr-12"
+                  onKeyPress={(e) => e.key === 'Enter' && handleSubmitComment()}
+                />
+                <button
+                  onClick={handleSubmitComment}
+                  disabled={!newComment.trim()}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-primary-500 disabled:text-gray-300 dark:disabled:text-gray-600"
+                >
+                  <Send className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
