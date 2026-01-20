@@ -135,10 +135,10 @@ function App() {
             <Route path="/browse/:type" element={<FilteredContent />} />
           </Route>
           
-          {/* Post detail (full screen) */}
+          {/* Post detail (full screen) - PUBLIC so shared links work! */}
           <Route 
             path="/post/:postId" 
-            element={<ProtectedRoute><PostDetail /></ProtectedRoute>} 
+            element={<PostDetail />} 
           />
           
           {/* Fallback */}

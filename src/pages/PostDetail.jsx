@@ -147,12 +147,20 @@ export default function PostDetail() {
   };
   
   const handleLike = async () => {
-    if (post) {
-      const { user } = useAuthStore.getState();
-      const userId = user?.uid;
-      const wasLiked = post.isLiked || (userId && post.likedBy?.includes(userId));
-      
-      console.log('🐾 PostDetail Like:', { postId: post.id, userId, wasLiked });
+    if (!post) return;
+    
+    const { user } = useAuthStore.getState();
+    const userId = user?.uid;
+    
+    // Prompt login if not authenticated
+    if (!userId) {
+      showToast('Login to like this post! 🐾', 'info');
+      return;
+    }
+    
+    const wasLiked = post.isLiked || (userId && post.likedBy?.includes(userId));
+    
+    console.log('🐾 PostDetail Like:', { postId: post.id, userId, wasLiked });
       
       // Optimistic update
       setPost(prev => ({
@@ -186,13 +194,19 @@ export default function PostDetail() {
   };
   
   const handleBookmark = async () => {
-    if (post) {
-      const wasBookmarked = post.isBookmarked;
-      setPost(prev => ({ ...prev, isBookmarked: !prev.isBookmarked }));
-      const result = await toggleBookmark(post.id, user?.uid);
-      if (result?.success) {
-        showToast(wasBookmarked ? 'Removed from favorites' : 'Added to favorites! ❤️', 'success');
-      }
+    if (!post) return;
+    
+    // Prompt login if not authenticated
+    if (!user?.uid) {
+      showToast('Login to save favorites! ❤️', 'info');
+      return;
+    }
+    
+    const wasBookmarked = post.isBookmarked;
+    setPost(prev => ({ ...prev, isBookmarked: !prev.isBookmarked }));
+    const result = await toggleBookmark(post.id, user?.uid);
+    if (result?.success) {
+      showToast(wasBookmarked ? 'Removed from favorites' : 'Added to favorites! ❤️', 'success');
     }
   };
   
@@ -301,6 +315,12 @@ export default function PostDetail() {
   
   const handleSubmitComment = async () => {
     if (!newComment.trim() || !post) return;
+    
+    // Prompt login if not authenticated
+    if (!user?.uid) {
+      showToast('Login to comment! 💬', 'info');
+      return;
+    }
     
     const commentText = newComment.trim();
     setNewComment(''); // Clear input immediately for better UX
