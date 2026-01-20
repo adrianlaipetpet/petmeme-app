@@ -62,49 +62,92 @@ export default function Login() {
   
   const handleEmailAuth = async (e) => {
     e.preventDefault();
+    
+    // Validate inputs
     if (!email || !password) {
       showToast('Fill in all the boxes, hooman! 🐱', 'error');
       return;
     }
     
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showToast('That email looks sus... check it again! 🧐', 'error');
+      return;
+    }
+    
+    // Password length check (Firebase requires 6+ chars)
+    if (password.length < 6) {
+      showToast('Password needs at least 6 characters 💪', 'error');
+      return;
+    }
+    
     setLoading(true);
+    console.log(`🔐 Attempting ${isSignUp ? 'signup' : 'login'} with email:`, email);
+    
     try {
       if (isSignUp) {
+        console.log('📝 Creating new account...');
         await createUserWithEmailAndPassword(auth, email, password);
+        console.log('✅ Account created successfully!');
         showToast('Welcome to the fur family! 🎉', 'success');
       } else {
+        console.log('🔑 Signing in...');
         await signInWithEmailAndPassword(auth, email, password);
+        console.log('✅ Signed in successfully!');
         showToast('Welcome back, pet lover! 😸', 'success');
       }
     } catch (error) {
-      console.error('Email auth error:', error);
+      console.error('❌ Email auth error:', error.code, error.message);
       let message = 'Something went wrong... blame the cat! 😹';
       
       switch (error.code) {
+        // Sign-in errors
         case 'auth/user-not-found':
           message = 'No pet parent found with this email 🔍';
           break;
         case 'auth/wrong-password':
         case 'auth/invalid-credential':
-          message = 'Wrong password! Did the cat change it? 🙀';
+          message = isSignUp 
+            ? 'This email may already be in use. Try signing in!'
+            : 'Wrong email or password! Did the cat change it? 🙀';
           break;
+        
+        // Sign-up errors  
         case 'auth/email-already-in-use':
-          message = 'This email already has a fur-ever home! Try signing in.';
+          message = 'This email already has a fur-ever home! Try signing in instead.';
           break;
         case 'auth/invalid-email':
-          message = 'That email looks sus... check it again! 🧐';
+          message = 'That email looks sus... check the format! 🧐';
           break;
         case 'auth/weak-password':
           message = 'Password too weak! Make it at least 6 characters 💪';
           break;
+        
+        // Configuration errors
+        case 'auth/operation-not-allowed':
+          message = 'Email signup is temporarily disabled. Try Google sign-in! 🔧';
+          console.error('⚠️ Email/Password auth not enabled in Firebase Console!');
+          break;
+        case 'auth/configuration-not-found':
+          message = 'App configuration error. Please try again later 🔧';
+          break;
+        
+        // Rate limiting & network
         case 'auth/network-request-failed':
           message = 'Network error. Check your connection 📶';
           break;
         case 'auth/too-many-requests':
           message = 'Too many attempts! Take a catnap and try later 😴';
           break;
+        case 'auth/internal-error':
+          message = 'Server error. Please try again in a moment 🔄';
+          break;
+          
         default:
-          console.log('Unhandled auth error code:', error.code);
+          // Show the actual error code for debugging
+          message = `Oops! Error: ${error.code || 'unknown'}. Please try again 🙀`;
+          console.error('Unhandled auth error:', error);
       }
       
       showToast(message, 'error');
