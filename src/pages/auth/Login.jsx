@@ -22,19 +22,42 @@ export default function Login() {
   useEffect(() => {
     const handleRedirectResult = async () => {
       try {
+        console.log('🔍 Checking for Google redirect result...');
         const result = await getRedirectResult(auth);
         if (result) {
-          console.log('Google sign-in successful:', result.user.email);
+          console.log('✅ Google sign-in successful:', result.user.email);
           showToast('Welcome to Lmeow! 😸', 'success');
         }
       } catch (error) {
-        console.error('Google sign-in error:', error);
+        console.error('❌ Google redirect error:', error.code, error.message);
         let message = 'Sign-in failed. Please try again 🙀';
-        if (error.code === 'auth/network-request-failed') {
-          message = 'Network error. Check your connection 📶';
-        } else if (error.code === 'auth/user-cancelled') {
-          message = 'Sign-in cancelled. Try again when ready! 😸';
+        
+        switch (error.code) {
+          case 'auth/popup-blocked':
+          case 'auth/popup-closed-by-user':
+            // These shouldn't happen with redirect, but handle just in case
+            message = 'Sign-in was interrupted. Please try again!';
+            break;
+          case 'auth/network-request-failed':
+            message = 'Network error. Check your connection 📶';
+            break;
+          case 'auth/user-cancelled':
+            message = 'Sign-in cancelled. Try again when ready! 😸';
+            break;
+          case 'auth/unauthorized-domain':
+            message = 'Domain not authorized. Contact support 🔧';
+            console.error('⚠️ Add this domain to Firebase Console → Authentication → Settings → Authorized domains');
+            break;
+          case 'auth/operation-not-allowed':
+            message = 'Google sign-in not enabled. Contact support 🔧';
+            break;
+          case 'auth/invalid-credential':
+            message = 'Invalid credentials. Please try again 🔄';
+            break;
+          default:
+            message = `Sign-in error: ${error.code || 'unknown'}. Please try again 🙀`;
         }
+        
         showToast(message, 'error');
       }
     };
@@ -44,17 +67,35 @@ export default function Login() {
   
   const handleGoogleLogin = async () => {
     setLoading(true);
+    console.log('🔐 Starting Google sign-in...');
+    
     try {
-      // Always use redirect - works on all browsers without popup issues
-      console.log('🔐 Starting Google sign-in with redirect...');
+      // Use redirect - works on all browsers without popup blocking
+      console.log('➡️ Redirecting to Google...');
       await signInWithRedirect(auth, googleProvider);
-      // Note: redirect will navigate away from the page
+      // Page will redirect to Google, so we won't reach here
     } catch (error) {
-      console.error('Google login error:', error);
+      console.error('❌ Google login error:', error.code, error.message);
       let message = 'Oops! Something went wrong 🙀';
-      if (error.code === 'auth/network-request-failed') {
-        message = 'Network error. Check your connection 📶';
+      
+      switch (error.code) {
+        case 'auth/popup-blocked':
+          message = 'Browser blocked the sign-in. Please try again!';
+          break;
+        case 'auth/network-request-failed':
+          message = 'Network error. Check your connection 📶';
+          break;
+        case 'auth/unauthorized-domain':
+          message = 'This domain is not authorized for sign-in 🔧';
+          console.error('⚠️ Add domain to Firebase: Console → Authentication → Settings → Authorized domains');
+          break;
+        case 'auth/operation-not-allowed':
+          message = 'Google sign-in is not enabled 🔧';
+          break;
+        default:
+          message = `Error: ${error.code || error.message}. Please try again!`;
       }
+      
       showToast(message, 'error');
       setLoading(false);
     }
