@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
   signInWithEmailAndPassword, 
@@ -11,11 +10,6 @@ import { auth, googleProvider } from '../../config/firebase';
 import { useUIStore } from '../../store/uiStore';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
-// Detect if user is on mobile device
-const isMobile = () => {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-};
-
 export default function Login() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
@@ -24,20 +18,24 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const { showToast } = useUIStore();
   
-  // Handle redirect result when returning from Google sign-in (mobile)
+  // Handle redirect result when returning from Google sign-in
   useEffect(() => {
     const handleRedirectResult = async () => {
       try {
         const result = await getRedirectResult(auth);
         if (result) {
-          console.log('Redirect sign-in successful:', result.user.email);
+          console.log('Google sign-in successful:', result.user.email);
           showToast('Welcome to Lmeow! 😸', 'success');
         }
       } catch (error) {
-        console.error('Redirect result error:', error);
-        if (error.code !== 'auth/popup-closed-by-user') {
-          showToast('Sign-in failed. Please try again 🙀', 'error');
+        console.error('Google sign-in error:', error);
+        let message = 'Sign-in failed. Please try again 🙀';
+        if (error.code === 'auth/network-request-failed') {
+          message = 'Network error. Check your connection 📶';
+        } else if (error.code === 'auth/user-cancelled') {
+          message = 'Sign-in cancelled. Try again when ready! 😸';
         }
+        showToast(message, 'error');
       }
     };
     
@@ -47,33 +45,17 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      // Use redirect on mobile (more reliable), popup on desktop
-      if (isMobile()) {
-        console.log('📱 Mobile detected, using redirect sign-in');
-        await signInWithRedirect(auth, googleProvider);
-        // Note: redirect will navigate away, so we won't reach this point
-      } else {
-        console.log('💻 Desktop detected, using popup sign-in');
-        await signInWithPopup(auth, googleProvider);
-        showToast('Welcome to Lmeow! 😸', 'success');
-      }
+      // Always use redirect - works on all browsers without popup issues
+      console.log('🔐 Starting Google sign-in with redirect...');
+      await signInWithRedirect(auth, googleProvider);
+      // Note: redirect will navigate away from the page
     } catch (error) {
       console.error('Google login error:', error);
-      // More specific error messages
-      let message = 'Oops! The cat knocked over the sign-in 🙀';
-      if (error.code === 'auth/popup-blocked') {
-        message = 'Popup blocked! Please allow popups for this site 🚫';
-      } else if (error.code === 'auth/popup-closed-by-user') {
-        message = 'Sign-in cancelled. Try again when ready! 😸';
-      } else if (error.code === 'auth/network-request-failed') {
+      let message = 'Oops! Something went wrong 🙀';
+      if (error.code === 'auth/network-request-failed') {
         message = 'Network error. Check your connection 📶';
-      } else if (error.code === 'auth/cancelled-popup-request') {
-        // User clicked multiple times, ignore
-        setLoading(false);
-        return;
       }
       showToast(message, 'error');
-    } finally {
       setLoading(false);
     }
   };
